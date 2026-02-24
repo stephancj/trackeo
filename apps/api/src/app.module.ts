@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { PositionsModule } from './positions/positions.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
+import { AdminModule } from './admin/admin.module';
 import databaseConfig from './config/database.config';
 
 @Module({
@@ -21,6 +22,7 @@ import databaseConfig from './config/database.config';
     UsersModule,
     PositionsModule,
     VehiclesModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
