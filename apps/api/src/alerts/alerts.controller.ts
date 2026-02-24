@@ -6,11 +6,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('alerts')
 @UseGuards(JwtAuthGuard)
 export class AlertsController {
-  constructor(private readonly alertsService: AlertsService) { }
+  constructor(private readonly alertsService: AlertsService) {}
 
   @Get()
   findAll(@Request() req) {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     return this.alertsService.findAllForUser(userId);
   }
 }

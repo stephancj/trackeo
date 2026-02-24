@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../../features/vehicles/views/fleet_list_view.dart';
 import '../../features/map/views/map_view.dart';
+import '../../features/alerts/views/alerts_view.dart';
 
 /// Index de l'onglet actif : 0=List, 1=Map, 2=Alerts, 3=Settings
 final activeTabProvider = StateProvider<int>((ref) => 0);
@@ -20,16 +21,13 @@ class AppShell extends ConsumerWidget {
         children: const [
           FleetListView(),
           MapView(),
-          _PlaceholderView(
-              icon: Icons.notifications_outlined, label: 'Alertes'),
-          _PlaceholderView(
-              icon: Icons.settings_outlined, label: 'Paramètres'),
+          AlertsView(),
+          _PlaceholderView(icon: Icons.settings_outlined, label: 'Paramètres'),
         ],
       ),
       bottomNavigationBar: _TrackeoBottomNav(
         activeTab: activeTab,
-        onTabChanged: (i) =>
-            ref.read(activeTabProvider.notifier).state = i,
+        onTabChanged: (i) => ref.read(activeTabProvider.notifier).state = i,
       ),
     );
   }
@@ -41,8 +39,10 @@ class _TrackeoBottomNav extends StatelessWidget {
   final int activeTab;
   final ValueChanged<int> onTabChanged;
 
-  const _TrackeoBottomNav(
-      {required this.activeTab, required this.onTabChanged});
+  const _TrackeoBottomNav({
+    required this.activeTab,
+    required this.onTabChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -100,8 +100,11 @@ class _TrackeoBottomNav extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.add,
-                          color: Colors.white, size: 28),
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
                   ),
                 ),
@@ -180,10 +183,8 @@ class _NavItem extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 10,
-                fontWeight:
-                    isActive ? FontWeight.w600 : FontWeight.normal,
-                color:
-                    isActive ? AppColors.primary : AppColors.textHint,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: isActive ? AppColors.primary : AppColors.textHint,
               ),
             ),
           ],
@@ -210,14 +211,19 @@ class _PlaceholderView extends StatelessWidget {
           children: [
             Icon(icon, size: 64, color: AppColors.textHint),
             const SizedBox(height: 16),
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 8),
-            const Text('Disponible en V2',
-                style: TextStyle(color: AppColors.textHint)),
+            const Text(
+              'Disponible en V2',
+              style: TextStyle(color: AppColors.textHint),
+            ),
           ],
         ),
       ),

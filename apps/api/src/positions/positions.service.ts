@@ -23,7 +23,7 @@ export class PositionsService {
   constructor(
     @InjectRepository(Position)
     private readonly positionRepo: Repository<Position>,
-  ) { }
+  ) {}
 
   /** Dernière position connue d'un device */
   async getLastPosition(deviceId: number): Promise<PositionDto> {

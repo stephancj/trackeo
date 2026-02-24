@@ -51,6 +51,9 @@ dependencies:
 
   # Stockage JWT (localStorage sur web, SharedPreferences sur mobile)
   shared_preferences: ^2.3.0
+  
+  # Affichage du temps relatif
+  timeago: ^3.7.1
 
 dev_dependencies:
   flutter_test:
