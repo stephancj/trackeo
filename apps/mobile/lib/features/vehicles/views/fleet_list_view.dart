@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/navigation/app_shell.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/vehicle_model.dart';
 import '../providers/vehicles_provider.dart';
@@ -139,6 +140,8 @@ class FleetListView extends ConsumerWidget {
                           ref
                               .read(selectedVehicleIdProvider.notifier)
                               .state = vehicles[i].id;
+                          // Switch to Map tab so the vehicle card popup appears
+                          ref.read(activeTabProvider.notifier).state = 1;
                         },
                       ),
                     ),

@@ -35,31 +35,123 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 
 ---
 
-## Périmètre MVP (In Scope)
+## Catalogue des fonctionnalités
 
-### ✅ Fonctionnalités incluses
+### MVP (0–6 mois)
 
-1. **Suivi en temps réel** — Polling API toutes les 10s (pas WebSocket)
-2. **Historique des trajets** — Affichage des points bruts reliés par une polyligne (pas d'algorithme de segmentation)
-3. **Geofencing basique** — Vérification : "Le dernier point est-il hors du cercle ?"
-4. **Gestion de flotte** — Liste de véhicules filtrables (statut, recherche)
-5. **Authentification** — Login JWT simple
+#### ✅ Suivi en temps réel (Live Tracking)
+- Carte avec marqueur véhicule mis à jour toutes les 10s (polling)
+- Vitesse, batterie, force signal, statut affiché
+- Statut "offline" si aucune mise à jour après 30s
+- **V2** : Lien de suivi partageable sans login (lien expirant)
+- **V2** : WebSocket temps réel (polling suffisant pour MVP PWA)
 
-### ❌ Reporté en V2
+#### ✅ Historique des trajets (Raw History)
+- Sélecteur de date (from/to)
+- Appel `GET /api/vehicles/:id/history?from=&to=`
+- Polyligne sur flutter_map (`PolylineLayer`)
+- Marqueurs départ / arrivée
+- Stats trip (distance Haversine, durée, vitesse max)
+- ⚠️ Pas d'algorithme de segmentation — points bruts reliés par polyligne
 
-| Fonctionnalité | Raison du report |
-|---|---|
-| App mobile native (iOS / Android) | Flutter Web PWA d'abord, stores ensuite |
-| WebSocket temps réel | Polling 10s suffit pour MVP PWA |
-| Onboarding QR Code + OTP WhatsApp | Trop complexe, admin crée manuellement |
-| Mode Vol & commandes hardware | Trop risqué sans supervision humaine |
-| Paiements Stripe / Mobile Money | Manuel pour MVP (activation par admin) |
-| Application Installateur | Google Form ou WhatsApp à la place |
-| Segmentation automatique des trajets | Points bruts suffisants pour MVP |
+#### 🔲 Geofencing basique
+- Création de zone (cercle, rayon 100m–5km)
+- Vérification : "Le dernier point est-il hors du cercle ?"
+- Alerte entrée/sortie avec debounce (N=3 pings consécutifs ou distance >50m sur 30s)
+- Notification push + WhatsApp
+- PostGIS `ST_Contains` pour test point-dans-polygone
+
+#### 🔲 Onboarding & Activation appareil (QR / OTP)
+- Scan QR (contient `device_id`) → OTP WhatsApp/SMS → liaison device/compte
+- Fallback OTP si QR indisponible
+- OTP expire en 10 min ; rate-limit ; token chiffré
+- **MVP simplifié** : admin crée manuellement via Traccar UI — onboarding QR/OTP en V2
+
+#### 🔲 Gestion des alertes & support
+- File d'alertes + actions owner (Share Live Link, Call Support)
+- Ticket support créé automatiquement
+- Escalade automatique après timeout configurable (défaut 10 min) si owner ne répond pas
+- Canaux : push, WhatsApp, Messenger, SMS
+
+#### 🔲 Mode Vol & Récupération
+- Owner signale vol → fréquence reporting augmentée (5s si supporté)
+- Ticket support créé + notification partenaires
+- Annulation possible dans la minute (faux positif)
+- **Reporté** : commande hardware d'immobilisation → V2+ (supervision humaine obligatoire)
+
+#### 🔲 Flow Installation & Photos Installateur
+- Installateur : VIN + ≥2 photos + confirmation placement
+- **MVP** : Google Form ou WhatsApp à la place — flow applicatif en V2
+
+#### 🔲 Gestion de compte & Abonnement (basique)
+- Plans, période d'essai, facturation Stripe (carte) puis mobile money local
+- **MVP** : activation manuelle par admin
 
 ---
 
-## Feuille de route (16 semaines)
+### Near-term (6–18 mois)
+
+#### 🔲 Trips & Trip Aggregator
+- Worker de segmentation des trajets depuis `tc_positions`
+- Table `trips` dédiée pour requêtes rapides
+- Critères de segmentation : vitesse > seuil OU mouvement > distance ET gap < seuil
+- Lecture des trajets paginée + polyline GeoJSON
+- Playback trajet sur carte
+
+#### 🔲 Rapports Distance (complet)
+- Totaux journaliers/hebdo/mensuels par device depuis table `trips`
+- Export CSV / PDF
+- `GET /devices/:id/reports/distance?start=&end=&interval=daily|weekly|monthly`
+- Agrégation Timescale `time_bucket()` pour performances
+
+#### 🔲 Télémétrie Carburant
+- Champs `fuel_pct` / `fuel_v` dans la télémétrie (entrée analogique ou OBD-II)
+- Lissage / calibration tension→pourcentage
+- Jauge carburant + graphe historique
+- Alerte niveau bas + alerte chute soudaine (vol)
+- Consommation L/100km par trajet si `tank_capacity_liters` renseigné
+
+#### 🔲 Module Livraison / Collecte (basique)
+- Flux chauffeur/marchand/client pour livraison colis
+- Statuts : `accepted → arrived_pickup → picked_up → in_transit → delivered`
+- Photo preuve de livraison (POD)
+- Lien de tracking live pour le client (sans login)
+- Dispatch simple : nearest driver naïf (distance)
+
+#### 🔲 Gestion de flotte B2B & Dashboard web
+- Multi-véhicules, groupes, assignation chauffeur, rapports
+- Import CSV (jusqu'à 1 000 devices)
+- RBAC pour membres de l'équipe
+- Rapports planifiés + exports batch
+
+#### 🔲 API Partenaires & Webhooks (sociétés de sécurité)
+- Partenaires enregistrent des webhooks, s'abonnent aux alertes
+- POST HMAC-signé ; retries exponentiels
+- Partenaire peut claim/ack les alertes
+- Scopes limités : `location:read`, `alerts:subscribe`
+- Consentement owner requis pour partage historique
+
+#### 🔲 OTA Firmware Management
+- Hébergement firmware + déploiement canary (1–5 devices)
+- Monitoring erreurs + rollback si taux d'échec > seuil
+- MQTT `devices/{id}/ota` avec url + checksum SHA256
+
+---
+
+### Future (18+ mois)
+
+#### 🔲 Immobilisateur à distance / Contrôle véhicule
+- Coupure démarreur à distance (soumis à cadre légal)
+- Multi-factor confirmation + interlock fail-safe + audit log
+- Human-in-the-loop obligatoire
+
+#### 🔲 Analytics avancées & IA
+- Détection d'anomalies, maintenance prédictive, scoring comportement chauffeur
+- Opt-in pour données d'entraînement
+
+---
+
+## Feuille de route (16 semaines MVP)
 
 ### Mois 1 — Setup & Simulation
 | Semaine | Objectif | Statut |
@@ -77,7 +169,7 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 ### Mois 3 — Fonctionnalités Métier
 | Semaine | Objectif | Statut |
 |---|---|---|
-| S9-S10 | Historique trajet (sélecteur de date + polyligne) | 🔲 À faire |
+| S9-S10 | Historique trajet (sélecteur de date + polyligne + stats) | ✅ Fait |
 | S11-S12 | Admin basique (créer user, lier device) + tests terrain | 🔲 À faire |
 
 ### Mois 4 — Déploiement VPS
@@ -108,11 +200,14 @@ trackeo/
 │   └── mobile/                # Frontend Flutter Web (PWA)
 │       └── lib/
 │           ├── core/
-│           │   └── network/   # Client Dio (api_client.dart)
+│           │   ├── network/   # Client Dio (api_client.dart)
+│           │   ├── navigation/ # AppShell, activeTabProvider
+│           │   └── theme/     # AppTheme, AppColors
 │           └── features/
-│               ├── auth/      # Login view + provider
-│               ├── devices/   # Modèle, repository, providers, fleet list
-│               └── map/       # Vue carte (flutter_map) + tracking temps réel
+│               ├── auth/      # Login view + provider ✅
+│               ├── vehicles/  # Modèle, repository, providers, fleet list ✅
+│               ├── map/       # Vue carte (flutter_map) + tracking temps réel ✅
+│               └── history/   # Historique trajet + stats ✅
 ├── infra/
 │   ├── postgres/
 │   │   └── init.sql           # Init TimescaleDB extensions
@@ -222,7 +317,9 @@ TOTAL_POINTS=30
 
 ---
 
-## API Endpoints (MVP)
+## API Endpoints
+
+### MVP (implémentés)
 
 | Méthode | Route | Description |
 |---|---|---|
@@ -231,11 +328,27 @@ TOTAL_POINTS=30
 | `GET` | `/api/vehicles/:id/position` | Dernière position d'un véhicule (polling 10s) |
 | `GET` | `/api/vehicles/:id/history` | Positions entre `from` et `to` (historique trajet) |
 
+### Near-term (à implémenter)
+
+| Méthode | Route | Description |
+|---|---|---|
+| `POST` | `/api/auth/register` | Inscription + provisionnement device |
+| `POST` | `/api/provision/request-otp` | Demande OTP pour activation device |
+| `POST` | `/api/provision/claim` | Valide OTP + lie device au compte |
+| `GET` | `/api/vehicles/:id/reports/distance` | Totaux distance par période (`?start=&end=&interval=daily\|weekly\|monthly`) |
+| `GET` | `/api/vehicles/:id/trips` | Liste des trajets segmentés (`?start=&end=&page=`) |
+| `POST` | `/api/geofences` | Créer une geofence (cercle ou polygone) |
+| `GET` | `/api/geofences` | Liste des geofences de l'utilisateur |
+| `DELETE` | `/api/geofences/:id` | Supprimer une geofence |
+| `POST` | `/api/devices/:id/theft` | Déclencher le mode récupération vol |
+| `GET` | `/api/alerts` | File d'alertes de l'utilisateur |
+| `POST` | `/api/alerts/:id/escalate` | Escalader une alerte au partenaire |
+
 ---
 
 ## Schéma de base de données
 
-Traccar gère son propre schéma. Les tables clés :
+### Tables Traccar (ne pas modifier — `synchronize: false`)
 
 | Table | Description |
 |---|---|
@@ -251,6 +364,135 @@ Après le premier démarrage de Traccar :
 ```sql
 SELECT create_hypertable('tc_positions', 'devicetime', if_not_exists => TRUE);
 ```
+
+### Tables propres à l'API (migrations TypeORM)
+
+```sql
+-- Trajets segmentés (Near-term)
+CREATE TABLE trips (
+  id uuid PRIMARY KEY,
+  device_id text NOT NULL,
+  start_ts timestamptz,
+  end_ts timestamptz,
+  distance_m double precision,
+  duration_s integer,
+  geom geometry(LineString, 4326),
+  created_at timestamptz DEFAULT now()
+);
+
+-- Geofences
+CREATE TABLE geofences (
+  id uuid PRIMARY KEY,
+  owner_id uuid,
+  device_id text,
+  geom geometry,
+  name text,
+  radius_m integer,
+  active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Alertes
+CREATE TABLE alerts (
+  id uuid PRIMARY KEY,
+  device_id text,
+  owner_id uuid,
+  type text,           -- 'geofence_exit', 'geofence_enter', 'theft', 'low_battery'
+  status text,         -- 'open', 'acked', 'escalated', 'resolved'
+  created_at timestamptz DEFAULT now(),
+  handled_by uuid
+);
+
+-- Télémétrie carburant (Near-term)
+CREATE TABLE device_fuel_readings (
+  id bigserial PRIMARY KEY,
+  device_id text,
+  ts timestamptz,
+  fuel_pct numeric,
+  fuel_v numeric,
+  raw jsonb
+);
+
+-- Livraisons (Near-term)
+CREATE TABLE deliveries (
+  id uuid PRIMARY KEY,
+  merchant_id uuid,
+  customer_id uuid,
+  driver_id uuid,
+  pickup_lat double precision,
+  pickup_lon double precision,
+  dropoff_lat double precision,
+  dropoff_lon double precision,
+  status varchar,      -- 'pending', 'accepted', 'picked_up', 'in_transit', 'delivered'
+  eta timestamptz,
+  amount_cents integer,
+  pod_photos jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Chauffeurs (Near-term)
+CREATE TABLE drivers (
+  id uuid PRIMARY KEY,
+  user_id uuid,
+  vehicle_device_id text,
+  status varchar,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Installations (Near-term)
+CREATE TABLE installations (
+  id uuid PRIMARY KEY,
+  device_id text,
+  installer_id uuid,
+  photos jsonb,
+  vin text,
+  installed_at timestamptz DEFAULT now()
+);
+
+-- Abonnements
+CREATE TABLE subscriptions (
+  id uuid PRIMARY KEY,
+  user_id uuid,
+  plan text,
+  status text,
+  next_billing_date timestamptz
+);
+```
+
+---
+
+## Schéma de télémétrie (canonical)
+
+```json
+{
+  "device_id": "DEV123456",
+  "ts": 1700000000,
+  "lat": -18.8792,
+  "lon": 47.5079,
+  "speed_kmh": 0,
+  "heading": 180,
+  "battery_pct": 78,
+  "gsm_signal": 12,
+  "event": "heartbeat",
+  "seq": 12345,
+  "firmware": "v1.2.3",
+  "fuel_pct": 57.3,
+  "fuel_v": 2.34,
+  "odometer_m": 1234567
+}
+```
+
+> `ts` en epoch seconds UTC. `seq` monotone par device (le serveur rejette les doublons). `fuel_pct` / `fuel_v` optionnels (selon matériel). `odometer_m` préférable à Haversine pour distance cumulative précise.
+
+---
+
+## Workflow de notification & escalade
+
+1. Alerte créée → push + message WhatsApp (template) à l'owner (avec actions : Share Live Link, Call Support)
+2. Si aucun accusé de l'owner en `EscalationTimeout` (défaut 10 min) → notif webhook partenaire + WhatsApp
+3. Ticket support créé immédiatement ; support peut demander consentement owner pour partager position avec police → lien éphémère + log
+4. Partenaire claim l'alerte : `open → in_progress → resolved`
+5. Toutes les étapes sont auditées
 
 ---
 
@@ -273,9 +515,10 @@ feature/
 
 - **Models** : `Equatable`, factory `fromJson`
 - **Repositories** : interface abstraite + implémentation `Remote*`
-- **Providers** : `FutureProvider` pour les données async, `StateProvider` pour l'état UI
+- **Providers** : `AsyncNotifierProvider` pour les données async avec polling, `FutureProvider` pour les données one-shot, `StateProvider` pour l'état UI
 - **Views** : `ConsumerWidget`, pas de logique métier
-- **Polling** : `Timer.periodic(Duration(seconds: 10), ...)` dans le provider de tracking
+- **Polling** : `Timer.periodic(Duration(seconds: 10), ...)` dans `AsyncNotifier._refresh()` — ne jamais passer par `AsyncLoading` pour éviter le flash des marqueurs
+- **valueOrNull** : utiliser `vehiclesAsync.valueOrNull ?? []` pour les données affichées sur la carte
 
 ---
 
@@ -283,27 +526,38 @@ feature/
 
 - **Ne pas modifier** le schéma Traccar (`synchronize: false` dans TypeORM)
 - **Ne jamais** committer de credentials réels — utiliser `.env` (gitignored)
-- **Toujours** passer par le `DeviceRepository` dans Flutter, pas appeler Dio directement dans les vues
+- **Toujours** passer par le `VehicleRepository` / `DeviceRepository` dans Flutter, pas appeler Dio directement dans les vues
 - **Pas de WebSocket pour le MVP** — utiliser le polling toutes les 10s uniquement (WebSocket prévu en V2 avec l'app mobile native)
-- **Pas d'algorithme de segmentation de trajets** — afficher les points bruts reliés par une polyligne
+- **Pas d'algorithme de segmentation de trajets dans le MVP** — afficher les points bruts reliés par une polyligne (segmentation = Near-term avec table `trips`)
 - Avant d'ajouter un nouveau protocole Traccar, vérifier qu'il n'est pas déjà activé dans `traccar.xml`
 - Les migrations TypeORM sont uniquement pour les tables **propres à l'API** (pas les tables `tc_*`)
+- **selectedVehicle** : stocker uniquement l'id dans `selectedVehicleIdProvider`, dériver le `Vehicle?` via `Provider` depuis la liste live — toujours fraîche
+- **withOpacity** déprécié depuis Flutter 3.38 → utiliser `withValues(alpha: x)`
+- **dart:math** : `pi` est disponible via import transitif de `flutter_map`/`latlong2` — importer explicitement seulement si `sin`, `cos`, `sqrt`, `atan2` sont utilisés
 
 ---
 
-## Prochaine étape immédiate (S9-S10)
+## Checklist avancement
 
-### ✅ Déjà fait (S1–S8)
+### ✅ Fait (S1–S10)
 - [x] Docker + Traccar + PostgreSQL
 - [x] Simulation GPS (`simulate.ts`)
 - [x] API NestJS : Auth JWT, Vehicles (fleet list, polling, history)
 - [x] Flutter Web PWA : Login, Bottom Nav, Fleet List, Carte OSM + marqueurs + polling 10s
-- [x] Statut véhicule (online/idle/offline) basé sur le champ `status` Traccar
+- [x] Statut véhicule (online=Moving / idle / offline) basé sur le champ `status` Traccar
 - [x] Bouton recentrer sur la carte
+- [x] Design Figma : header logo+bell, search bar, filter chips, vehicle card LIVE badge
+- [x] Fix marqueurs : `AsyncNotifier._refresh()` sans flash + `valueOrNull` pattern
+- [x] Fix popup : flag `_markerJustTapped` pour conflit tap marker/map
+- [x] Screen Historique : sélecteur de date, polyligne, stats (distance/durée/vitesse max), timeline
+- [x] Navigation liste → carte : tap véhicule bascule sur l'onglet Map
 
-### 🔲 À faire (S9-S10) — Historique trajet
-- [ ] Screen Historique : sélecteur de date/heure (from/to)
-- [ ] Appel `GET /api/vehicles/:id/history?from=&to=`
-- [ ] Affichage polyligne sur flutter_map (`PolylineLayer`)
-- [ ] Marqueurs départ / arrivée
-- [ ] Accès depuis le bouton "History" dans la card véhicule sélectionné
+### 🔲 À faire (S11-S12)
+- [ ] Admin basique (créer user, lier device à un user)
+- [ ] Tests terrain avec device GPS réel
+
+### 🔲 À faire (S13-S16) — Déploiement VPS
+- [ ] Acquérir VPS + domaine `trackeo.mg`
+- [ ] Docker sur VPS + HTTPS (SSL)
+- [ ] Connexion GPS réel → IP publique VPS
+- [ ] Go Live !

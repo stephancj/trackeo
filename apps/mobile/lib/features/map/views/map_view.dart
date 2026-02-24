@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../history/views/history_view.dart';
 import '../../vehicles/models/vehicle_model.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
 
@@ -214,6 +215,15 @@ class _MapViewState extends ConsumerState<MapView> {
                 vehicle: selected,
                 onClose: () =>
                     ref.read(selectedVehicleIdProvider.notifier).state = null,
+                onHistoryTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => HistoryView(
+                      vehicleId: selected.id,
+                      vehicleName: selected.name,
+                    ),
+                  ),
+                ),
               ),
             ),
         ],
@@ -439,8 +449,13 @@ class _Chip extends StatelessWidget {
 class _VehicleCard extends StatelessWidget {
   final Vehicle vehicle;
   final VoidCallback onClose;
+  final VoidCallback onHistoryTap;
 
-  const _VehicleCard({required this.vehicle, required this.onClose});
+  const _VehicleCard({
+    required this.vehicle,
+    required this.onClose,
+    required this.onHistoryTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -689,7 +704,7 @@ class _VehicleCard extends StatelessWidget {
               // History — contour gris
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: onHistoryTap,
                   icon: const Icon(Icons.history_rounded, size: 17),
                   label: const Text(
                     'History',
