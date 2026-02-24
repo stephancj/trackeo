@@ -55,13 +55,16 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 - Stats trip (distance Haversine, durée, vitesse max)
 - ⚠️ Pas d'algorithme de segmentation — points bruts reliés par polyligne
 
-#### 🔲 Geofencing basique
+#### ✅ Geofencing basique
 - ✅ Création de zone en base et API (cercle, rayon)
 - ✅ Vérification : "Le dernier point est-il hors du cercle ?" (via Cron et algorithme Haversine)
 - ✅ Alertes d'entrée/sortie (`GEOFENCE_ENTER`, `GEOFENCE_EXIT`) insérées dans la base
+- ✅ Entités `Geofence` et `Alert` enregistrées dans TypeORM (`database.config.ts`)
+- ✅ Migrations SQL exécutées (`002_geofences.sql`, `003_alerts.sql`)
+- ✅ Flutter : UI geofences + alertes (liste, vide premium)
+- ✅ Flutter : Création de geofence avec marqueur draggable, tap-to-place, bouton centrer
 - 🔲 Notifications push + WhatsApp
 - 🔲 PostGIS `ST_Contains` pour polygones (workaround avec rayon circulaire 100% fonctionnel)
-- 🔲 Interface sur flutter_map pour construire un périmètre (rayon dynamique)
 
 #### 🔲 Onboarding & Activation appareil (QR / OTP)
 - Scan QR (contient `device_id`) → OTP WhatsApp/SMS → liaison device/compte
@@ -329,6 +332,11 @@ TOTAL_POINTS=30
 | `GET` | `/api/vehicles` | Liste tous les véhicules avec statut + dernière position |
 | `GET` | `/api/vehicles/:id/position` | Dernière position d'un véhicule (polling 10s) |
 | `GET` | `/api/vehicles/:id/history` | Positions entre `from` et `to` (historique trajet) |
+| `POST` | `/api/geofences` | Créer une geofence (cercle) |
+| `GET` | `/api/geofences` | Liste des geofences de l'utilisateur |
+| `PATCH` | `/api/geofences/:id` | Mettre à jour une geofence (ex : activer/désactiver) |
+| `DELETE` | `/api/geofences/:id` | Supprimer une geofence |
+| `GET` | `/api/alerts` | Alertes de l'utilisateur (geofence_enter / geofence_exit) |
 
 ### Near-term (à implémenter)
 
@@ -544,12 +552,16 @@ feature/
 - **selectedVehicle** : stocker uniquement l'id dans `selectedVehicleIdProvider`, dériver le `Vehicle?` via `Provider` depuis la liste live — toujours fraîche
 - **withOpacity** déprécié depuis Flutter 3.38 → utiliser `withValues(alpha: x)`
 - **dart:math** : `pi` est disponible via import transitif de `flutter_map`/`latlong2` — importer explicitement seulement si `sin`, `cos`, `sqrt`, `atan2` sont utilisés
+- **TypeORM entities** : toute nouvelle entité doit être ajoutée dans le tableau `entities` de `apps/api/src/config/database.config.ts` EN PLUS du module feature — sinon EntityMetadataNotFoundError → HTTP 500
+- **Field naming** : les entités TypeORM utilisent camelCase (ex: `userId`, `deviceId`, `createdAt`), TypeORM sérialise en camelCase JSON — s'assurer que les modèles Flutter `fromJson` utilisent les mêmes clés (ex: `json['userId']`, pas `json['ownerId']` sauf si la colonne s'appelle `owner_id`)
+- **Geofence radiusM** : le DTO attend un entier (`@IsNumber()`) — toujours envoyer `_radius.toInt()` depuis Flutter
+- **Marqueur draggable** (flutter_map) : utiliser `GestureDetector.onPanUpdate` sur le `Marker.child` + conversion pixel→lat/lon via formule `metersPerPixel = 156543 * cos(lat * π/180) / 2^zoom`, puis `latPerPixel = metersPerPixel / 111320`
 
 ---
 
 ## Checklist avancement
 
-### ✅ Fait (S1–S10)
+### ✅ Fait (S1–S10 + Geofencing)
 - [x] Docker + Traccar + PostgreSQL
 - [x] Simulation GPS (`simulate.ts`)
 - [x] API NestJS : Auth JWT, Vehicles (fleet list, polling, history)
@@ -561,17 +573,16 @@ feature/
 - [x] Fix popup : flag `_markerJustTapped` pour conflit tap marker/map
 - [x] Screen Historique : sélecteur de date, polyligne, stats (distance/durée/vitesse max), timeline
 - [x] Navigation liste → carte : tap véhicule bascule sur l'onglet Map
+- [x] Geofencing API : entités, migrations, endpoints CRUD + cron checker 15s (Haversine)
+- [x] Fix TypeORM : `Geofence` + `Alert` ajoutés dans `database.config.ts` entities array
+- [x] Fix Flutter : `Geofence.fromJson` utilise `userId` (était `ownerId`)
+- [x] Flutter Alerts : vue geofences + alertes, empty states premium, couleurs par type
+- [x] Flutter Create Geofence : marqueur draggable (pan gesture), tap-to-place, bouton centrer, zoom ±, coordonnées chip, submit correct (`radiusM.toInt()`)
 
-### 🔲 À faire (S11-S12)
-- [x] Migration SQL pour `device_assignments` exécutée (lie un device Traccar à un user Trackeo)
-- [ ] Interface Admin Web (à développer ultérieurement avec **Next.js**)
-- [ ] **Geofencing basique** :
-  - [x] API (NestJS) : Migrations `geofences` et `alerts` créées et jouées.
-  - [x] API (NestJS) : Créer les endpoints `POST /api/geofences`, `GET /api/geofences` et `GET /api/alerts`.
-  - [x] API (NestJS) : Service (Cron 15s) pour vérifier les assignements par rapport à la localisation (`Math.haversine` utilisé en attendant `ST_Contains`).
-  - [ ] Mobile (Flutter) : UI pour voir les geofences existantes (`CircleLayer`).
-  - [ ] Mobile (Flutter) : UI pour dessiner une geofence circulaire sur la map (`Geofence Builder` dynamique).
-  - [ ] Mobile (Flutter) : Ecran pour monitorer les alertes.
+### 🔲 À faire (S13-S16 — Déploiement VPS)
+- [ ] API Admin / Interface Next.js
+- [ ] Notifications push + WhatsApp (geofence alerts)
+- [ ] Onboarding QR/OTP pour activation device
 
 ### 🔲 Prochaines Étapes Immédiates (Déploiement VPS & Setup Prod)
 Maintenant que le MVP (S1-S10) est opérationnel, l'objectif est de le mettre en ligne de manière sécurisée pour de vrais tests.

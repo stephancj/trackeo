@@ -59,10 +59,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
             geofencesState.when(
               data: (geofences) {
                 if (geofences.isEmpty) {
-                  return const Text(
-                    'No geofences found.',
-                    style: TextStyle(color: AppColors.textHint),
-                  );
+                  return _buildGeofencesEmptyState();
                 }
                 return Column(
                   children: geofences
@@ -75,9 +72,13 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                       .toList(),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) =>
-                  Text('Error: $e', style: const TextStyle(color: Colors.red)),
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              ),
+              error: (e, st) => _buildErrorState('$e'),
             ),
             const SizedBox(height: 24),
 
@@ -94,9 +95,13 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
             const SizedBox(height: 12),
             alertsState.when(
               data: (alerts) => _buildRecentActivityList(alerts),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) =>
-                  Text('Error: $e', style: const TextStyle(color: Colors.red)),
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              ),
+              error: (e, st) => _buildErrorState('$e'),
             ),
             const SizedBox(height: 32),
           ],
@@ -449,10 +454,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
 
   Widget _buildRecentActivityList(List<AlertModel> alerts) {
     if (alerts.isEmpty) {
-      return const Text(
-        'No recent activity.',
-        style: TextStyle(color: AppColors.textHint),
-      );
+      return _buildActivityEmptyState();
     }
     return Container(
       decoration: BoxDecoration(
@@ -472,12 +474,195 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
             if (i > 0)
               const Divider(height: 1, indent: 32, color: AppColors.divider),
             _buildActivityItem(
-              dotColor: AppColors.primary, // Could depend on alert type
-              title: 'Activity: ${alerts[i].type}',
+              dotColor: _alertDotColor(alerts[i].type),
+              title: _alertTitle(alerts[i].type),
               subtitle: alerts[i].message ?? 'No details provided',
               time: timeago.format(alerts[i].createdAt),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Color _alertDotColor(String type) {
+    switch (type) {
+      case 'geofence_enter':
+        return Colors.green;
+      case 'geofence_exit':
+        return Colors.orange;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  String _alertTitle(String type) {
+    switch (type) {
+      case 'geofence_enter':
+        return 'Entered zone';
+      case 'geofence_exit':
+        return 'Exited zone';
+      default:
+        return type;
+    }
+  }
+
+  Widget _buildGeofencesEmptyState() {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CreateGeofenceView()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primary.withValues(alpha: 0.08),
+              AppColors.primary.withValues(alpha: 0.03),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.2),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.radar_rounded,
+                color: AppColors.primary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No zones yet',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Tap here to create your first geofence and get alerts when vehicles enter or exit.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textHint,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                '+ New',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivityEmptyState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle_outline_rounded,
+              color: Colors.green,
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'All clear',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'No alerts triggered recently.\nYour vehicles are within their zones.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textHint,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded, color: Colors.red, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.red, fontSize: 13),
+            ),
+          ),
         ],
       ),
     );
