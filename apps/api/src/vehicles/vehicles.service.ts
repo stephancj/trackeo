@@ -22,7 +22,10 @@ export class VehiclesService {
     );
 
     return results
-      .filter((r): r is PromiseFulfilledResult<VehicleDto> => r.status === 'fulfilled')
+      .filter(
+        (r): r is PromiseFulfilledResult<VehicleDto> =>
+          r.status === 'fulfilled',
+      )
       .map((r) => r.value);
   }
 
@@ -91,10 +94,15 @@ export class VehiclesService {
    * Extrait le % de batterie depuis les attributs JSON de Traccar.
    * Traccar peut stocker : { "battery": 85 } ou { "batteryLevel": 0.85 }
    */
-  private extractBattery(attributes: Record<string, unknown> | null): number | null {
+  private extractBattery(
+    attributes: Record<string, unknown> | null,
+  ): number | null {
     if (!attributes) return null;
 
-    const raw = attributes['battery'] ?? attributes['batteryLevel'] ?? attributes['io113'];
+    const raw =
+      attributes['battery'] ??
+      attributes['batteryLevel'] ??
+      attributes['io113'];
     if (typeof raw === 'number') {
       // Certains traceurs envoient 0–1, d'autres 0–100
       return raw <= 1 ? Math.round(raw * 100) : Math.round(raw);

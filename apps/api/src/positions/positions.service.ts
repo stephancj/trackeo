@@ -9,7 +9,7 @@ export interface PositionDto {
   lat: number;
   lon: number;
   altitude: number;
-  speedKmh: number;    // Converti depuis nœuds
+  speedKmh: number; // Converti depuis nœuds
   course: number;
   valid: boolean;
   deviceTime: Date;
@@ -23,7 +23,7 @@ export class PositionsService {
   constructor(
     @InjectRepository(Position)
     private readonly positionRepo: Repository<Position>,
-  ) {}
+  ) { }
 
   /** Dernière position connue d'un device */
   async getLastPosition(deviceId: number): Promise<PositionDto> {
@@ -58,14 +58,16 @@ export class PositionsService {
       take: limit,
     });
 
-    return positions.map(this.toDto);
+    return positions.map((pos) => this.toDto(pos));
   }
 
   /** Convertit l'entité en DTO propre (nœuds → km/h, JSON attributes…) */
   private toDto(pos: Position): PositionDto {
     let attributes: Record<string, unknown> | null = null;
     try {
-      if (pos.attributes) attributes = JSON.parse(pos.attributes);
+      if (pos.attributes) {
+        attributes = JSON.parse(pos.attributes) as Record<string, unknown>;
+      }
     } catch {
       // attributes mal formé → on ignore
     }

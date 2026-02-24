@@ -6,7 +6,7 @@ import { VehiclesController } from './vehicles.controller';
 
 @Module({
   imports: [
-    DevicesModule,   // fournit DevicesService
+    DevicesModule, // fournit DevicesService
     PositionsModule, // fournit PositionsService
   ],
   controllers: [VehiclesController],

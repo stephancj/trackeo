@@ -20,7 +20,11 @@ export class Device {
   @Column({ length: 32, nullable: true })
   status: string;
 
-  @Column({ name: 'lastupdate', type: 'timestamp with time zone', nullable: true })
+  @Column({
+    name: 'lastupdate',
+    type: 'timestamp with time zone',
+    nullable: true,
+  })
   lastUpdate: Date;
 
   @Column({ nullable: true })

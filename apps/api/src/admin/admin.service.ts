@@ -78,9 +78,7 @@ export class AdminService {
   async unassignDevice(deviceId: number) {
     const result = await this.assignmentRepo.delete({ deviceId });
     if (result.affected === 0) {
-      throw new NotFoundException(
-        `No assignment found for device ${deviceId}`,
-      );
+      throw new NotFoundException(`No assignment found for device ${deviceId}`);
     }
   }
 

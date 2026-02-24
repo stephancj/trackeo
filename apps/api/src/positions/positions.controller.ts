@@ -39,14 +39,18 @@ export class PositionsController {
     @Query('limit') limit?: string,
   ) {
     if (!from || !to) {
-      throw new BadRequestException('Les paramètres "from" et "to" sont requis');
+      throw new BadRequestException(
+        'Les paramètres "from" et "to" sont requis',
+      );
     }
 
     const fromDate = new Date(from);
     const toDate = new Date(to);
 
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-      throw new BadRequestException('Format de date invalide (ISO 8601 requis)');
+      throw new BadRequestException(
+        'Format de date invalide (ISO 8601 requis)',
+      );
     }
 
     if (fromDate >= toDate) {
@@ -55,6 +59,11 @@ export class PositionsController {
 
     const limitNum = limit ? parseInt(limit, 10) : 1000;
 
-    return this.positionsService.getHistory(deviceId, fromDate, toDate, limitNum);
+    return this.positionsService.getHistory(
+      deviceId,
+      fromDate,
+      toDate,
+      limitNum,
+    );
   }
 }

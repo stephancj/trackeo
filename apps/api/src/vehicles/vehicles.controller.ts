@@ -78,7 +78,9 @@ export class VehiclesController {
   async getLastPosition(@Param('id', ParseIntPipe) id: number) {
     const position = await this.vehiclesService.getLastPosition(id);
     if (!position) {
-      throw new NotFoundException(`Aucune position trouvée pour le véhicule #${id}`);
+      throw new NotFoundException(
+        `Aucune position trouvée pour le véhicule #${id}`,
+      );
     }
     return position;
   }
@@ -100,14 +102,18 @@ export class VehiclesController {
     @Query('limit') limit?: string,
   ) {
     if (!from || !to) {
-      throw new BadRequestException('Les paramètres "from" et "to" sont requis (ISO 8601)');
+      throw new BadRequestException(
+        'Les paramètres "from" et "to" sont requis (ISO 8601)',
+      );
     }
 
     const fromDate = new Date(from);
     const toDate = new Date(to);
 
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
-      throw new BadRequestException('Format de date invalide — utiliser ISO 8601 (ex: 2024-01-01T00:00:00Z)');
+      throw new BadRequestException(
+        'Format de date invalide — utiliser ISO 8601 (ex: 2024-01-01T00:00:00Z)',
+      );
     }
 
     if (fromDate >= toDate) {

@@ -10,9 +10,9 @@ async function bootstrap() {
   // Validation globale des DTOs (class-validator)
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,        // Supprime les champs non déclarés
+      whitelist: true, // Supprime les champs non déclarés
       forbidNonWhitelisted: false,
-      transform: true,        // Auto-cast (string → number, etc.)
+      transform: true, // Auto-cast (string → number, etc.)
     }),
   );
 
@@ -20,4 +20,4 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`Trackeo API running on http://localhost:${port}/api`);
 }
-bootstrap();
+bootstrap().catch((err) => console.error(err));

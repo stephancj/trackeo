@@ -1,0 +1,65 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Geofence } from './entities/geofence.entity';
+import {
+  CreateGeofenceDto,
+  UpdateGeofenceDto,
+} from './dto/create-geofence.dto';
+
+@Injectable()
+export class GeofencesService {
+  constructor(
+    @InjectRepository(Geofence)
+    private readonly geofencesRepository: Repository<Geofence>,
+  ) {}
+
+  async create(
+    userId: number,
+    createGeofenceDto: CreateGeofenceDto,
+  ): Promise<Geofence> {
+    const geofence = this.geofencesRepository.create({
+      ...createGeofenceDto,
+      userId,
+    });
+    return this.geofencesRepository.save(geofence);
+  }
+
+  async findAllForUser(userId: number): Promise<Geofence[]> {
+    return this.geofencesRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findAllActive(): Promise<Geofence[]> {
+    return this.geofencesRepository.find({
+      where: { isActive: true },
+    });
+  }
+
+  async findOne(id: number, userId: number): Promise<Geofence> {
+    const geofence = await this.geofencesRepository.findOne({
+      where: { id, userId },
+    });
+    if (!geofence) {
+      throw new NotFoundException(`Geofence #${id} not found`);
+    }
+    return geofence;
+  }
+
+  async update(
+    id: number,
+    userId: number,
+    updateGeofenceDto: UpdateGeofenceDto,
+  ): Promise<Geofence> {
+    const geofence = await this.findOne(id, userId);
+    Object.assign(geofence, updateGeofenceDto);
+    return this.geofencesRepository.save(geofence);
+  }
+
+  async remove(id: number, userId: number): Promise<void> {
+    const geofence = await this.findOne(id, userId);
+    await this.geofencesRepository.remove(geofence);
+  }
+}

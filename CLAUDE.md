@@ -56,11 +56,12 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 - ⚠️ Pas d'algorithme de segmentation — points bruts reliés par polyligne
 
 #### 🔲 Geofencing basique
-- Création de zone (cercle, rayon 100m–5km)
-- Vérification : "Le dernier point est-il hors du cercle ?"
-- Alerte entrée/sortie avec debounce (N=3 pings consécutifs ou distance >50m sur 30s)
-- Notification push + WhatsApp
-- PostGIS `ST_Contains` pour test point-dans-polygone
+- ✅ Création de zone en base et API (cercle, rayon)
+- ✅ Vérification : "Le dernier point est-il hors du cercle ?" (via Cron et algorithme Haversine)
+- ✅ Alertes d'entrée/sortie (`GEOFENCE_ENTER`, `GEOFENCE_EXIT`) insérées dans la base
+- 🔲 Notifications push + WhatsApp
+- 🔲 PostGIS `ST_Contains` pour polygones (workaround avec rayon circulaire 100% fonctionnel)
+- 🔲 Interface sur flutter_map pour construire un périmètre (rayon dynamique)
 
 #### 🔲 Onboarding & Activation appareil (QR / OTP)
 - Scan QR (contient `device_id`) → OTP WhatsApp/SMS → liaison device/compte
@@ -393,7 +394,7 @@ CREATE TABLE trips (
 CREATE TABLE geofences (
   id uuid PRIMARY KEY,
   owner_id uuid,
-  device_id text,
+  device_ids integer[],
   geom geometry,
   name text,
   radius_m integer,
@@ -565,9 +566,12 @@ feature/
 - [x] Migration SQL pour `device_assignments` exécutée (lie un device Traccar à un user Trackeo)
 - [ ] Interface Admin Web (à développer ultérieurement avec **Next.js**)
 - [ ] **Geofencing basique** :
-  - API (NestJS) : Créer les endpoints `POST /api/geofences` et `GET /api/geofences`.
-  - API (NestJS) : Service (Cron/Event) pour vérifier par rapport à la localisation (`ST_Contains`).
-  - Mobile (Flutter) : UI pour dessiner une geofence circulaire sur la map et recevoir l'alerte.
+  - [x] API (NestJS) : Migrations `geofences` et `alerts` créées et jouées.
+  - [x] API (NestJS) : Créer les endpoints `POST /api/geofences`, `GET /api/geofences` et `GET /api/alerts`.
+  - [x] API (NestJS) : Service (Cron 15s) pour vérifier les assignements par rapport à la localisation (`Math.haversine` utilisé en attendant `ST_Contains`).
+  - [ ] Mobile (Flutter) : UI pour voir les geofences existantes (`CircleLayer`).
+  - [ ] Mobile (Flutter) : UI pour dessiner une geofence circulaire sur la map (`Geofence Builder` dynamique).
+  - [ ] Mobile (Flutter) : Ecran pour monitorer les alertes.
 
 ### 🔲 Prochaines Étapes Immédiates (Déploiement VPS & Setup Prod)
 Maintenant que le MVP (S1-S10) est opérationnel, l'objectif est de le mettre en ligne de manière sécurisée pour de vrais tests.
