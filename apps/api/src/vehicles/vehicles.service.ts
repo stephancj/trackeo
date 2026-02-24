@@ -65,28 +65,25 @@ export class VehiclesService {
       id: device.id,
       name: device.name,
       plate: device.uniqueId,
-      status: this.computeStatus(device.status, device.lastUpdate, position?.speedKmh ?? 0),
+      status: this.computeStatus(device.status, position?.speedKmh ?? 0),
       lastUpdate: device.lastUpdate,
       position,
     };
   }
 
   /**
-   * Calcule le statut affiché dans le Figma :
-   *   online  → en mouvement (vitesse > 1 km/h)
-   *   idle    → connecté mais arrêté
-   *   offline → déconnecté ou lastUpdate > 5 min
+   * Calcule le statut affiché dans le Figma.
+   * On fait confiance au status de Traccar (il gère son propre timeout).
+   *   online  → Traccar dit "online" ET vitesse > 1 km/h (en mouvement)
+   *   idle    → Traccar dit "online" ET vitesse ≤ 1 km/h (arrêté connecté)
+   *   offline → Traccar dit "offline" ou null
    */
   private computeStatus(
     traccarStatus: string | null,
-    lastUpdate: Date | null,
     speedKmh: number,
   ): VehicleStatus {
-    if (!lastUpdate || traccarStatus === 'offline') return 'offline';
-
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    if (lastUpdate < fiveMinutesAgo) return 'offline';
-
+    if (!traccarStatus || traccarStatus === 'offline') return 'offline';
+    // traccarStatus === 'online' → distinguer moving vs idle
     return speedKmh > 1 ? 'online' : 'idle';
   }
 

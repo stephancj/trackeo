@@ -4,8 +4,8 @@ enum VehicleStatus { online, idle, offline }
 
 extension VehicleStatusX on VehicleStatus {
   String get label => switch (this) {
-        VehicleStatus.online => 'Online',
-        VehicleStatus.idle => 'Idling',
+        VehicleStatus.online => 'Moving',
+        VehicleStatus.idle => 'Idle',
         VehicleStatus.offline => 'Offline',
       };
 }

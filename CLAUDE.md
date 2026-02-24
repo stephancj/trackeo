@@ -71,8 +71,8 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 ### Mois 2 — Frontend PWA
 | Semaine | Objectif | Statut |
 |---|---|---|
-| S5-S6 | Init Flutter Web + flutter_map + marqueur véhicule (polling 10s) | 🔄 En cours |
-| S7-S8 | Login + Fleet List + Popup détail (vitesse, batterie) | 🔲 À faire |
+| S5-S6 | Init Flutter Web + flutter_map + marqueur véhicule (polling 10s) | ✅ Fait |
+| S7-S8 | Login + Fleet List + Popup détail (vitesse, batterie) | ✅ Fait |
 
 ### Mois 3 — Fonctionnalités Métier
 | Semaine | Objectif | Statut |
@@ -291,10 +291,19 @@ feature/
 
 ---
 
-## Prochaine étape immédiate (S5-S6)
+## Prochaine étape immédiate (S9-S10)
 
-- [ ] Vérifier que l'app Flutter compile en mode web (`flutter run -d chrome`)
-- [ ] Bottom navigation bar (5 onglets : List / Map / + / Alerts / Settings)
-- [ ] Screen Fleet List (`/features/devices/views/fleet_list_view.dart`) avec polling `GET /api/vehicles`
-- [ ] Screen Map (`/features/map/views/map_view.dart`) avec marqueur véhicule + polling 10s `GET /api/vehicles/:id/position`
-- [ ] Intégrer login JWT dans Dio (intercepteur Bearer token)
+### ✅ Déjà fait (S1–S8)
+- [x] Docker + Traccar + PostgreSQL
+- [x] Simulation GPS (`simulate.ts`)
+- [x] API NestJS : Auth JWT, Vehicles (fleet list, polling, history)
+- [x] Flutter Web PWA : Login, Bottom Nav, Fleet List, Carte OSM + marqueurs + polling 10s
+- [x] Statut véhicule (online/idle/offline) basé sur le champ `status` Traccar
+- [x] Bouton recentrer sur la carte
+
+### 🔲 À faire (S9-S10) — Historique trajet
+- [ ] Screen Historique : sélecteur de date/heure (from/to)
+- [ ] Appel `GET /api/vehicles/:id/history?from=&to=`
+- [ ] Affichage polyligne sur flutter_map (`PolylineLayer`)
+- [ ] Marqueurs départ / arrivée
+- [ ] Accès depuis le bouton "History" dans la card véhicule sélectionné

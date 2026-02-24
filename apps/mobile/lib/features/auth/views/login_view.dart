@@ -121,10 +121,10 @@ class _LoginViewState extends ConsumerState<LoginView> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.statusAlert.withOpacity(0.08),
+                          color: AppColors.statusAlert.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                              color: AppColors.statusAlert.withOpacity(0.3)),
+                              color: AppColors.statusAlert.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [

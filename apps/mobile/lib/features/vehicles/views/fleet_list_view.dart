@@ -48,7 +48,7 @@ class FleetListView extends ConsumerWidget {
                         ],
                       ),
                       loading: () => const SizedBox(height: 44),
-                      error: (_, __) => const SizedBox(height: 44),
+                      error: (_, _) => const SizedBox(height: 44),
                     ),
                   ),
                   IconButton(
@@ -107,7 +107,7 @@ class FleetListView extends ConsumerWidget {
                 ),
               ),
               loading: () => const SizedBox(height: 36),
-              error: (_, __) => const SizedBox(height: 36),
+              error: (_, _) => const SizedBox(height: 36),
             ),
 
             const SizedBox(height: 8),
@@ -137,8 +137,8 @@ class FleetListView extends ConsumerWidget {
                         vehicle: vehicles[i],
                         onTap: () {
                           ref
-                              .read(selectedVehicleProvider.notifier)
-                              .state = vehicles[i];
+                              .read(selectedVehicleIdProvider.notifier)
+                              .state = vehicles[i].id;
                         },
                       ),
                     ),

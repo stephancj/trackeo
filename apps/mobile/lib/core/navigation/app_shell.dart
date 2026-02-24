@@ -51,7 +51,7 @@ class _TrackeoBottomNav extends StatelessWidget {
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
+            color: Colors.black.withValues(alpha: 0.07),
             blurRadius: 16,
             offset: const Offset(0, -2),
           ),
@@ -94,7 +94,7 @@ class _TrackeoBottomNav extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.4),
+                            color: AppColors.primary.withValues(alpha: 0.4),
                             blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
