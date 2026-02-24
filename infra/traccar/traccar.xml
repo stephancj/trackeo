@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!DOCTYPE properties SYSTEM 'http://java.sun.com/dtd/properties.dtd'>
+
+<properties>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       TRACKEO — Configuration Traccar
+       Base de données : PostgreSQL (TimescaleDB)
+       ═══════════════════════════════════════════════════════════════ -->
+
+  <!-- Database -->
+  <entry key='database.driver'>org.postgresql.Driver</entry>
+  <entry key='database.url'>jdbc:postgresql://postgres:5432/traccar_db</entry>
+  <entry key='database.user'>trackeo</entry>
+  <entry key='database.password'>Password_1234</entry>
+
+  <!-- Server -->
+  <entry key='web.enable'>true</entry>
+  <entry key='web.port'>8082</entry>
+  <entry key='web.origin'>*</entry>
+
+  <!-- Protocols activés -->
+  <!-- OsmAnd (simulation via HTTP GET port 5055) -->
+  <entry key='osmand.port'>5055</entry>
+
+  <!-- GPS103 / TK103 (traceurs génériques) -->
+  <entry key='gps103.port'>5001</entry>
+
+  <!-- Teltonika (FMB series) -->
+  <entry key='teltonika.port'>5027</entry>
+
+  <!-- MQTT -->
+  <!-- <entry key='mqtt.port'>1883</entry> -->
+
+  <!-- Geocoder (optionnel — nécessite une clé API ou nominatim) -->
+  <!-- <entry key='geocoder.enable'>true</entry> -->
+  <!-- <entry key='geocoder.type'>nominatim</entry> -->
+  <!-- <entry key='geocoder.url'>https://nominatim.openstreetmap.org/reverse</entry> -->
+
+  <!-- Filtrage des positions -->
+  <entry key='filter.enable'>true</entry>
+  <entry key='filter.distance'>10</entry>        <!-- mètres minimum entre 2 positions -->
+  <entry key='filter.maxSpeed'>250</entry>       <!-- km/h max (filtre les valeurs aberrantes) -->
+  <entry key='filter.invalid'>true</entry>
+  <entry key='filter.accuracy'>0</entry>
+
+  <!-- Logs -->
+  <entry key='logger.level'>info</entry>
+  <entry key='logger.file'>/opt/traccar/logs/tracker-server.log</entry>
+  <entry key='logger.rotate'>true</entry>
+
+</properties>

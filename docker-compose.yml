@@ -1,0 +1,79 @@
+version: "3.9"
+
+networks:
+  trackeo-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  traccar_data:
+  traccar_logs:
+
+services:
+  # ─── PostgreSQL + TimescaleDB ───────────────────────────────────────────────
+  postgres:
+    image: timescale/timescaledb:latest-pg14
+    container_name: trackeo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: trackeo
+      POSTGRES_PASSWORD: Password_1234
+      POSTGRES_DB: traccar_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - trackeo-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trackeo -d traccar_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Traccar GPS Server ─────────────────────────────────────────────────────
+  traccar:
+    image: traccar/traccar:latest
+    container_name: trackeo-traccar
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8082:8082"   # Web UI
+      - "5055:5055"   # OsmAnd protocol (simulation)
+      - "5000-5150:5000-5150/tcp"  # Other device protocols
+      - "5000-5150:5000-5150/udp"
+    volumes:
+      - ./infra/traccar/traccar.xml:/opt/traccar/conf/traccar.xml:ro
+      - traccar_data:/opt/traccar/data
+      - traccar_logs:/opt/traccar/logs
+    networks:
+      - trackeo-net
+
+  # ─── NestJS API ─────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: trackeo-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: trackeo
+      DB_PASS: Password_1234
+      DB_NAME: traccar_db
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+    networks:
+      - trackeo-net

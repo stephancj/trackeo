@@ -1,0 +1,31 @@
+# Env files — NEVER commit credentials
+.env
+.env.local
+.env.*.local
+
+# NestJS
+apps/api/dist/
+apps/api/node_modules/
+apps/api/coverage/
+
+# Flutter
+apps/mobile/.dart_tool/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+apps/mobile/build/
+apps/mobile/android/.gradle/
+apps/mobile/ios/.symlinks/
+apps/mobile/ios/Pods/
+
+# Docker volumes (si montés localement)
+infra/postgres/data/
+infra/traccar/data/
+infra/traccar/logs/
+
+# Scripts
+scripts/dist/
+scripts/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
