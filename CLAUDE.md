@@ -30,6 +30,7 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 | Ingestion GPS | MQTT + HTTP custom | **Traccar** | Gère nativement des milliers de protocoles GPS binaires |
 | Backend | Microservices | **NestJS monolithe modulaire** | Plus simple à gérer seul |
 | Frontend | React Native + ReactJS | **Flutter Web (PWA) → Mobile** | Un seul codebase Flutter, PWA d'abord, mobile ensuite |
+| Interface Admin | Intégrée au frontend | **Next.js (Reporté)** | L'interface d'administration back-office sera développée en Next.js plus tard |
 | Live Tracking | WebSocket temps réel | **Polling 10s → WebSocket (V2)** | Polling suffisant pour MVP, WebSocket en V2 mobile |
 | Infra | Cloud AWS | **Docker sur VPS / Local** | Local First, portable, économique |
 
@@ -170,7 +171,7 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 | Semaine | Objectif | Statut |
 |---|---|---|
 | S9-S10 | Historique trajet (sélecteur de date + polyligne + stats) | ✅ Fait |
-| S11-S12 | Admin basique (créer user, lier device) + tests terrain | 🔲 À faire |
+| S11-S12 | Init DB device_assignments + Tests terrain (Admin Next.js reporté) | 🔄 En cours |
 
 ### Mois 4 — Déploiement VPS
 | Semaine | Objectif | Statut |
@@ -368,6 +369,14 @@ SELECT create_hypertable('tc_positions', 'devicetime', if_not_exists => TRUE);
 ### Tables propres à l'API (migrations TypeORM)
 
 ```sql
+-- Assignation des devices (Lié propriétaire Trackeo <-> Device Traccar)
+CREATE TABLE device_assignments (
+  id SERIAL PRIMARY KEY,
+  device_id INTEGER NOT NULL UNIQUE,
+  user_id INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Trajets segmentés (Near-term)
 CREATE TABLE trips (
   id uuid PRIMARY KEY,
@@ -553,7 +562,8 @@ feature/
 - [x] Navigation liste → carte : tap véhicule bascule sur l'onglet Map
 
 ### 🔲 À faire (S11-S12)
-- [ ] Admin basique (créer user, lier device à un user)
+- [x] Migration SQL pour `device_assignments` exécutée (lie un device Traccar à un user Trackeo)
+- [ ] Interface Admin Web (à développer ultérieurement avec **Next.js**)
 - [ ] Tests terrain avec device GPS réel
 
 ### 🔲 À faire (S13-S16) — Déploiement VPS
