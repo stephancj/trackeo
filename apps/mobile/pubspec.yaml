@@ -49,6 +49,9 @@ dependencies:
   # Utilitaires
   equatable: ^2.0.5
 
+  # Stockage JWT (localStorage sur web, SharedPreferences sur mobile)
+  shared_preferences: ^2.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

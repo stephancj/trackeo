@@ -1,22 +1,32 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../storage/token_storage.dart';
 
-const String _baseUrl = 'http://localhost:3000/api';
+/// URL de base — pointer vers localhost en dev, domaine VPS en prod.
+const String kBaseUrl = 'http://localhost:3000/api';
 
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
-      baseUrl: _baseUrl,
+      baseUrl: kBaseUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
       headers: {'Content-Type': 'application/json'},
     ),
   );
 
-  dio.interceptors.add(LogInterceptor(
-    requestBody: true,
-    responseBody: true,
-  ));
+  // Intercepteur JWT — injecte le token Bearer à chaque requête
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await TokenStorage.getToken();
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        handler.next(options);
+      },
+    ),
+  );
 
   return dio;
 });

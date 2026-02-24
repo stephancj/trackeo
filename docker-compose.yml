@@ -9,6 +9,7 @@ volumes:
   traccar_data:
   traccar_logs:
 
+
 services:
   # ─── PostgreSQL + TimescaleDB ───────────────────────────────────────────────
   postgres:
@@ -27,7 +28,7 @@ services:
     networks:
       - trackeo-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U trackeo -d traccar_db"]
+      test: [ "CMD-SHELL", "pg_isready -U trackeo -d traccar_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,10 +42,10 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8082:8082"   # Web UI
-      - "5055:5055"   # OsmAnd protocol (simulation)
-      - "5000-5150:5000-5150/tcp"  # Other device protocols
-      - "5000-5150:5000-5150/udp"
+      - "8082:8082" # Web UI
+      - "5055:5055" # OsmAnd protocol (simulation)
+      - "5001-5150:5001-5150/tcp" # Other device protocols
+      - "5001-5150:5001-5150/udp"
     volumes:
       - ./infra/traccar/traccar.xml:/opt/traccar/conf/traccar.xml:ro
       - traccar_data:/opt/traccar/data

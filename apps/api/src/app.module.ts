@@ -4,6 +4,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DevicesModule } from './devices/devices.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { PositionsModule } from './positions/positions.module';
+import { VehiclesModule } from './vehicles/vehicles.module';
 import databaseConfig from './config/database.config';
 
 @Module({
@@ -13,6 +17,10 @@ import databaseConfig from './config/database.config';
       useFactory: () => databaseConfig(),
     }),
     DevicesModule,
+    AuthModule,
+    UsersModule,
+    PositionsModule,
+    VehiclesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
