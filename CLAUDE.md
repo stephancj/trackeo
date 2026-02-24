@@ -173,13 +173,13 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 | S9-S10 | Historique trajet (sélecteur de date + polyligne + stats) | ✅ Fait |
 | S11-S12 | Init DB device_assignments + Tests terrain (Admin Next.js reporté) | 🔄 En cours |
 
-### Mois 4 — Déploiement VPS
+### Mois 4 — Déploiement VPS & Tests Terrain
 | Semaine | Objectif | Statut |
 |---|---|---|
-| S13 | Acquérir VPS + domaine `trackeo.mg` + Docker sur VPS | 🔲 À faire |
-| S14 | Migration code + HTTPS (SSL) | 🔲 À faire |
-| S15 | Connexion GPS réel → IP publique VPS | 🔲 À faire |
-| S16 | Go Live ! | 🔲 À faire |
+| S13 | Réserver VPS + nom de domaine `trackeo.mg` | 🔲 À faire |
+| S14 | Docker sur VPS + Configurer HTTPS (Let's Encrypt SSL) | 🔲 À faire |
+| S15 | Tracker GPS matériel réel → Configuration IP / Port VPS | 🔲 À faire |
+| S16 | Tests sur route complets + Lancement "Go Live" | 🔲 À faire |
 
 ---
 
@@ -564,10 +564,26 @@ feature/
 ### 🔲 À faire (S11-S12)
 - [x] Migration SQL pour `device_assignments` exécutée (lie un device Traccar à un user Trackeo)
 - [ ] Interface Admin Web (à développer ultérieurement avec **Next.js**)
-- [ ] Tests terrain avec device GPS réel
+- [ ] **Geofencing basique** :
+  - API (NestJS) : Créer les endpoints `POST /api/geofences` et `GET /api/geofences`.
+  - API (NestJS) : Service (Cron/Event) pour vérifier par rapport à la localisation (`ST_Contains`).
+  - Mobile (Flutter) : UI pour dessiner une geofence circulaire sur la map et recevoir l'alerte.
 
-### 🔲 À faire (S13-S16) — Déploiement VPS
-- [ ] Acquérir VPS + domaine `trackeo.mg`
-- [ ] Docker sur VPS + HTTPS (SSL)
-- [ ] Connexion GPS réel → IP publique VPS
-- [ ] Go Live !
+### 🔲 Prochaines Étapes Immédiates (Déploiement VPS & Setup Prod)
+Maintenant que le MVP (S1-S10) est opérationnel, l'objectif est de le mettre en ligne de manière sécurisée pour de vrais tests.
+
+1. **Infrastructure Cloud**
+   - [ ] Louer un serveur VPS (ex: Hetzner, OVH, DigitalOcean).
+   - [ ] Réserver le nom de domaine `trackeo.mg`.
+   - [ ] Faire pointer le sous-domaine `api.trackeo.mg` et Traccar vers l'IP du VPS.
+
+2. **Déploiement & Sécurité**
+   - [ ] Installer Docker & Docker Compose sur le VPS.
+   - [ ] Mettre en place un proxy inversé (ex: Nginx Proxy Manager ou Traefik) pour gérer les certificats SSL automatistés (HTTPS).
+   - [ ] Mettre en place un script de CI/CD basique (Github Actions ou hooks git) pour mettre à jour l'API et la web app.
+
+3. **Intégration Hardware (Tests Terrain)**
+   - [ ] Obtenir un traceur GPS physique réel (Teltonika, Coban, Sinotrack, etc.).
+   - [ ] Configurer le traceur (par SMS) pour lui donner l'IP publique du VPS, le bon port de Traccar correspondant au protocole, et l'APN de la carte SIM malgache.
+   - [ ] Créer l'identifiant du tracker (IMEI) dans l'interface de Trackeo.
+   - [ ] Mettre le tracker dans une voiture réelle à Antananarivo et s'assurer que sa route s'affiche sans accroc.
