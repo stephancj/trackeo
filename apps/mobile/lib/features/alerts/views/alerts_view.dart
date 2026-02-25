@@ -62,15 +62,16 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                 if (geofences.isEmpty) {
                   return _buildGeofencesEmptyState();
                 }
-                return Column(
-                  children: geofences
-                      .map(
-                        (gf) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: _buildActiveGeofenceCard(gf),
-                        ),
-                      )
-                      .toList(),
+                return SizedBox(
+                  height: 230,
+                  child: CarouselView(
+                    itemExtent: MediaQuery.of(context).size.width * 1,
+                    shrinkExtent: MediaQuery.of(context).size.width * 0.8,
+                    padding: const EdgeInsets.only(right: 16),
+                    children: geofences.map((gf) {
+                      return _buildActiveGeofenceCard(gf);
+                    }).toList(),
+                  ),
                 );
               },
               loading: () => const Center(
@@ -81,7 +82,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
               ),
               error: (e, st) => _buildErrorState('$e'),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
             _buildSectionHeader('ALERT SETTINGS'),
             const SizedBox(height: 12),
