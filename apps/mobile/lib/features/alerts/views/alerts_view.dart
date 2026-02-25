@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'dart:math' as math;
 import '../../../core/theme/app_theme.dart';
 import '../providers/alerts_provider.dart';
 import '../providers/geofences_provider.dart';
@@ -171,7 +172,10 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                         geofence.centerLat,
                         geofence.centerLon,
                       ),
-                      initialZoom: 14,
+                      initialZoom: _calculateZoom(
+                        geofence.radiusM,
+                        geofence.centerLat,
+                      ),
                       interactionOptions: const InteractionOptions(
                         flags: InteractiveFlag.none,
                       ),
@@ -716,5 +720,18 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         ],
       ),
     );
+  }
+
+  double _calculateZoom(double radiusM, double lat) {
+    // We want the circle to take up about 60% of the map's height (140px)
+    // So 84 pixels should represent the diameter (2 * radius)
+    final double metersPerPixel = (2 * radiusM) / 84;
+    // zoom = log2(156543.03392 * cos(lat) / metersPerPixel)
+    final double zoom =
+        math.log(
+          156543.03392 * math.cos(lat * math.pi / 180) / metersPerPixel,
+        ) /
+        math.ln2;
+    return zoom.clamp(3.0, 18.0);
   }
 }

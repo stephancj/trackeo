@@ -59,6 +59,25 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     setState(() {
       _center = point;
     });
+    _ensureCircleVisible();
+  }
+
+  void _ensureCircleVisible() {
+    // If the circle's bounding box is not fully visible, fit it
+    // This provides the "adapter avec le zoom" functionality
+    final distance = const Distance();
+    final north = distance.offset(_center, _radius, 0);
+    final south = distance.offset(_center, _radius, 180);
+    final east = distance.offset(_center, _radius, 90);
+    final west = distance.offset(_center, _radius, 270);
+
+    final bounds = LatLngBounds.fromPoints([north, south, east, west]);
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: const EdgeInsets.all(100), // Nice margin to see context
+      ),
+    );
   }
 
   Future<void> _saveGeofence() async {
@@ -516,10 +535,16 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                         overlayColor: AppColors.primary.withValues(alpha: 0.12),
                       ),
                       child: Slider(
-                        value: _radius,
+                        value: _radius.clamp(100, _getMaxRadiusForZoom()),
                         min: 100,
-                        max: 5000,
-                        onChanged: (val) => setState(() => _radius = val),
+                        max: _getMaxRadiusForZoom(),
+                        onChanged: (val) {
+                          setState(() => _radius = val);
+                        },
+                        onChangeEnd: (val) {
+                          _ensureCircleVisible();
+                          HapticFeedback.lightImpact();
+                        },
                       ),
                     ),
                     Row(
@@ -761,5 +786,21 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
         ),
       ),
     );
+  }
+
+  double _getMaxRadiusForZoom() {
+    try {
+      final camera = _mapController.camera;
+      final zoom = camera.zoom;
+      // meters_per_pixel = 156543 * cos(lat) / 2^zoom
+      final metersPerPixel =
+          156543.0 *
+          math.cos(_center.latitude * math.pi / 180) /
+          math.pow(2, zoom);
+      // We want the max value to allow filling the screen (e.g. 400 pixels radius)
+      return (metersPerPixel * 400).clamp(500.0, 10000.0);
+    } catch (_) {
+      return 5000.0;
+    }
   }
 }

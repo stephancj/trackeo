@@ -63,6 +63,7 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 - ✅ Migrations SQL exécutées (`002_geofences.sql`, `003_alerts.sql`)
 - ✅ Flutter : UI geofences + alertes (liste, vide premium)
 - ✅ Flutter : Création de geofence avec marqueur draggable, tap-to-place, bouton centrer
+- ✅ Flutter : taille du cercle a adapter avec le zoom de la carte et slider (geofence view)
 - 🔲 Notifications push + WhatsApp
 - 🔲 PostGIS `ST_Contains` pour polygones (workaround avec rayon circulaire 100% fonctionnel)
 
