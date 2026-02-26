@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:dio/dio.dart';
 import 'dart:math' as math;
 import '../../../core/theme/app_theme.dart';
 import '../providers/alerts_provider.dart';
@@ -10,6 +12,47 @@ import '../providers/geofences_provider.dart';
 import '../models/geofence_model.dart';
 import '../models/alert_model.dart';
 import 'create_geofence_view.dart';
+import '../../vehicles/providers/vehicles_provider.dart';
+
+/// Reverse geocode a lat/lon via Nominatim. Result cached per unique coordinate.
+final _reverseGeocodeProvider =
+    FutureProvider.family<String?, String>((ref, key) async {
+  final parts = key.split(',');
+  final lat = double.parse(parts[0]);
+  final lon = double.parse(parts[1]);
+  try {
+    final response = await Dio().get(
+      'https://nominatim.openstreetmap.org/reverse',
+      queryParameters: {'lat': lat, 'lon': lon, 'format': 'json', 'zoom': 16},
+      options: Options(
+        headers: {'Accept-Language': 'fr', 'User-Agent': 'trackeo-app/1.0'},
+        sendTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 5),
+      ),
+    );
+    final data = response.data as Map<String, dynamic>;
+    final address = data['address'] as Map<String, dynamic>?;
+    if (address != null) {
+      final road = address['road'] as String?;
+      final sub = address['suburb'] as String? ??
+          address['neighbourhood'] as String? ??
+          address['quarter'] as String?;
+      final city = address['city'] as String? ??
+          address['town'] as String? ??
+          address['village'] as String?;
+      if (road != null) {
+        final secondary = sub ?? city;
+        return secondary != null ? '$road, $secondary' : road;
+      }
+      if (sub != null) return sub;
+      if (city != null) return city;
+    }
+    final display = data['display_name'] as String?;
+    return display?.split(',').first.trim();
+  } catch (_) {
+    return null;
+  }
+});
 
 class AlertsView extends ConsumerStatefulWidget {
   const AlertsView({super.key});
@@ -145,8 +188,40 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
     );
   }
 
+  /// Returns a comma-separated list of vehicle names for the geofence,
+  /// or null if no filter is applied (= all vehicles).
+  String? _vehicleNamesFor(Geofence geofence) {
+    final ids = geofence.deviceIds;
+    if (ids == null || ids.isEmpty) return null;
+    final vehiclesAsync = ref.watch(vehiclesProvider);
+    return vehiclesAsync.whenOrNull(
+      data: (vehicles) {
+        final names = vehicles
+            .where((v) => ids.contains(v.id))
+            .map((v) => v.name)
+            .toList();
+        if (names.isEmpty) {
+          return '${ids.length} vehicle${ids.length > 1 ? 's' : ''}';
+        }
+        return names.join(', ');
+      },
+    ) ?? '${ids.length} vehicle${ids.length > 1 ? 's' : ''}';
+  }
+
   Widget _buildActiveGeofenceCard(Geofence geofence) {
-    return Container(
+    final vehicleNames = _vehicleNamesFor(geofence);
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CreateGeofenceView(geofence: geofence),
+        ),
+      ),
+      onLongPress: () {
+        HapticFeedback.mediumImpact();
+        _showQuickActionsSheet(geofence);
+      },
+      child: Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -257,6 +332,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                         ],
                       ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
                             Icons.home_rounded,
@@ -299,13 +375,24 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        geofence.name,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
+                      Builder(
+                        builder: (_) {
+                          final geoKey =
+                              '${geofence.centerLat},${geofence.centerLon}';
+                          final address = ref
+                              .watch(_reverseGeocodeProvider(geoKey))
+                              .whenOrNull(data: (addr) => addr);
+                          return Text(
+                            address ?? geofence.name,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
                       const SizedBox(height: 2),
                       Row(
@@ -332,6 +419,30 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                           ),
                         ],
                       ),
+                      if (vehicleNames != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.directions_car_rounded,
+                              size: 12,
+                              color: AppColors.textHint,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                vehicleNames,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textHint,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -349,6 +460,16 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
           ),
         ],
       ),
+      ),  // end Container
+    );    // end GestureDetector
+  }
+
+  void _showQuickActionsSheet(Geofence geofence) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _GeofenceActionsSheet(geofence: geofence),
     );
   }
 
@@ -734,5 +855,322 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         ) /
         math.ln2;
     return zoom.clamp(3.0, 18.0);
+  }
+}
+
+// ── Quick-action bottom sheet ────────────────────────────────────────────────
+
+class _GeofenceActionsSheet extends ConsumerStatefulWidget {
+  final Geofence geofence;
+  const _GeofenceActionsSheet({required this.geofence});
+
+  @override
+  ConsumerState<_GeofenceActionsSheet> createState() =>
+      _GeofenceActionsSheetState();
+}
+
+class _GeofenceActionsSheetState
+    extends ConsumerState<_GeofenceActionsSheet> {
+  late Set<int> _selectedIds;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIds = Set<int>.from(widget.geofence.deviceIds ?? []);
+  }
+
+  Future<void> _applyVehicles() async {
+    setState(() => _isSaving = true);
+    await ref.read(geofencesProvider.notifier).updateGeofence(
+      widget.geofence.id,
+      {'deviceIds': _selectedIds.toList()},
+    );
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    Navigator.pop(context);
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text(
+          'Delete zone?',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${widget.geofence.name}"?\nThis cannot be undone.',
+          style: const TextStyle(color: AppColors.textHint),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await ref
+          .read(geofencesProvider.notifier)
+          .deleteGeofence(widget.geofence.id);
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vehiclesAsync = ref.watch(vehiclesProvider);
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        12,
+        24,
+        24 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          // Title
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.radar_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.geofence.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${widget.geofence.radiusM.toInt()}m radius',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textHint,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'MONITORED VEHICLES',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textHint,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _selectedIds.isEmpty
+                ? 'All vehicles (no filter)'
+                : '${_selectedIds.length} vehicle${_selectedIds.length > 1 ? 's' : ''} selected',
+            style: const TextStyle(fontSize: 12, color: AppColors.textHint),
+          ),
+          const SizedBox(height: 10),
+          vehiclesAsync.when(
+            data: (vehicles) {
+              if (vehicles.isEmpty) {
+                return const Text(
+                  'No vehicles available',
+                  style: TextStyle(color: AppColors.textHint, fontSize: 13),
+                );
+              }
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: vehicles.map((v) {
+                  final selected = _selectedIds.contains(v.id);
+                  return GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() {
+                        if (selected) {
+                          _selectedIds.remove(v.id);
+                        } else {
+                          _selectedIds.add(v.id);
+                        }
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppColors.primary.withValues(alpha: 0.08)
+                            : AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selected
+                              ? AppColors.primary
+                              : AppColors.divider.withValues(alpha: 0.5),
+                          width: selected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            selected
+                                ? Icons.check_circle_rounded
+                                : Icons.directions_car_rounded,
+                            size: 16,
+                            color: selected
+                                ? AppColors.primary
+                                : AppColors.textHint,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            v.name,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: selected
+                                  ? AppColors.primary
+                                  : AppColors.textHint,
+                            ),
+                          ),
+                          if (v.plate.isNotEmpty) ...[
+                            const SizedBox(width: 5),
+                            Text(
+                              '· ${v.plate}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textHint,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const SizedBox(
+              height: 36,
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 2,
+                ),
+              ),
+            ),
+            error: (e, st) => const SizedBox.shrink(),
+          ),
+          const SizedBox(height: 20),
+          // Apply button
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _isSaving ? null : _applyVehicles,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      'Apply',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Delete button
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: OutlinedButton(
+              onPressed: _isSaving ? null : _confirmDelete,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: BorderSide(
+                  color: Colors.red.withValues(alpha: 0.4),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.delete_outline_rounded, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Delete Zone',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

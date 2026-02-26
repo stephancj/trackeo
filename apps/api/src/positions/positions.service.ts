@@ -25,11 +25,17 @@ export class PositionsService {
     private readonly positionRepo: Repository<Position>,
   ) {}
 
-  /** Dernière position connue d'un device */
+  /** Position par ID (référence directe depuis tc_devices.positionid) */
+  async getPositionById(id: number): Promise<PositionDto | null> {
+    const pos = await this.positionRepo.findOneBy({ id });
+    return pos ? this.toDto(pos) : null;
+  }
+
+  /** Dernière position connue d'un device (fallback si positionid absent) */
   async getLastPosition(deviceId: number): Promise<PositionDto> {
     const pos = await this.positionRepo.findOne({
       where: { deviceId },
-      order: { deviceTime: 'DESC' },
+      order: { serverTime: 'DESC' }, // serverTime = heure Traccar (UTC garanti), deviceTime peut être en heure locale
     });
 
     if (!pos) {

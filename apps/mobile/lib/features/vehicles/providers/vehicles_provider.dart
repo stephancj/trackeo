@@ -66,7 +66,12 @@ final vehiclesProvider =
 
 enum VehicleFilter { all, moving, idle }
 
+/// Filtre de la Fleet List (onglet List) — indépendant de la carte
 final vehicleFilterProvider =
+    StateProvider<VehicleFilter>((ref) => VehicleFilter.all);
+
+/// Filtre de la carte (onglet Map) — état local à la carte, sans impact sur la liste
+final mapFilterProvider =
     StateProvider<VehicleFilter>((ref) => VehicleFilter.all);
 
 final vehicleSearchProvider = StateProvider<String>((ref) => '');

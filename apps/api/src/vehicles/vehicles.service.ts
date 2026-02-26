@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { DevicesService } from '../devices/devices.service';
-import { PositionsService } from '../positions/positions.service';
+import { PositionsService, PositionDto } from '../positions/positions.service';
 import { VehicleDto, VehiclePositionDto, VehicleStatus } from './vehicle.dto';
+import { Device } from '../devices/device.entity';
 
 @Injectable()
 export class VehiclesService {
@@ -18,7 +19,7 @@ export class VehiclesService {
     const devices = await this.devicesService.findAll();
 
     const results = await Promise.allSettled(
-      devices.map((device) => this.buildVehicleDto(device.id)),
+      devices.map((device) => this.buildVehicleDto(device)),
     );
 
     return results
@@ -33,7 +34,8 @@ export class VehiclesService {
    * Retourne un véhicule enrichi par son ID.
    */
   async findOne(id: number): Promise<VehicleDto> {
-    return this.buildVehicleDto(id);
+    const device = await this.devicesService.findOne(id);
+    return this.buildVehicleDto(device);
   }
 
   /**
@@ -60,33 +62,74 @@ export class VehiclesService {
   // Helpers privés
   // ──────────────────────────────────────────────────────────────────────────
 
-  private async buildVehicleDto(deviceId: number): Promise<VehicleDto> {
-    const device = await this.devicesService.findOne(deviceId);
-    const position = await this.getLastPosition(deviceId);
+  private async buildVehicleDto(device: Device): Promise<VehicleDto> {
+    let position: VehiclePositionDto | null = null;
+    // device.lastUpdate = mis à jour par Traccar à chaque position reçue (référence de fraîcheur)
+    // pos.serverTime    = heure de réception de cette position spécifique (peut être périmé
+    //                     si tc_devices.positionid n'a pas été mis à jour par Traccar)
+    // → on garde device.lastUpdate en priorité, pos.serverTime en fallback si null
+    let lastSeen: Date | null = device.lastUpdate;
+
+    if (device.positionid) {
+      const pos = await this.positionsService.getPositionById(device.positionid);
+      if (pos) {
+        position = this.toVehiclePosition(pos);
+        if (!lastSeen) lastSeen = pos.serverTime ?? pos.deviceTime;
+      }
+    } else {
+      // Fallback : cherche la dernière position par serverTime (UTC garanti par Traccar)
+      try {
+        const pos = await this.positionsService.getLastPosition(device.id);
+        position = this.toVehiclePosition(pos);
+        if (!lastSeen) lastSeen = pos.serverTime ?? pos.deviceTime;
+      } catch {
+        // Aucune position pour ce device → offline
+      }
+    }
 
     return {
       id: device.id,
       name: device.name,
       plate: device.uniqueId,
-      status: this.computeStatus(device.status, position?.speedKmh ?? 0),
+      status: this.computeStatus(position?.speedKmh ?? 0, lastSeen, device.status),
       lastUpdate: device.lastUpdate,
       position,
     };
   }
 
+  private toVehiclePosition(pos: PositionDto): VehiclePositionDto {
+    return {
+      lat: pos.lat,
+      lon: pos.lon,
+      speedKmh: pos.speedKmh,
+      course: pos.course,
+      address: pos.address,
+      battery: this.extractBattery(pos.attributes),
+      deviceTime: pos.deviceTime,
+    };
+  }
+
   /**
-   * Calcule le statut affiché dans le Figma.
-   * On fait confiance au status de Traccar (il gère son propre timeout).
-   *   online  → Traccar dit "online" ET vitesse > 1 km/h (en mouvement)
-   *   idle    → Traccar dit "online" ET vitesse ≤ 1 km/h (arrêté connecté)
-   *   offline → Traccar dit "offline" ou null
+   * Statut combiné : device.lastUpdate (primaire) + tc_devices.status Traccar (secondaire).
+   *
+   *   offline → lastUpdate ≥ 10min  OU  pas de lastUpdate
+   *             OU  Traccar dit 'offline' (utile pour trackers TCP persistants)
+   *   online  → lastUpdate < 10min  ET  vitesse > 1 km/h
+   *   idle    → lastUpdate < 10min  ET  vitesse ≤ 1 km/h
+   *
+   * Note : pour OsmAnd/HTTP, Traccar peut garder 'online' longtemps après
+   * déconnexion → dans ce cas notre seuil 10min prime.
    */
   private computeStatus(
-    traccarStatus: string | null,
     speedKmh: number,
+    lastUpdate: Date | null,
+    traccarStatus?: string | null,
   ): VehicleStatus {
-    if (!traccarStatus || traccarStatus === 'offline') return 'offline';
-    // traccarStatus === 'online' → distinguer moving vs idle
+    const OFFLINE_THRESHOLD_S = 600;
+    if (!lastUpdate) return 'offline';
+    const secondsAgo = (Date.now() - new Date(lastUpdate).getTime()) / 1000;
+    if (secondsAgo > OFFLINE_THRESHOLD_S) return 'offline';
+    if (traccarStatus === 'offline') return 'offline';
     return speedKmh > 1 ? 'online' : 'idle';
   }
 

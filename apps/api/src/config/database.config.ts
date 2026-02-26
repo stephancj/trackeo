@@ -5,6 +5,10 @@ import { User } from '../users/user.entity';
 import { DeviceAssignment } from '../admin/device-assignment.entity';
 import { Geofence } from '../geofences/entities/geofence.entity';
 import { Alert } from '../alerts/entities/alert.entity';
+import * as pg from 'pg';
+
+// Force parsing of 'timestamp without time zone' (OID 1114) as UTC.
+pg.types.setTypeParser(1114, str => new Date(str + 'Z'));
 
 export default (): TypeOrmModuleOptions => ({
   type: 'postgres',
@@ -17,4 +21,6 @@ export default (): TypeOrmModuleOptions => ({
   // migrations exclues du runtime — lancées manuellement via `npm run migration:run`
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
+  // Force UTC pour éviter les décalages de timezone (ex: UTC+3 local)
+  extra: { options: '-c timezone=UTC' },
 });

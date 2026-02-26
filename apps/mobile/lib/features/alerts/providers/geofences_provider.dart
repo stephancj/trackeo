@@ -39,6 +39,37 @@ class GeofencesNotifier extends StateNotifier<AsyncValue<List<Geofence>>> {
     }
   }
 
+  Future<Geofence?> updateGeofence(
+    int id,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final updated = await _repository.updateGeofence(id, payload);
+      if (state is AsyncData) {
+        state = AsyncValue.data(
+          state.value!.map((e) => e.id == id ? updated : e).toList(),
+        );
+      }
+      return updated;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> deleteGeofence(int id) async {
+    try {
+      await _repository.deleteGeofence(id);
+      if (state is AsyncData) {
+        state = AsyncValue.data(
+          state.value!.where((e) => e.id != id).toList(),
+        );
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<void> toggleGeofence(Geofence geofence, bool isActive) async {
     final previousState = state;
     if (state is AsyncData) {

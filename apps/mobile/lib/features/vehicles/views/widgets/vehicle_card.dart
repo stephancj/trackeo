@@ -102,8 +102,9 @@ class VehicleCard extends StatelessWidget {
                             fontSize: 11, color: AppColors.textSecondary),
                       ),
 
-                      // Vitesse + Batterie
-                      if (vehicle.position != null) ...[
+                      // Vitesse + Batterie (masqués si offline — données périmées)
+                      if (vehicle.position != null &&
+                          vehicle.status != VehicleStatus.offline) ...[
                         const SizedBox(height: 8),
                         Row(
                           children: [

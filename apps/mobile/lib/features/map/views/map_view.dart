@@ -35,9 +35,16 @@ class _MapViewState extends ConsumerState<MapView> {
   @override
   Widget build(BuildContext context) {
     final vehiclesAsync = ref.watch(vehiclesProvider);
-    // vehiclesAsync.valueOrNull : jamais de MarkerLayer vide pendant le polling.
-    // Les marqueurs restent visibles même quand les données se rafraîchissent.
-    final vehicles = vehiclesAsync.valueOrNull ?? [];
+    final mapFilter = ref.watch(mapFilterProvider);
+    // Filtre local à la carte — indépendant du filtre de la Fleet List
+    final allVehicles = vehiclesAsync.valueOrNull ?? [];
+    final vehicles = switch (mapFilter) {
+      VehicleFilter.moving =>
+        allVehicles.where((v) => v.status == VehicleStatus.online).toList(),
+      VehicleFilter.idle =>
+        allVehicles.where((v) => v.status == VehicleStatus.idle).toList(),
+      VehicleFilter.all => allVehicles,
+    };
     final selected = ref.watch(selectedVehicleProvider);
     final topPad = MediaQuery.of(context).padding.top;
 
@@ -151,7 +158,7 @@ class _MapViewState extends ConsumerState<MapView> {
             left: 16,
             right: 16,
             child: vehiclesAsync.when(
-              data: (v) => _MapFilterRow(vehicles: v),
+              data: (v) => _MapFilterRow(vehicles: v, allVehicles: allVehicles),
               loading: () => const SizedBox.shrink(),
               error: (_, _) => const SizedBox.shrink(),
             ),
@@ -283,9 +290,11 @@ class _MapViewState extends ConsumerState<MapView> {
           angle: pos.course * (pi / 180),
           child: Container(
             decoration: BoxDecoration(
-              color: vehicle.status == VehicleStatus.online
-                  ? AppColors.primary
-                  : AppColors.statusOffline,
+              color: switch (vehicle.status) {
+                  VehicleStatus.online => AppColors.primary,
+                  VehicleStatus.idle => AppColors.statusIdle,
+                  VehicleStatus.offline => AppColors.statusOffline,
+                },
               shape: BoxShape.circle,
               border: Border.all(
                   color: Colors.white, width: isSelected ? 3 : 2),
@@ -361,18 +370,20 @@ class _MapSearchBar extends ConsumerWidget {
   }
 }
 
-/// Chips de filtre : All Vehicles / Moving / Idle
+/// Chips de filtre : All Vehicles / Moving / Idle (filtre local carte uniquement)
 class _MapFilterRow extends ConsumerWidget {
   final List<Vehicle> vehicles;
-  const _MapFilterRow({required this.vehicles});
+  final List<Vehicle> allVehicles;
+  const _MapFilterRow({required this.vehicles, required this.allVehicles});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final filter = ref.watch(vehicleFilterProvider);
+    final filter = ref.watch(mapFilterProvider);
+    // Counts basés sur TOUS les véhicules (pas le sous-ensemble filtré)
     final moving =
-        vehicles.where((v) => v.status == VehicleStatus.online).length;
+        allVehicles.where((v) => v.status == VehicleStatus.online).length;
     final idle =
-        vehicles.where((v) => v.status == VehicleStatus.idle).length;
+        allVehicles.where((v) => v.status == VehicleStatus.idle).length;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -382,7 +393,7 @@ class _MapFilterRow extends ConsumerWidget {
             label: 'All Vehicles',
             selected: filter == VehicleFilter.all,
             onTap: () => ref
-                .read(vehicleFilterProvider.notifier)
+                .read(mapFilterProvider.notifier)
                 .state = VehicleFilter.all,
           ),
           const SizedBox(width: 8),
@@ -390,7 +401,7 @@ class _MapFilterRow extends ConsumerWidget {
             label: 'Moving ($moving)',
             selected: filter == VehicleFilter.moving,
             onTap: () => ref
-                .read(vehicleFilterProvider.notifier)
+                .read(mapFilterProvider.notifier)
                 .state = VehicleFilter.moving,
           ),
           const SizedBox(width: 8),
@@ -398,7 +409,7 @@ class _MapFilterRow extends ConsumerWidget {
             label: 'Idle ($idle)',
             selected: filter == VehicleFilter.idle,
             onTap: () => ref
-                .read(vehicleFilterProvider.notifier)
+                .read(mapFilterProvider.notifier)
                 .state = VehicleFilter.idle,
           ),
         ],

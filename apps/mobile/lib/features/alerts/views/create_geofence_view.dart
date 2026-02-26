@@ -6,9 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import '../../../core/theme/app_theme.dart';
 import '../providers/geofences_provider.dart';
+import '../models/geofence_model.dart';
+import '../../vehicles/providers/vehicles_provider.dart';
 
 class CreateGeofenceView extends ConsumerStatefulWidget {
-  const CreateGeofenceView({super.key});
+  /// Pass a [geofence] to open in edit mode, null to create a new one.
+  final Geofence? geofence;
+
+  const CreateGeofenceView({super.key, this.geofence});
 
   @override
   ConsumerState<CreateGeofenceView> createState() => _CreateGeofenceViewState();
@@ -20,20 +25,32 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
   double _radius = 500;
   bool _onEntry = true;
   bool _onExit = false;
-  // Default to Antananarivo (project's target city)
   LatLng _center = const LatLng(-18.8792, 47.5079);
   bool _isSaving = false;
   bool _isDragging = false;
-  final TextEditingController _nameController = TextEditingController(
-    text: 'Home',
-  );
+  final Set<int> _selectedVehicleIds = {};
+  late final TextEditingController _nameController;
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
+  bool get _isEditing => widget.geofence != null;
+
   @override
   void initState() {
     super.initState();
+    // Pre-fill fields when editing
+    final gf = widget.geofence;
+    if (gf != null) {
+      _nameController = TextEditingController(text: gf.name);
+      _center = LatLng(gf.centerLat, gf.centerLon);
+      _radius = gf.radiusM;
+      if (gf.deviceIds != null) _selectedVehicleIds.addAll(gf.deviceIds!);
+      // Fit circle into view after the map widget is ready
+      WidgetsBinding.instance.addPostFrameCallback((_) => _ensureCircleVisible());
+    } else {
+      _nameController = TextEditingController(text: 'Home');
+    }
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -51,7 +68,24 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
   }
 
   void _centerOnMarker() {
-    _mapController.move(_center, _mapController.camera.zoom);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final bottomPanelHeight = screenHeight * 0.46;
+    final zoom = _mapController.camera.zoom;
+
+    // Visible area center is (screenHeight - bottomPanelHeight) / 2 from top,
+    // which is bottomPanelHeight / 2 pixels above the screen center.
+    // To place the marker there, shift the camera center downward by that offset.
+    final metersPerPixel =
+        156543.03392 *
+        math.cos(_center.latitude * math.pi / 180) /
+        math.pow(2, zoom);
+    final latPerPixel = metersPerPixel / 111320;
+    final latOffset = (bottomPanelHeight / 2) * latPerPixel;
+
+    _mapController.move(
+      LatLng(_center.latitude - latOffset, _center.longitude),
+      zoom,
+    );
   }
 
   void _onMapTap(TapPosition tapPosition, LatLng point) {
@@ -63,8 +97,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
   }
 
   void _ensureCircleVisible() {
-    // If the circle's bounding box is not fully visible, fit it
-    // This provides the "adapter avec le zoom" functionality
+    final bottomPanelHeight = MediaQuery.of(context).size.height * 0.46;
     final distance = const Distance();
     final north = distance.offset(_center, _radius, 0);
     final south = distance.offset(_center, _radius, 180);
@@ -75,9 +108,61 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     _mapController.fitCamera(
       CameraFit.bounds(
         bounds: bounds,
-        padding: const EdgeInsets.all(100), // Nice margin to see context
+        // Extra bottom padding pushes the fit into the visible area above the panel
+        padding: EdgeInsets.fromLTRB(60, 80, 60, bottomPanelHeight + 60),
       ),
     );
+  }
+
+  Future<void> _deleteGeofence() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text(
+          'Delete zone?',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${_nameController.text.trim()}"?\nThis cannot be undone.',
+          style: const TextStyle(color: AppColors.textHint),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final ok = await ref
+        .read(geofencesProvider.notifier)
+        .deleteGeofence(widget.geofence!.id);
+    if (!mounted) return;
+    if (ok) {
+      HapticFeedback.mediumImpact();
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Failed to delete zone. Please try again.'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _saveGeofence() async {
@@ -102,13 +187,15 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
       'name': name,
       'centerLat': _center.latitude,
       'centerLon': _center.longitude,
-      'radiusM': _radius.toInt(), // API expects integer
-      'isActive': true,
+      'radiusM': _radius.toInt(),
+      'isActive': widget.geofence?.isActive ?? true,
+      'deviceIds': _selectedVehicleIds.toList(),
     };
 
-    final result = await ref
-        .read(geofencesProvider.notifier)
-        .createGeofence(payload);
+    final notifier = ref.read(geofencesProvider.notifier);
+    final result = _isEditing
+        ? await notifier.updateGeofence(widget.geofence!.id, payload)
+        : await notifier.createGeofence(payload);
 
     if (!mounted) return;
     setState(() => _isSaving = false);
@@ -119,7 +206,11 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Failed to save geofence. Please try again.'),
+          content: Text(
+            _isEditing
+                ? 'Failed to update zone. Please try again.'
+                : 'Failed to save zone. Please try again.',
+          ),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -321,9 +412,9 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                         ),
                       ],
                     ),
-                    child: const Text(
-                      'New Geofence',
-                      style: TextStyle(
+                    child: Text(
+                      _isEditing ? 'Edit Zone' : 'New Geofence',
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -568,6 +659,22 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                     ),
                     const SizedBox(height: 20),
 
+                    // ── Monitored Vehicles ─────────────────────────────────
+                    _buildLabel('Monitored Vehicles'),
+                    const SizedBox(height: 4),
+                    Text(
+                      _selectedVehicleIds.isEmpty
+                          ? 'All vehicles (no filter)'
+                          : '${_selectedVehicleIds.length} vehicle${_selectedVehicleIds.length > 1 ? 's' : ''} selected',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textHint,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _buildVehicleSelector(),
+                    const SizedBox(height: 20),
+
                     // ── Alert Triggers ─────────────────────────────────────
                     _buildLabel('Alert Triggers'),
                     const SizedBox(height: 10),
@@ -594,7 +701,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                     ),
                     const SizedBox(height: 24),
 
-                    // ── Save Button ────────────────────────────────────────
+                    // ── Save / Delete Buttons ──────────────────────────────
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -620,17 +727,19 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                                   strokeWidth: 2.5,
                                 ),
                               )
-                            : const Row(
+                            : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.check_circle_outline_rounded,
+                                    _isEditing
+                                        ? Icons.edit_rounded
+                                        : Icons.check_circle_outline_rounded,
                                     size: 20,
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(
-                                    'Save Zone',
-                                    style: TextStyle(
+                                    _isEditing ? 'Update Zone' : 'Save Zone',
+                                    style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: -0.3,
@@ -640,6 +749,39 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                               ),
                       ),
                     ),
+                    if (_isEditing) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: _isSaving ? null : _deleteGeofence,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: BorderSide(
+                              color: Colors.red.withValues(alpha: 0.4),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.delete_outline_rounded,
+                                size: 18,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Delete Zone',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -647,6 +789,111 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildVehicleSelector() {
+    final vehiclesAsync = ref.watch(vehiclesProvider);
+    return vehiclesAsync.when(
+      data: (vehicles) {
+        if (vehicles.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Text(
+              'No vehicles available',
+              style: TextStyle(color: AppColors.textHint, fontSize: 13),
+            ),
+          );
+        }
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: vehicles.map((vehicle) {
+            final selected = _selectedVehicleIds.contains(vehicle.id);
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  if (selected) {
+                    _selectedVehicleIds.remove(vehicle.id);
+                  } else {
+                    _selectedVehicleIds.add(vehicle.id);
+                  }
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.primary.withValues(alpha: 0.08)
+                      : AppColors.background,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.divider.withValues(alpha: 0.5),
+                    width: selected ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      selected
+                          ? Icons.check_circle_rounded
+                          : Icons.directions_car_rounded,
+                      size: 16,
+                      color: selected ? AppColors.primary : AppColors.textHint,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      vehicle.name,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            selected ? AppColors.primary : AppColors.textHint,
+                      ),
+                    ),
+                    if (vehicle.plate.isNotEmpty) ...[
+                      const SizedBox(width: 5),
+                      Text(
+                        '· ${vehicle.plate}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textHint,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+      loading: () => const SizedBox(
+        height: 36,
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              color: AppColors.primary,
+              strokeWidth: 2,
+            ),
+          ),
+        ),
+      ),
+      error: (e, st) => const SizedBox.shrink(),
     );
   }
 
