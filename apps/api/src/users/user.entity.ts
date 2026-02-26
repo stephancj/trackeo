@@ -37,6 +37,10 @@ export class User {
   })
   role: UserRole;
 
+  /** Subscription ID OneSignal (web push) — enregistré par le client après init SDK */
+  @Column({ type: 'varchar', name: 'onesignal_sub_id', length: 255, nullable: true })
+  onesignalSubId: string | null;
+
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 

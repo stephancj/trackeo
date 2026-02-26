@@ -55,6 +55,9 @@ dependencies:
   # Affichage du temps relatif
   timeago: ^3.7.1
 
+  # Push notifications via OneSignal (web + iOS + Android)
+  onesignal_flutter: ^5.2.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -68,7 +68,10 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 - ✅ **Correction Timezone** : Forçage explicite du driver `pg` Node.js en UTC (`pg.types.setTypeParser(1114)`) pour éviter les faux statuts "offline" dus aux décalages horaires locaux vs serveur Traccar.
 - ✅ **Gestion des Véhicules** : Édition complète des informations (Nom, Plaque, Numéro de série/IMEI, URL photo personnalisée).
 - ✅ **Sérialisation Robuste** : Correction de la corruption de la colonne `attributes` (TEXT) de Traccar via un transformateur JSON NestJS, permettant de stocker proprement la plaque et l'image sans casser le format Traccar.
-- 🔲 Notifications push + WhatsApp
+- ✅ **Notifications Push OneSignal** : `NotificationsService` (NestJS) appelle l'API REST OneSignal à chaque alerte geofence. Flutter SDK `onesignal_flutter` lié au `userId` via `OneSignal.login()` après login/restore session. Service worker web (`web/OneSignalSDKWorker.js`) + init JS dans `web/index.html` pour support PWA.
+- ✅ **Fix Push Ciblage (Subscription ID)** : `OneSignal.login()` (web SDK) ne persistait pas le External ID côté serveur OneSignal → push échouait avec "All included players are not subscribed". Fix : enregistrement du **subscription ID** (`OneSignal.User.PushSubscription.id`) en base (`users.onesignal_sub_id`) via `POST /api/auth/push-token` après login. Backend utilise désormais `include_subscription_ids` (ciblage direct, sans dépendance au External ID). Migration `004_onesignal_sub_id.sql`.
+- ✅ **SQL Logging** : `logging: ['error']` dans `database.config.ts` — seules les erreurs SQL sont loggées (plus de spam SELECT toutes les 15s).
+- 🔲 Notifications WhatsApp
 - 🔲 PostGIS `ST_Contains` pour polygones (workaround avec rayon circulaire 100% fonctionnel)
 
 #### 🔲 Onboarding & Activation appareil (QR / OTP)
@@ -567,6 +570,8 @@ feature/
 - **Attributs Traccar (Fix)** : La colonne `tc_devices.attributes` est de type `TEXT` dans Traccar mais doit être manipulée comme du JSON dans l'API. Utiliser le transformateur défini dans `Device` entity. Ne jamais assigner un objet brut à `attributes` sans passer par l'entité transformée.
 - **Null Safety (Plate)** : Le champ `plate` est nullable. Dans Flutter, toujours utiliser `v.plate?.isNotEmpty ?? false` ou `v.plate != null && v.plate!.isNotEmpty` pour éviter les erreurs de compilation.
 - **Recherche Véhicules** : Toujours inclure `name`, `plate` (null-safe) et `serialNumber` dans les filtres de recherche.
+- **OneSignal Push** : Le ciblage se fait via `include_subscription_ids` (PAS `include_external_user_ids` — le External ID ne se persiste pas côté serveur OneSignal depuis le SDK web). Après login, Flutter lit `window.trackeoGetSubId()` (JS) via `getOneSignalSubId()` (dart:js), attend 3s, puis POST le subscription ID vers `POST /api/auth/push-token`. Le backend le stocke dans `users.onesignal_sub_id` et l'utilise dans `GeofencesCheckerService` (avec cache mémoire `subIdCache`). Web → `web/OneSignalSDKWorker.js` + bloc `<script>` dans `web/index.html` obligatoires. Build production (`flutter build web`) requis — dev mode n'enregistre pas de service worker.
+- **SQL Logging TypeORM** : Garder `logging: ['error']` dans `database.config.ts` — ne jamais remettre `process.env.NODE_ENV === 'development'` qui spamme la console avec chaque SELECT du cron geofence (15s) et du polling (10s).
 
 ---
 
@@ -594,10 +599,13 @@ feature/
 - [x] Reverse Geocoding : Implementation globale (provider + cache) intégrée dans Liste, Carte, Historique et Alertes
 - [x] Édition Véhicule : Formulaire complet (Nom, Plaque, IMEI, Photo) + Fix sérialisation JSON attributes.
 - [x] Fix Null-Safety : Correction des erreurs de compilation liées à la plaque nullable dans toutes les vues.
+- [x] Notifications Push OneSignal : Backend `NotificationsService` + Flutter SDK lié au userId + service worker web (`OneSignalSDKWorker.js`) + init JS dans `index.html`.
+- [x] Fix SQL logging : `logging: ['error']` — suppression du spam SELECT dans la console NestJS.
+- [x] Fix Push Ciblage OneSignal : Subscription ID enregistré en base (`users.onesignal_sub_id`) via `POST /api/auth/push-token` + `include_subscription_ids` côté backend. Contourne le bug External ID non persisté du SDK web OneSignal. Migration `004_onesignal_sub_id.sql`.
 
 ### 🔲 À faire (S13-S16 — Déploiement VPS)
 - [ ] API Admin / Interface Next.js
-- [ ] Notifications push + WhatsApp (geofence alerts)
+- [ ] Notifications WhatsApp (geofence alerts)
 - [ ] Onboarding QR/OTP pour activation device
 
 ### 🔲 Prochaines Étapes Immédiates (Déploiement VPS & Setup Prod)

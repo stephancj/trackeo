@@ -5,6 +5,10 @@ import '../models/auth_model.dart';
 
 abstract class AuthRepository {
   Future<AuthResponse> login(String email, String password);
+
+  /// Enregistre le subscription ID OneSignal pour l'utilisateur connecté.
+  /// Permet au backend de cibler cet appareil via include_subscription_ids.
+  Future<void> registerPushToken(String subscriptionId);
 }
 
 class RemoteAuthRepository implements AuthRepository {
@@ -18,6 +22,14 @@ class RemoteAuthRepository implements AuthRepository {
       data: {'email': email, 'password': password},
     );
     return AuthResponse.fromJson(response.data!);
+  }
+
+  @override
+  Future<void> registerPushToken(String subscriptionId) async {
+    await _dio.post<void>(
+      '/auth/push-token',
+      data: {'subscriptionId': subscriptionId},
+    );
   }
 }
 

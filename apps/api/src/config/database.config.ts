@@ -20,7 +20,7 @@ export default (): TypeOrmModuleOptions => ({
   entities: [Device, Position, User, DeviceAssignment, Geofence, Alert],
   // migrations exclues du runtime — lancées manuellement via `npm run migration:run`
   synchronize: false,
-  logging: process.env.NODE_ENV === 'development',
+  logging: ['error'],
   // Force UTC pour éviter les décalages de timezone (ex: UTC+3 local)
   extra: { options: '-c timezone=UTC' },
 });

@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import '../../../core/storage/token_storage.dart';
+import '../../../core/platform/onesignal_login.dart';
 import '../models/auth_model.dart';
 import '../repositories/auth_repository.dart';
 
@@ -42,15 +44,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _tryRestoreSession() async {
     final session = await TokenStorage.getSession();
     if (session.token != null && session.email != null) {
-      state = AuthState.authenticated(
-        token: session.token!,
-        user: AuthUser(
-          id: 0,
-          email: session.email!,
-          name: session.name,
-          role: 'user',
-        ),
+      final user = AuthUser(
+        id: session.userId ?? 0,
+        email: session.email!,
+        name: session.name,
+        role: 'user',
       );
+      state = AuthState.authenticated(token: session.token!, user: user);
+      // Ré-enregistre l'utilisateur dans OneSignal après redémarrage de l'app
+      if (user.id != 0) _linkOneSignal(user.id);
     } else {
       state = const AuthState.unauthenticated();
     }
@@ -63,12 +65,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await TokenStorage.saveSession(
         token: response.accessToken,
         email: response.user.email,
+        userId: response.user.id,
         name: response.user.name,
       );
       state = AuthState.authenticated(
         token: response.accessToken,
         user: response.user,
       );
+      _linkOneSignal(response.user.id);
     } on DioException catch (e) {
       state = AuthState.unauthenticated(error: _parseError(e));
     } catch (_) {
@@ -77,8 +81,34 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    await OneSignal.logout(); // Détache l'utilisateur (mobile)
+    oneSignalLogoutPlatform(); // Détache l'utilisateur (web JS direct)
     await TokenStorage.clear();
     state = const AuthState.unauthenticated();
+  }
+
+  /// Lie cet utilisateur à OneSignal pour recevoir les push ciblés.
+  void _linkOneSignal(int userId) {
+    OneSignal.login(userId.toString()); // mobile (natif)
+    oneSignalLoginPlatform(userId.toString()); // web (JS direct — le plugin ne bridge pas login sur web)
+    _tryRegisterPushToken(); // Enregistre le subscription ID côté backend (fire & forget)
+  }
+
+  /// Lit le subscription ID OneSignal (web) et l'enregistre côté backend.
+  /// Attend 3s pour laisser le SDK OneSignal finir son initialisation.
+  /// Fire & forget — les erreurs sont ignorées silencieusement.
+  Future<void> _tryRegisterPushToken() async {
+    // Attente : OneSignal init + login peuvent être asynchrones
+    await Future.delayed(const Duration(seconds: 3));
+
+    final subId = getOneSignalSubId(); // null sur mobile (stub no-op)
+    if (subId == null || subId.isEmpty) return;
+
+    try {
+      await _repo.registerPushToken(subId);
+    } catch (_) {
+      // Best-effort — la prochaine ouverture de session réessaiera
+    }
   }
 
   String _parseError(DioException e) {

@@ -11,6 +11,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
 import { AdminModule } from './admin/admin.module';
 import { GeofencesModule } from './geofences/geofences.module';
 import { AlertsModule } from './alerts/alerts.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import databaseConfig from './config/database.config';
 import { ScheduleModule } from '@nestjs/schedule';
 
@@ -29,6 +30,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     AdminModule,
     GeofencesModule,
     AlertsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

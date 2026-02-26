@@ -3,6 +3,8 @@ import { Cron } from '@nestjs/schedule';
 import { GeofencesService } from './geofences.service';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { AlertsService } from '../alerts/alerts.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { UsersService } from '../users/users.service';
 import { AlertType } from '../alerts/entities/alert.entity';
 
 @Injectable()
@@ -13,31 +15,28 @@ export class GeofencesCheckerService {
     private readonly geofencesService: GeofencesService,
     private readonly vehiclesService: VehiclesService,
     private readonly alertsService: AlertsService,
+    private readonly notificationsService: NotificationsService,
+    private readonly usersService: UsersService,
   ) {}
 
   // Cache en mémoire pour éviter le spam et les requêtes DB.
   // Clé: "{vehicleId}_{geofenceId}", Valeur: boolean (true = inside)
   private readonly insideGeofencesCache = new Map<string, boolean>();
 
-  @Cron('*/15 * * * * *') // Run every 15 seconds
+  // Cache du subscription ID OneSignal par userId (évite un SELECT à chaque alerte)
+  private readonly subIdCache = new Map<number, string | null>();
+
+  @Cron('*/15 * * * * *')
   async checkGeofences() {
     this.logger.debug('Vérification des Geofences en cours...');
     try {
       const vehicles = await this.vehiclesService.findAll();
-      // Optimization: We could get all active geofences instead of looping linearly
-      // For MVP, we'll just query all geofences and check
+      const allGeofences = await this.geofencesService.findAllActive();
+
       for (const vehicle of vehicles) {
         if (!vehicle.position || vehicle.status === 'offline') continue;
 
-        // In a real app, geofences would be assigned by user, here we assume all geofences apply or we can check
-        // Wait, Geofences have userId. Vehicles don't have owner ID in VehicleDto?
-        // Let's get all active geofences in the system for this MVP
-
-        // Wait, we need a method to get ALL active geofences in the system to check.
-        const allGeofences = await this.geofencesService.findAllActive();
-
         for (const fence of allGeofences) {
-          // If the geofence is linked to specific devices, check if this vehicle is included
           if (
             fence.deviceIds &&
             fence.deviceIds.length > 0 &&
@@ -46,7 +45,6 @@ export class GeofencesCheckerService {
             continue;
           }
 
-          // Check distance
           const distanceM = this.getDistanceFromLatLonInM(
             vehicle.position.lat,
             vehicle.position.lon,
@@ -55,34 +53,55 @@ export class GeofencesCheckerService {
           );
 
           const isInside = distanceM <= fence.radiusM;
-
           const cacheKey = `${vehicle.id}_${fence.id}`;
           const wasInside = this.insideGeofencesCache.get(cacheKey) ?? false;
 
           if (isInside && !wasInside) {
-            // Mise à jour du cache
             this.insideGeofencesCache.set(cacheKey, true);
-            this.logger.log(
-              `🚗 Véhicule ${vehicle.name} ENTERED geofence ${fence.name}`,
-            );
+            this.logger.log(`🚗 ${vehicle.name} ENTERED ${fence.name}`);
+
             await this.alertsService.createAlert(
               fence.userId,
               vehicle.id,
               AlertType.GEOFENCE_ENTER,
-              `Le véhicule ${vehicle.name} est entré dans la zone ${fence.name}`,
+              `${vehicle.name} est entré dans la zone ${fence.name}`,
             );
+
+            const subscriptionId = await this.getUserSubId(fence.userId);
+            await this.notificationsService.sendPush({
+              externalUserId: fence.userId.toString(),
+              subscriptionId: subscriptionId ?? undefined,
+              title: '🟢 Entrée de zone',
+              body: `${vehicle.name} est entré dans la zone "${fence.name}"`,
+              data: {
+                type: 'geofence_enter',
+                vehicleId: vehicle.id.toString(),
+                geofenceName: fence.name,
+              },
+            });
           } else if (!isInside && wasInside) {
-            // Mise à jour du cache
             this.insideGeofencesCache.set(cacheKey, false);
-            this.logger.log(
-              `🚗 Véhicule ${vehicle.name} EXITED geofence ${fence.name}`,
-            );
+            this.logger.log(`🚗 ${vehicle.name} EXITED ${fence.name}`);
+
             await this.alertsService.createAlert(
               fence.userId,
               vehicle.id,
               AlertType.GEOFENCE_EXIT,
-              `Le véhicule ${vehicle.name} est sorti de la zone ${fence.name}`,
+              `${vehicle.name} a quitté la zone ${fence.name}`,
             );
+
+            const subscriptionId = await this.getUserSubId(fence.userId);
+            await this.notificationsService.sendPush({
+              externalUserId: fence.userId.toString(),
+              subscriptionId: subscriptionId ?? undefined,
+              title: '🔴 Sortie de zone',
+              body: `${vehicle.name} a quitté la zone "${fence.name}"`,
+              data: {
+                type: 'geofence_exit',
+                vehicleId: vehicle.id.toString(),
+                geofenceName: fence.name,
+              },
+            });
           }
         }
       }
@@ -91,14 +110,28 @@ export class GeofencesCheckerService {
     }
   }
 
-  // Haversine formula
+  /**
+   * Retourne le subscription ID OneSignal de l'utilisateur.
+   * Met en cache le résultat pour éviter les requêtes DB répétitives.
+   * Cache invalidé au redémarrage du serveur — acceptable en MVP.
+   */
+  private async getUserSubId(userId: number): Promise<string | null> {
+    if (this.subIdCache.has(userId)) {
+      return this.subIdCache.get(userId) ?? null;
+    }
+    const user = await this.usersService.findById(userId);
+    const subId = user?.onesignalSubId ?? null;
+    this.subIdCache.set(userId, subId);
+    return subId;
+  }
+
   private getDistanceFromLatLonInM(
     lat1: number,
     lon1: number,
     lat2: number,
     lon2: number,
   ) {
-    const R = 6371e3; // Radius of the earth in m
+    const R = 6371e3;
     const dLat = this.deg2rad(lat2 - lat1);
     const dLon = this.deg2rad(lon2 - lon1);
     const a =

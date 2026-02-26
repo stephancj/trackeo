@@ -42,6 +42,11 @@ export class UsersService {
     return this.userRepo.save(user);
   }
 
+  /** Enregistre le subscription ID OneSignal pour ciblage push direct. */
+  async saveSubscriptionId(userId: number, subId: string): Promise<void> {
+    await this.userRepo.update(userId, { onesignalSubId: subId });
+  }
+
   findAll(): Promise<User[]> {
     return this.userRepo.find({ order: { createdAt: 'DESC' } });
   }

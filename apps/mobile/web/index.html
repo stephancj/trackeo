@@ -29,8 +29,80 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>mobile</title>
+  <title>Trackeo</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- OneSignal Web Push SDK -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+
+    // Stocke le userId en attente si Flutter appelle login avant la fin de l'init OneSignal
+    window._trackeoUserId = null;
+    // Stocke le subscription ID OneSignal dès qu'il est disponible
+    window._trackeoSubId = null;
+
+    // Appelé par Flutter (dart:js) après login — await la Promise correctement
+    window.trackeoOneSignalLogin = async function(userId) {
+      window._trackeoUserId = userId;
+      try {
+        await window.OneSignal.login(userId);
+        // Capture le subscription ID après login (peut être null si pas encore souscrit)
+        window._trackeoSubId = window.OneSignal?.User?.PushSubscription?.id ?? null;
+        console.log('[Trackeo] OneSignal login OK — externalId:', userId, '| subId:', window._trackeoSubId);
+      } catch(e) {
+        console.error('[Trackeo] OneSignal login failed:', e);
+      }
+    };
+
+    window.trackeoOneSignalLogout = async function() {
+      window._trackeoUserId = null;
+      window._trackeoSubId = null;
+      try {
+        await window.OneSignal.logout();
+      } catch(e) {}
+    };
+
+    /**
+     * Retourne le subscription ID OneSignal courant.
+     * Appelé par Flutter via dart:js pour l'enregistrer côté backend.
+     * Préfère la valeur live du SDK, bascule sur le cache _trackeoSubId.
+     */
+    window.trackeoGetSubId = function() {
+      return window.OneSignal?.User?.PushSubscription?.id ?? window._trackeoSubId ?? null;
+    };
+
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "b08553a3-c59a-49c7-8097-a23a704527bc",
+        notifyButton: { enable: false },
+        promptOptions: {
+          slidedown: {
+            prompts: [{
+              type: "push",
+              autoPrompt: true,
+              text: {
+                actionMessage: "Trackeo souhaite vous envoyer des alertes de zone.",
+                acceptButton: "Autoriser",
+                cancelButton: "Plus tard",
+              },
+            }]
+          }
+        }
+      });
+
+      // Capture le subscription ID dès que l'init est terminée
+      window._trackeoSubId = OneSignal?.User?.PushSubscription?.id ?? null;
+      console.log('[Trackeo] OneSignal init OK — subId:', window._trackeoSubId);
+
+      // Si Flutter a déjà fourni un userId avant la fin de l'init, on le lie maintenant
+      if (window._trackeoUserId) {
+        await OneSignal.login(window._trackeoUserId);
+        window._trackeoSubId = OneSignal?.User?.PushSubscription?.id ?? null;
+        console.log('[Trackeo] OneSignal post-init login OK —', window._trackeoUserId, '| subId:', window._trackeoSubId);
+      }
+    });
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
