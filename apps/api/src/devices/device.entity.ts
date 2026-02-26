@@ -35,4 +35,24 @@ export class Device {
 
   @Column({ default: false })
   disabled: boolean;
+
+  @Column({
+    name: 'attributes',
+    type: 'text',
+    nullable: true,
+    transformer: {
+      to: (value: any) => (value ? JSON.stringify(value) : null),
+      from: (value: any) => {
+        if (typeof value === 'string') {
+          try {
+            return JSON.parse(value);
+          } catch {
+            return value;
+          }
+        }
+        return value;
+      },
+    },
+  })
+  attributes: Record<string, any>;
 }

@@ -9,7 +9,7 @@ export class VehiclesService {
   constructor(
     private readonly devicesService: DevicesService,
     private readonly positionsService: PositionsService,
-  ) {}
+  ) { }
 
   /**
    * Retourne tous les véhicules enrichis avec leur dernière position.
@@ -38,6 +38,11 @@ export class VehiclesService {
     return this.buildVehicleDto(device);
   }
 
+  async update(id: number, data: Partial<Device>): Promise<VehicleDto> {
+    const device = await this.devicesService.update(id, data);
+    return this.buildVehicleDto(device);
+  }
+
   /**
    * Dernière position d'un véhicule — endpoint de polling (toutes les 10s).
    */
@@ -51,6 +56,8 @@ export class VehiclesService {
         course: pos.course,
         address: pos.address,
         battery: this.extractBattery(pos.attributes),
+        ignition: this.extractIgnition(pos.attributes),
+        rssi: this.extractRssi(pos.attributes),
         deviceTime: pos.deviceTime,
       };
     } catch {
@@ -64,10 +71,6 @@ export class VehiclesService {
 
   private async buildVehicleDto(device: Device): Promise<VehicleDto> {
     let position: VehiclePositionDto | null = null;
-    // device.lastUpdate = mis à jour par Traccar à chaque position reçue (référence de fraîcheur)
-    // pos.serverTime    = heure de réception de cette position spécifique (peut être périmé
-    //                     si tc_devices.positionid n'a pas été mis à jour par Traccar)
-    // → on garde device.lastUpdate en priorité, pos.serverTime en fallback si null
     let lastSeen: Date | null = device.lastUpdate;
 
     if (device.positionid) {
@@ -79,20 +82,21 @@ export class VehiclesService {
         if (!lastSeen) lastSeen = pos.serverTime ?? pos.deviceTime;
       }
     } else {
-      // Fallback : cherche la dernière position par serverTime (UTC garanti par Traccar)
       try {
         const pos = await this.positionsService.getLastPosition(device.id);
         position = this.toVehiclePosition(pos);
         if (!lastSeen) lastSeen = pos.serverTime ?? pos.deviceTime;
       } catch {
-        // Aucune position pour ce device → offline
+        // offline
       }
     }
 
     return {
       id: device.id,
       name: device.name,
-      plate: device.uniqueId,
+      serialNumber: device.uniqueId,
+      plate: (device.attributes as any)?.plate || null,
+      imageUrl: this.extractImageUrl(device),
       status: this.computeStatus(
         position?.speedKmh ?? 0,
         lastSeen,
@@ -111,20 +115,31 @@ export class VehiclesService {
       course: pos.course,
       address: pos.address,
       battery: this.extractBattery(pos.attributes),
+      ignition: this.extractIgnition(pos.attributes),
+      rssi: this.extractRssi(pos.attributes),
       deviceTime: pos.deviceTime,
     };
   }
 
   /**
+   * Retourne une image personnalisée ou un mockup selon le nom.
+   */
+  private extractImageUrl(device: Device): string | null {
+    if (device.attributes?.imageUrl) {
+      return device.attributes.imageUrl as string;
+    }
+
+    const n = device.name.toLowerCase();
+    if (n.includes('rav4'))
+      return 'https://images.info-auto.fr/toyota-rav4-2019-1.jpg';
+    if (n.includes('hilux'))
+      return 'https://images.info-auto.fr/toyota-hilux-2021.jpg';
+    // Fallback image generic 4x4
+    return 'https://images.info-auto.fr/vehicule-generique.jpg';
+  }
+
+  /**
    * Statut combiné : device.lastUpdate (primaire) + tc_devices.status Traccar (secondaire).
-   *
-   *   offline → lastUpdate ≥ 10min  OU  pas de lastUpdate
-   *             OU  Traccar dit 'offline' (utile pour trackers TCP persistants)
-   *   online  → lastUpdate < 10min  ET  vitesse > 1 km/h
-   *   idle    → lastUpdate < 10min  ET  vitesse ≤ 1 km/h
-   *
-   * Note : pour OsmAnd/HTTP, Traccar peut garder 'online' longtemps après
-   * déconnexion → dans ce cas notre seuil 10min prime.
    */
   private computeStatus(
     speedKmh: number,
@@ -139,23 +154,37 @@ export class VehiclesService {
     return speedKmh > 1 ? 'online' : 'idle';
   }
 
-  /**
-   * Extrait le % de batterie depuis les attributs JSON de Traccar.
-   * Traccar peut stocker : { "battery": 85 } ou { "batteryLevel": 0.85 }
-   */
   private extractBattery(
     attributes: Record<string, unknown> | null,
   ): number | null {
     if (!attributes) return null;
-
     const raw =
       attributes['battery'] ??
       attributes['batteryLevel'] ??
       attributes['io113'];
     if (typeof raw === 'number') {
-      // Certains traceurs envoient 0–1, d'autres 0–100
       return raw <= 1 ? Math.round(raw * 100) : Math.round(raw);
     }
+    return null;
+  }
+
+  private extractIgnition(
+    attributes: Record<string, unknown> | null,
+  ): boolean | null {
+    if (!attributes) return null;
+    const raw = attributes['ignition'] ?? attributes['acc'];
+    if (typeof raw === 'boolean') return raw;
+    if (typeof raw === 'number') return raw === 1;
+    return null;
+  }
+
+  private extractRssi(
+    attributes: Record<string, unknown> | null,
+  ): number | null {
+    if (!attributes) return null;
+    // rssi : 0-31 (GSM) ou 0-100 (WiFi)
+    const raw = attributes['rssi'] ?? attributes['signal'];
+    if (typeof raw === 'number') return raw;
     return null;
   }
 }

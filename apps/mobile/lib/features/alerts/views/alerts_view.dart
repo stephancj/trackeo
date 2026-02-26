@@ -1064,7 +1064,7 @@ class _GeofenceActionsSheetState extends ConsumerState<_GeofenceActionsSheet> {
                                   : AppColors.textHint,
                             ),
                           ),
-                          if (v.plate.isNotEmpty) ...[
+                          if (v.plate != null && v.plate!.isNotEmpty) ...[
                             const SizedBox(width: 5),
                             Text(
                               '· ${v.plate}',

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/navigation/app_shell.dart';
 import '../../../core/theme/app_theme.dart';
 import '../models/vehicle_model.dart';
 import '../providers/vehicles_provider.dart';
 import 'widgets/vehicle_card.dart';
+import 'vehicle_details_view.dart';
 
 class FleetListView extends ConsumerWidget {
   const FleetListView({super.key});
@@ -153,8 +153,13 @@ class FleetListView extends ConsumerWidget {
                         onTap: () {
                           ref.read(selectedVehicleIdProvider.notifier).state =
                               vehicles[i].id;
-                          // Switch to Map tab so the vehicle card popup appears
-                          ref.read(activeTabProvider.notifier).state = 1;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  VehicleDetailsView(vehicle: vehicles[i]),
+                            ),
+                          );
                         },
                       ),
                     ),

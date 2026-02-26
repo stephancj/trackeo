@@ -47,7 +47,9 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
       _radius = gf.radiusM;
       if (gf.deviceIds != null) _selectedVehicleIds.addAll(gf.deviceIds!);
       // Fit circle into view after the map widget is ready
-      WidgetsBinding.instance.addPostFrameCallback((_) => _ensureCircleVisible());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _ensureCircleVisible(),
+      );
     } else {
       _nameController = TextEditingController(text: 'Home');
     }
@@ -119,9 +121,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Delete zone?',
           style: TextStyle(color: AppColors.textPrimary),
@@ -768,10 +768,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                           child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.delete_outline_rounded,
-                                size: 18,
-                              ),
+                              Icon(Icons.delete_outline_rounded, size: 18),
                               SizedBox(width: 8),
                               Text(
                                 'Delete Zone',
@@ -859,11 +856,12 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color:
-                            selected ? AppColors.primary : AppColors.textHint,
+                        color: selected
+                            ? AppColors.primary
+                            : AppColors.textHint,
                       ),
                     ),
-                    if (vehicle.plate.isNotEmpty) ...[
+                    if (vehicle.plate != null && vehicle.plate!.isNotEmpty) ...[
                       const SizedBox(width: 5),
                       Text(
                         '· ${vehicle.plate}',

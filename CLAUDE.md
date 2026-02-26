@@ -66,6 +66,8 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 - ✅ Flutter : taille du cercle a adapter avec le zoom de la carte et slider (geofence view)
 - ✅ **Optimisation Backend** : Cache en mémoire (`insideGeofencesCache`) pour éviter le spam d'alertes multiples et supprimer la surcharge de requêtes `SELECT` sur PostgreSQL.
 - ✅ **Correction Timezone** : Forçage explicite du driver `pg` Node.js en UTC (`pg.types.setTypeParser(1114)`) pour éviter les faux statuts "offline" dus aux décalages horaires locaux vs serveur Traccar.
+- ✅ **Gestion des Véhicules** : Édition complète des informations (Nom, Plaque, Numéro de série/IMEI, URL photo personnalisée).
+- ✅ **Sérialisation Robuste** : Correction de la corruption de la colonne `attributes` (TEXT) de Traccar via un transformateur JSON NestJS, permettant de stocker proprement la plaque et l'image sans casser le format Traccar.
 - 🔲 Notifications push + WhatsApp
 - 🔲 PostGIS `ST_Contains` pour polygones (workaround avec rayon circulaire 100% fonctionnel)
 
@@ -334,6 +336,7 @@ TOTAL_POINTS=30
 | `POST` | `/api/auth/login` | Login → retourne JWT |
 | `GET` | `/api/vehicles` | Liste tous les véhicules avec statut + dernière position |
 | `GET` | `/api/vehicles/:id/position` | Dernière position d'un véhicule (polling 10s) |
+| `PATCH` | `/api/vehicles/:id` | Mise à jour complète (nom, plaque, IMEI, photo) |
 | `GET` | `/api/vehicles/:id/history` | Positions entre `from` et `to` (historique trajet) |
 | `POST` | `/api/geofences` | Créer une geofence (cercle) |
 | `GET` | `/api/geofences` | Liste des geofences de l'utilisateur |
@@ -561,6 +564,9 @@ feature/
 - **Marqueur draggable** (flutter_map) : utiliser `GestureDetector.onPanUpdate` sur le `Marker.child` + conversion pixel→lat/lon via formule `metersPerPixel = 156543 * cos(lat * π/180) / 2^zoom`, puis `latPerPixel = metersPerPixel / 111320`
 - **Reverse Geocoding** : Toujours utiliser le provider global `reverseGeocodeProvider(LatLng)` présent dans `lib/core/providers/geocoding_provider.dart`. Il gère le cache et évite de surcharger l'API Nominatim.
 - **Design System** : Pour les éléments "pill-shaped" (barres de recherche, chips), utiliser `BorderRadius.circular(24)`. Les icônes de véhicules doivent utiliser les couleurs thématiques du mapping dans `VehicleCard` (pastel backgrounds).
+- **Attributs Traccar (Fix)** : La colonne `tc_devices.attributes` est de type `TEXT` dans Traccar mais doit être manipulée comme du JSON dans l'API. Utiliser le transformateur défini dans `Device` entity. Ne jamais assigner un objet brut à `attributes` sans passer par l'entité transformée.
+- **Null Safety (Plate)** : Le champ `plate` est nullable. Dans Flutter, toujours utiliser `v.plate?.isNotEmpty ?? false` ou `v.plate != null && v.plate!.isNotEmpty` pour éviter les erreurs de compilation.
+- **Recherche Véhicules** : Toujours inclure `name`, `plate` (null-safe) et `serialNumber` dans les filtres de recherche.
 
 ---
 
@@ -586,6 +592,8 @@ feature/
 - [x] UI Refinement : Design "pill-shaped" (radius 24) pour search bars et chips, counts par filtre (All, Moving, Idle, Offline)
 - [x] Vehicle Card : Couleurs par catégorie, intégration `timeago` pour statuts relatifs (Seen X ago, X stopped)
 - [x] Reverse Geocoding : Implementation globale (provider + cache) intégrée dans Liste, Carte, Historique et Alertes
+- [x] Édition Véhicule : Formulaire complet (Nom, Plaque, IMEI, Photo) + Fix sérialisation JSON attributes.
+- [x] Fix Null-Safety : Correction des erreurs de compilation liées à la plaque nullable dans toutes les vues.
 
 ### 🔲 À faire (S13-S16 — Déploiement VPS)
 - [ ] API Admin / Interface Next.js

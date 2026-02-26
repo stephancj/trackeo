@@ -7,7 +7,11 @@ abstract class VehicleRepository {
   Future<List<Vehicle>> getVehicles();
   Future<VehiclePosition?> getLastPosition(int vehicleId);
   Future<List<VehiclePosition>> getHistory(
-      int vehicleId, DateTime from, DateTime to);
+    int vehicleId,
+    DateTime from,
+    DateTime to,
+  );
+  Future<Vehicle> updateVehicle(int id, Map<String, dynamic> data);
 }
 
 class RemoteVehicleRepository implements VehicleRepository {
@@ -25,8 +29,9 @@ class RemoteVehicleRepository implements VehicleRepository {
   @override
   Future<VehiclePosition?> getLastPosition(int vehicleId) async {
     try {
-      final response =
-          await _dio.get<Map<String, dynamic>>('/vehicles/$vehicleId/position');
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/vehicles/$vehicleId/position',
+      );
       return VehiclePosition.fromJson(response.data!);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return null;
@@ -36,7 +41,10 @@ class RemoteVehicleRepository implements VehicleRepository {
 
   @override
   Future<List<VehiclePosition>> getHistory(
-      int vehicleId, DateTime from, DateTime to) async {
+    int vehicleId,
+    DateTime from,
+    DateTime to,
+  ) async {
     final response = await _dio.get<List<dynamic>>(
       '/vehicles/$vehicleId/history',
       queryParameters: {
@@ -45,9 +53,17 @@ class RemoteVehicleRepository implements VehicleRepository {
       },
     );
     return (response.data ?? [])
-        .map((json) =>
-            VehiclePosition.fromJson(json as Map<String, dynamic>))
+        .map((json) => VehiclePosition.fromJson(json as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<Vehicle> updateVehicle(int id, Map<String, dynamic> data) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/vehicles/$id',
+      data: data,
+    );
+    return Vehicle.fromJson(response.data!);
   }
 }
 

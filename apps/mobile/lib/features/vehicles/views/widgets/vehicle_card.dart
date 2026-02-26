@@ -108,7 +108,7 @@ class VehicleCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          vehicle.plate,
+                          vehicle.plate ?? vehicle.serialNumber,
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textHint,

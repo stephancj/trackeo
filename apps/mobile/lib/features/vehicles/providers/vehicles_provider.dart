@@ -48,6 +48,17 @@ class VehiclesNotifier extends AutoDisposeAsyncNotifier<List<Vehicle>> {
       }
     }
   }
+
+  Future<void> updateVehicle(int id, Map<String, dynamic> data) async {
+    final updated = await ref
+        .read(vehicleRepositoryProvider)
+        .updateVehicle(id, data);
+    // Silent update of the list
+    final currentVehicles = state.valueOrNull ?? [];
+    state = AsyncValue.data(
+      currentVehicles.map((v) => v.id == id ? updated : v).toList(),
+    );
+  }
 }
 
 /// Provider principal — remplace l'ancien FutureProvider.autoDispose.
@@ -95,7 +106,8 @@ final filteredVehiclesProvider = Provider<AsyncValue<List<Vehicle>>>((ref) {
           .where(
             (v) =>
                 v.name.toLowerCase().contains(search) ||
-                v.plate.toLowerCase().contains(search),
+                (v.plate?.toLowerCase().contains(search) ?? false) ||
+                v.serialNumber.toLowerCase().contains(search),
           )
           .toList();
     }

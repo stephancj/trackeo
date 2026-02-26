@@ -4,10 +4,10 @@ enum VehicleStatus { online, idle, offline }
 
 extension VehicleStatusX on VehicleStatus {
   String get label => switch (this) {
-        VehicleStatus.online => 'Moving',
-        VehicleStatus.idle => 'Idle',
-        VehicleStatus.offline => 'Offline',
-      };
+    VehicleStatus.online => 'Moving',
+    VehicleStatus.idle => 'Idle',
+    VehicleStatus.offline => 'Offline',
+  };
 }
 
 class VehiclePosition extends Equatable {
@@ -17,6 +17,8 @@ class VehiclePosition extends Equatable {
   final double course;
   final String? address;
   final int? battery;
+  final bool? ignition;
+  final int? rssi;
   final DateTime deviceTime;
 
   const VehiclePosition({
@@ -26,16 +28,21 @@ class VehiclePosition extends Equatable {
     required this.course,
     this.address,
     this.battery,
+    this.ignition,
+    this.rssi,
     required this.deviceTime,
   });
 
-  factory VehiclePosition.fromJson(Map<String, dynamic> json) => VehiclePosition(
+  factory VehiclePosition.fromJson(Map<String, dynamic> json) =>
+      VehiclePosition(
         lat: (json['lat'] as num).toDouble(),
         lon: (json['lon'] as num).toDouble(),
         speedKmh: (json['speedKmh'] as num).toDouble(),
         course: (json['course'] as num).toDouble(),
         address: json['address'] as String?,
         battery: json['battery'] as int?,
+        ignition: json['ignition'] as bool?,
+        rssi: json['rssi'] as int?,
         deviceTime: DateTime.parse(json['deviceTime'] as String),
       );
 
@@ -46,7 +53,9 @@ class VehiclePosition extends Equatable {
 class Vehicle extends Equatable {
   final int id;
   final String name;
-  final String plate;
+  final String serialNumber;
+  final String? plate;
+  final String? imageUrl;
   final VehicleStatus status;
   final DateTime? lastUpdate;
   final VehiclePosition? position;
@@ -54,7 +63,9 @@ class Vehicle extends Equatable {
   const Vehicle({
     required this.id,
     required this.name,
-    required this.plate,
+    required this.serialNumber,
+    this.plate,
+    this.imageUrl,
     required this.status,
     this.lastUpdate,
     this.position,
@@ -70,14 +81,15 @@ class Vehicle extends Equatable {
     return Vehicle(
       id: json['id'] as int,
       name: json['name'] as String,
-      plate: json['plate'] as String,
+      serialNumber: json['serialNumber'] as String,
+      plate: json['plate'] as String?,
+      imageUrl: json['imageUrl'] as String?,
       status: status,
       lastUpdate: json['lastUpdate'] != null
           ? DateTime.parse(json['lastUpdate'] as String)
           : null,
       position: json['position'] != null
-          ? VehiclePosition.fromJson(
-              json['position'] as Map<String, dynamic>)
+          ? VehiclePosition.fromJson(json['position'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -85,5 +97,5 @@ class Vehicle extends Equatable {
   bool get isMoving => status == VehicleStatus.online;
 
   @override
-  List<Object?> get props => [id, plate];
+  List<Object?> get props => [id, serialNumber, plate];
 }
