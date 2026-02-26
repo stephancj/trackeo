@@ -21,15 +21,11 @@ class VehiclesNotifier extends AutoDisposeAsyncNotifier<List<Vehicle>> {
   @override
   Future<List<Vehicle>> build() async {
     // Premier chargement — loading affiché normalement
-    final vehicles =
-        await ref.read(vehicleRepositoryProvider).getVehicles();
+    final vehicles = await ref.read(vehicleRepositoryProvider).getVehicles();
 
     // Démarrer le polling silencieux (sans repasser par loading)
     _timer?.cancel();
-    _timer = Timer.periodic(
-      const Duration(seconds: 10),
-      (_) => _refresh(),
-    );
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) => _refresh());
     ref.onDispose(() => _timer?.cancel());
 
     return vehicles;
@@ -39,8 +35,7 @@ class VehiclesNotifier extends AutoDisposeAsyncNotifier<List<Vehicle>> {
   /// Les marqueurs restent visibles pendant toute la durée du fetch.
   Future<void> _refresh() async {
     try {
-      final vehicles =
-          await ref.read(vehicleRepositoryProvider).getVehicles();
+      final vehicles = await ref.read(vehicleRepositoryProvider).getVehicles();
       // Mise à jour directe → pas de flash loading
       state = AsyncValue.data(vehicles);
     } catch (e, st) {
@@ -59,26 +54,27 @@ class VehiclesNotifier extends AutoDisposeAsyncNotifier<List<Vehicle>> {
 /// L'API publique est identique : AsyncValue of List of Vehicle.
 final vehiclesProvider =
     AsyncNotifierProvider.autoDispose<VehiclesNotifier, List<Vehicle>>(
-  VehiclesNotifier.new,
-);
+      VehiclesNotifier.new,
+    );
 
 // ── Filtres ─────────────────────────────────────────────────────────────────
 
-enum VehicleFilter { all, moving, idle }
+enum VehicleFilter { all, moving, idle, offline }
 
 /// Filtre de la Fleet List (onglet List) — indépendant de la carte
-final vehicleFilterProvider =
-    StateProvider<VehicleFilter>((ref) => VehicleFilter.all);
+final vehicleFilterProvider = StateProvider<VehicleFilter>(
+  (ref) => VehicleFilter.all,
+);
 
 /// Filtre de la carte (onglet Map) — état local à la carte, sans impact sur la liste
-final mapFilterProvider =
-    StateProvider<VehicleFilter>((ref) => VehicleFilter.all);
+final mapFilterProvider = StateProvider<VehicleFilter>(
+  (ref) => VehicleFilter.all,
+);
 
 final vehicleSearchProvider = StateProvider<String>((ref) => '');
 
 /// Véhicules filtrés par statut et recherche textuelle.
-final filteredVehiclesProvider =
-    Provider<AsyncValue<List<Vehicle>>>((ref) {
+final filteredVehiclesProvider = Provider<AsyncValue<List<Vehicle>>>((ref) {
   final all = ref.watch(vehiclesProvider);
   final filter = ref.watch(vehicleFilterProvider);
   final search = ref.watch(vehicleSearchProvider).toLowerCase().trim();
@@ -87,18 +83,20 @@ final filteredVehiclesProvider =
     var result = vehicles;
 
     if (filter == VehicleFilter.moving) {
-      result =
-          result.where((v) => v.status == VehicleStatus.online).toList();
+      result = result.where((v) => v.status == VehicleStatus.online).toList();
     } else if (filter == VehicleFilter.idle) {
-      result =
-          result.where((v) => v.status == VehicleStatus.idle).toList();
+      result = result.where((v) => v.status == VehicleStatus.idle).toList();
+    } else if (filter == VehicleFilter.offline) {
+      result = result.where((v) => v.status == VehicleStatus.offline).toList();
     }
 
     if (search.isNotEmpty) {
       result = result
-          .where((v) =>
-              v.name.toLowerCase().contains(search) ||
-              v.plate.toLowerCase().contains(search))
+          .where(
+            (v) =>
+                v.name.toLowerCase().contains(search) ||
+                v.plate.toLowerCase().contains(search),
+          )
           .toList();
     }
 

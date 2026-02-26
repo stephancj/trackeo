@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../vehicles/models/vehicle_model.dart';
+import '../../../core/providers/geocoding_provider.dart';
 import '../models/trip_stats_model.dart';
 import '../providers/history_provider.dart';
 
@@ -36,8 +37,9 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
 
   @override
   Widget build(BuildContext context) {
-    final positionsAsync =
-        ref.watch(historyPositionsProvider(widget.vehicleId));
+    final positionsAsync = ref.watch(
+      historyPositionsProvider(widget.vehicleId),
+    );
     final date = ref.watch(historyDateProvider);
     final screenH = MediaQuery.of(context).size.height;
     final topPad = MediaQuery.of(context).padding.top;
@@ -71,8 +73,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'mg.trackeo.app',
               ),
               // Polyligne bleue du trajet
@@ -135,8 +136,11 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new,
-                        size: 16, color: AppColors.primaryDark),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new,
+                      size: 16,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -161,13 +165,17 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2)),
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.layers,
-                      color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.layers,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 // Recentrer
@@ -175,8 +183,8 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                   onTap: () => points.length > 1
                       ? _fitRoute(points)
                       : points.isNotEmpty
-                          ? _mapController.move(points.first, 14)
-                          : null,
+                      ? _mapController.move(points.first, 14)
+                      : null,
                   child: Container(
                     width: 44,
                     height: 44,
@@ -185,13 +193,17 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2)),
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
                       ],
                     ),
-                    child: const Icon(Icons.gps_fixed,
-                        color: AppColors.primary, size: 22),
+                    child: const Icon(
+                      Icons.gps_fixed,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
                   ),
                 ),
               ],
@@ -207,8 +219,9 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.1),
@@ -219,8 +232,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
               ),
               child: positionsAsync.when(
                 loading: () => const Center(
-                  child:
-                      CircularProgressIndicator(color: AppColors.primary),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
                 error: (e, _) => Center(
                   child: Padding(
@@ -229,15 +241,14 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                       'Impossible de charger le trajet.\n$e',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                          color: AppColors.statusAlert, fontSize: 13),
+                        color: AppColors.statusAlert,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ),
                 data: (_) => positions.isEmpty
-                    ? _EmptyState(
-                        vehicleName: widget.vehicleName,
-                        date: date,
-                      )
+                    ? _EmptyState(vehicleName: widget.vehicleName, date: date)
                     : _TripPanel(stats: stats),
               ),
             ),
@@ -261,9 +272,10 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
           border: Border.all(color: Colors.white, width: 3),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 6,
-                offset: const Offset(0, 2)),
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
       ),
@@ -312,8 +324,11 @@ class _DateSelector extends ConsumerWidget {
             onTap: () => _shift(ref, -1),
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Icon(Icons.chevron_left,
-                  color: AppColors.textSecondary, size: 26),
+              child: Icon(
+                Icons.chevron_left,
+                color: AppColors.textSecondary,
+                size: 26,
+              ),
             ),
           ),
           // Date centrale
@@ -324,8 +339,11 @@ class _DateSelector extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.calendar_today_outlined,
-                        size: 14, color: AppColors.primary),
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 14,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       _formatDate(date),
@@ -355,9 +373,7 @@ class _DateSelector extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Icon(
                 Icons.chevron_right,
-                color: isToday
-                    ? AppColors.textHint
-                    : AppColors.textSecondary,
+                color: isToday ? AppColors.textHint : AppColors.textSecondary,
                 size: 26,
               ),
             ),
@@ -368,8 +384,9 @@ class _DateSelector extends ConsumerWidget {
   }
 
   void _shift(WidgetRef ref, int days) {
-    ref.read(historyDateProvider.notifier).state =
-        date.add(Duration(days: days));
+    ref.read(historyDateProvider.notifier).state = date.add(
+      Duration(days: days),
+    );
   }
 
   bool _isToday(DateTime d) {
@@ -379,8 +396,18 @@ class _DateSelector extends ConsumerWidget {
 
   String _formatDate(DateTime d) {
     const m = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${m[d.month - 1]} ${d.day}, ${d.year}';
   }
@@ -412,8 +439,7 @@ class _EmptyState extends StatelessWidget {
               color: AppColors.background,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.route,
-                size: 32, color: AppColors.textHint),
+            child: const Icon(Icons.route, size: 32, color: AppColors.textHint),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -478,11 +504,12 @@ class _TripPanel extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  border:
-                      Border.all(color: AppColors.primary, width: 1.5),
+                  border: Border.all(color: AppColors.primary, width: 1.5),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
@@ -596,10 +623,7 @@ class _StatTile extends StatelessWidget {
             Container(
               width: 42,
               height: 42,
-              decoration: BoxDecoration(
-                color: iconBg,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
               child: Icon(icon, color: iconColor, size: 20),
             ),
             const SizedBox(height: 8),
@@ -659,7 +683,8 @@ class _JourneyTimeline extends StatelessWidget {
         _TimelineItem(
           isStart: true,
           time: _hhmm(start.deviceTime),
-          label: start.address ?? 'Departure point',
+          latLng: LatLng(start.lat, start.lon),
+          fallback: start.address ?? 'Departure point',
         ),
         // Connecting line
         Padding(
@@ -672,7 +697,8 @@ class _JourneyTimeline extends StatelessWidget {
         _TimelineItem(
           isStart: false,
           time: _hhmm(end.deviceTime),
-          label: end.address ?? 'Arrival point',
+          latLng: LatLng(end.lat, end.lon),
+          fallback: end.address ?? 'Arrival point',
         ),
       ],
     );
@@ -682,19 +708,23 @@ class _JourneyTimeline extends StatelessWidget {
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 }
 
-class _TimelineItem extends StatelessWidget {
+class _TimelineItem extends ConsumerWidget {
   final bool isStart;
   final String time;
-  final String label;
+  final LatLng latLng;
+  final String fallback;
 
   const _TimelineItem({
     required this.isStart,
     required this.time,
-    required this.label,
+    required this.latLng,
+    required this.fallback,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final addressAsync = ref.watch(reverseGeocodeProvider(latLng));
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -713,7 +743,9 @@ class _TimelineItem extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                        color: const Color(0xFF5B8DEF), width: 2.5),
+                      color: const Color(0xFF5B8DEF),
+                      width: 2.5,
+                    ),
                   ),
                 ),
         ),
@@ -721,8 +753,7 @@ class _TimelineItem extends StatelessWidget {
         // Card
         Expanded(
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: AppColors.background,
               borderRadius: BorderRadius.circular(12),
@@ -730,15 +761,29 @@ class _TimelineItem extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: AppColors.primaryDark,
+                  child: addressAsync.when(
+                    data: (addr) => Text(
+                      addr ?? fallback,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: AppColors.primaryDark,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    loading: () => const Text(
+                      'Resolving...',
+                      style: TextStyle(fontSize: 13, color: AppColors.textHint),
+                    ),
+                    error: (_, __) => Text(
+                      fallback,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),

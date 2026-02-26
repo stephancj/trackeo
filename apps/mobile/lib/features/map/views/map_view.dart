@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../history/views/history_view.dart';
 import '../../vehicles/models/vehicle_model.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
+import '../../../core/providers/geocoding_provider.dart';
 
 class MapView extends ConsumerStatefulWidget {
   const MapView({super.key});
@@ -43,6 +44,8 @@ class _MapViewState extends ConsumerState<MapView> {
         allVehicles.where((v) => v.status == VehicleStatus.online).toList(),
       VehicleFilter.idle =>
         allVehicles.where((v) => v.status == VehicleStatus.idle).toList(),
+      VehicleFilter.offline =>
+        allVehicles.where((v) => v.status == VehicleStatus.offline).toList(),
       VehicleFilter.all => allVehicles,
     };
     final selected = ref.watch(selectedVehicleProvider);
@@ -68,8 +71,7 @@ class _MapViewState extends ConsumerState<MapView> {
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'mg.trackeo.app',
               ),
               // Fix : valueOrNull → jamais de flash "liste vide" pendant le polling
@@ -132,13 +134,17 @@ class _MapViewState extends ConsumerState<MapView> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2)),
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.notifications_outlined,
-                      color: AppColors.primaryDark, size: 20),
+                  child: const Icon(
+                    Icons.notifications_outlined,
+                    color: AppColors.primaryDark,
+                    size: 20,
+                  ),
                 ),
               ],
             ),
@@ -179,13 +185,17 @@ class _MapViewState extends ConsumerState<MapView> {
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2)),
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.layers,
-                      color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.layers,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 // Recenter (white circle)
@@ -199,13 +209,17 @@ class _MapViewState extends ConsumerState<MapView> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2)),
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
                       ],
                     ),
-                    child: const Icon(Icons.gps_fixed,
-                        color: AppColors.primary, size: 22),
+                    child: const Icon(
+                      Icons.gps_fixed,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
                   ),
                 ),
               ],
@@ -260,10 +274,10 @@ class _MapViewState extends ConsumerState<MapView> {
       } else {
         final avgLat =
             withPos.map((v) => v.position!.lat).reduce((a, b) => a + b) /
-                withPos.length;
+            withPos.length;
         final avgLon =
             withPos.map((v) => v.position!.lon).reduce((a, b) => a + b) /
-                withPos.length;
+            withPos.length;
         _mapController.move(LatLng(avgLat, avgLon), 12);
       }
     });
@@ -291,22 +305,28 @@ class _MapViewState extends ConsumerState<MapView> {
           child: Container(
             decoration: BoxDecoration(
               color: switch (vehicle.status) {
-                  VehicleStatus.online => AppColors.primary,
-                  VehicleStatus.idle => AppColors.statusIdle,
-                  VehicleStatus.offline => AppColors.statusOffline,
-                },
+                VehicleStatus.online => AppColors.primary,
+                VehicleStatus.idle => AppColors.statusIdle,
+                VehicleStatus.offline => AppColors.statusOffline,
+              },
               shape: BoxShape.circle,
               border: Border.all(
-                  color: Colors.white, width: isSelected ? 3 : 2),
+                color: Colors.white,
+                width: isSelected ? 3 : 2,
+              ),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2)),
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
               ],
             ),
-            child: Icon(Icons.navigation,
-                color: Colors.white, size: isSelected ? 28 : 22),
+            child: Icon(
+              Icons.navigation,
+              color: Colors.white,
+              size: isSelected ? 28 : 22,
+            ),
           ),
         ),
       ),
@@ -327,9 +347,10 @@ class _MapSearchBar extends ConsumerWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 2)),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
@@ -343,11 +364,12 @@ class _MapSearchBar extends ConsumerWidget {
               onChanged: (v) =>
                   ref.read(vehicleSearchProvider.notifier).state = v,
               style: const TextStyle(
-                  fontSize: 14, color: AppColors.textPrimary),
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
               decoration: const InputDecoration(
                 hintText: 'Find vehicle or driver...',
-                hintStyle:
-                    TextStyle(color: AppColors.textHint, fontSize: 14),
+                hintStyle: TextStyle(color: AppColors.textHint, fontSize: 14),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -361,8 +383,11 @@ class _MapSearchBar extends ConsumerWidget {
           // Icône filtre
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 14),
-            child: Icon(Icons.tune_rounded,
-                color: AppColors.textSecondary, size: 20),
+            child: Icon(
+              Icons.tune_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
           ),
         ],
       ),
@@ -380,10 +405,15 @@ class _MapFilterRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(mapFilterProvider);
     // Counts basés sur TOUS les véhicules (pas le sous-ensemble filtré)
-    final moving =
-        allVehicles.where((v) => v.status == VehicleStatus.online).length;
-    final idle =
-        allVehicles.where((v) => v.status == VehicleStatus.idle).length;
+    final moving = allVehicles
+        .where((v) => v.status == VehicleStatus.online)
+        .length;
+    final idle = allVehicles
+        .where((v) => v.status == VehicleStatus.idle)
+        .length;
+    final offline = allVehicles
+        .where((v) => v.status == VehicleStatus.offline)
+        .length;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -392,25 +422,29 @@ class _MapFilterRow extends ConsumerWidget {
           _Chip(
             label: 'All Vehicles',
             selected: filter == VehicleFilter.all,
-            onTap: () => ref
-                .read(mapFilterProvider.notifier)
-                .state = VehicleFilter.all,
+            onTap: () =>
+                ref.read(mapFilterProvider.notifier).state = VehicleFilter.all,
           ),
           const SizedBox(width: 8),
           _Chip(
             label: 'Moving ($moving)',
             selected: filter == VehicleFilter.moving,
-            onTap: () => ref
-                .read(mapFilterProvider.notifier)
-                .state = VehicleFilter.moving,
+            onTap: () => ref.read(mapFilterProvider.notifier).state =
+                VehicleFilter.moving,
           ),
           const SizedBox(width: 8),
           _Chip(
             label: 'Idle ($idle)',
             selected: filter == VehicleFilter.idle,
-            onTap: () => ref
-                .read(mapFilterProvider.notifier)
-                .state = VehicleFilter.idle,
+            onTap: () =>
+                ref.read(mapFilterProvider.notifier).state = VehicleFilter.idle,
+          ),
+          const SizedBox(width: 8),
+          _Chip(
+            label: 'Offline ($offline)',
+            selected: filter == VehicleFilter.offline,
+            onTap: () => ref.read(mapFilterProvider.notifier).state =
+                VehicleFilter.offline,
           ),
         ],
       ),
@@ -423,8 +457,11 @@ class _Chip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _Chip(
-      {required this.label, required this.selected, required this.onTap});
+  const _Chip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -438,7 +475,9 @@ class _Chip extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08), blurRadius: 6),
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 6,
+            ),
           ],
         ),
         child: Text(
@@ -457,7 +496,7 @@ class _Chip extends StatelessWidget {
 // ── Vehicle Card ─────────────────────────────────────────────────────────────
 
 /// Card bottom sheet quand un véhicule est sélectionné — design Figma exact.
-class _VehicleCard extends StatelessWidget {
+class _VehicleCard extends ConsumerWidget {
   final Vehicle vehicle;
   final VoidCallback onClose;
   final VoidCallback onHistoryTap;
@@ -469,16 +508,22 @@ class _VehicleCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final pos = vehicle.position;
     final updatedAgo = pos != null ? _timeAgo(pos.deviceTime) : null;
+
+    AsyncValue<String?>? addressAsync;
+    if (pos != null) {
+      addressAsync = ref.watch(
+        reverseGeocodeProvider(LatLng(pos.lat, pos.lon)),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.12),
@@ -513,8 +558,11 @@ class _VehicleCard extends StatelessWidget {
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.directions_car_outlined,
-                    color: AppColors.textSecondary, size: 26),
+                child: const Icon(
+                  Icons.directions_car_outlined,
+                  color: AppColors.textSecondary,
+                  size: 26,
+                ),
               ),
               const SizedBox(width: 12),
               // Nom + adresse
@@ -530,23 +578,52 @@ class _VehicleCard extends StatelessWidget {
                         color: AppColors.primaryDark,
                       ),
                     ),
-                    if (pos?.address != null) ...[
+                    if (pos != null) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined,
-                              size: 13, color: AppColors.textHint),
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 13,
+                            color: AppColors.textHint,
+                          ),
                           const SizedBox(width: 3),
                           Expanded(
-                            child: Text(
-                              pos!.address!,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            child: addressAsync != null
+                                ? addressAsync.when(
+                                    data: (address) => Text(
+                                      address ??
+                                          pos.address ??
+                                          'Location unknown',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    loading: () => const Text(
+                                      'Resolving location...',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    error: (_, __) => const Text(
+                                      'Location unknown',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Location unknown',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
                           ),
                         ],
                       ),
@@ -563,10 +640,14 @@ class _VehicleCard extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(
-                              color: AppColors.primary, width: 1.5),
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
@@ -582,8 +663,11 @@ class _VehicleCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       GestureDetector(
                         onTap: onClose,
-                        child: const Icon(Icons.close,
-                            size: 20, color: AppColors.textHint),
+                        child: const Icon(
+                          Icons.close,
+                          size: 20,
+                          color: AppColors.textHint,
+                        ),
                       ),
                     ],
                   ),
@@ -592,7 +676,9 @@ class _VehicleCard extends StatelessWidget {
                     Text(
                       'Updated $updatedAgo',
                       style: const TextStyle(
-                          fontSize: 11, color: AppColors.textHint),
+                        fontSize: 11,
+                        color: AppColors.textHint,
+                      ),
                     ),
                   ],
                 ],
@@ -698,15 +784,15 @@ class _VehicleCard extends StatelessWidget {
                   icon: const Icon(Icons.phone_rounded, size: 17),
                   label: const Text(
                     'Call Driver',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 14),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(0, 50),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
                   ),
                 ),
@@ -719,16 +805,18 @@ class _VehicleCard extends StatelessWidget {
                   icon: const Icon(Icons.history_rounded, size: 17),
                   label: const Text(
                     'History',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 14),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.textSecondary,
                     side: const BorderSide(
-                        color: AppColors.divider, width: 1.5),
+                      color: AppColors.divider,
+                      width: 1.5,
+                    ),
                     minimumSize: const Size(0, 50),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -740,10 +828,10 @@ class _VehicleCard extends StatelessWidget {
   }
 
   Color _statusColor(VehicleStatus status) => switch (status) {
-        VehicleStatus.online => AppColors.statusOnline,
-        VehicleStatus.idle => AppColors.statusIdle,
-        VehicleStatus.offline => AppColors.statusOffline,
-      };
+    VehicleStatus.online => AppColors.statusOnline,
+    VehicleStatus.idle => AppColors.statusIdle,
+    VehicleStatus.offline => AppColors.statusOffline,
+  };
 
   Color _batteryColor(int battery) {
     if (battery > 50) return AppColors.batteryGood;

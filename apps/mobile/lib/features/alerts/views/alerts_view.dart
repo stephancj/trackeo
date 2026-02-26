@@ -4,7 +4,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'package:dio/dio.dart';
 import 'dart:math' as math;
 import '../../../core/theme/app_theme.dart';
 import '../providers/alerts_provider.dart';
@@ -13,46 +12,9 @@ import '../models/geofence_model.dart';
 import '../models/alert_model.dart';
 import 'create_geofence_view.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
+import '../../../core/providers/geocoding_provider.dart';
 
-/// Reverse geocode a lat/lon via Nominatim. Result cached per unique coordinate.
-final _reverseGeocodeProvider =
-    FutureProvider.family<String?, String>((ref, key) async {
-  final parts = key.split(',');
-  final lat = double.parse(parts[0]);
-  final lon = double.parse(parts[1]);
-  try {
-    final response = await Dio().get(
-      'https://nominatim.openstreetmap.org/reverse',
-      queryParameters: {'lat': lat, 'lon': lon, 'format': 'json', 'zoom': 16},
-      options: Options(
-        headers: {'Accept-Language': 'fr', 'User-Agent': 'trackeo-app/1.0'},
-        sendTimeout: const Duration(seconds: 5),
-        receiveTimeout: const Duration(seconds: 5),
-      ),
-    );
-    final data = response.data as Map<String, dynamic>;
-    final address = data['address'] as Map<String, dynamic>?;
-    if (address != null) {
-      final road = address['road'] as String?;
-      final sub = address['suburb'] as String? ??
-          address['neighbourhood'] as String? ??
-          address['quarter'] as String?;
-      final city = address['city'] as String? ??
-          address['town'] as String? ??
-          address['village'] as String?;
-      if (road != null) {
-        final secondary = sub ?? city;
-        return secondary != null ? '$road, $secondary' : road;
-      }
-      if (sub != null) return sub;
-      if (city != null) return city;
-    }
-    final display = data['display_name'] as String?;
-    return display?.split(',').first.trim();
-  } catch (_) {
-    return null;
-  }
-});
+// Local _reverseGeocodeProvider removed in favor of global reverseGeocodeProvider
 
 class AlertsView extends ConsumerStatefulWidget {
   const AlertsView({super.key});
@@ -195,17 +157,18 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
     if (ids == null || ids.isEmpty) return null;
     final vehiclesAsync = ref.watch(vehiclesProvider);
     return vehiclesAsync.whenOrNull(
-      data: (vehicles) {
-        final names = vehicles
-            .where((v) => ids.contains(v.id))
-            .map((v) => v.name)
-            .toList();
-        if (names.isEmpty) {
-          return '${ids.length} vehicle${ids.length > 1 ? 's' : ''}';
-        }
-        return names.join(', ');
-      },
-    ) ?? '${ids.length} vehicle${ids.length > 1 ? 's' : ''}';
+          data: (vehicles) {
+            final names = vehicles
+                .where((v) => ids.contains(v.id))
+                .map((v) => v.name)
+                .toList();
+            if (names.isEmpty) {
+              return '${ids.length} vehicle${ids.length > 1 ? 's' : ''}';
+            }
+            return names.join(', ');
+          },
+        ) ??
+        '${ids.length} vehicle${ids.length > 1 ? 's' : ''}';
   }
 
   Widget _buildActiveGeofenceCard(Geofence geofence) {
@@ -222,246 +185,268 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         _showQuickActionsSheet(geofence);
       },
       child: Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Map mockup
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: SizedBox(
-              height: 140,
-              child: Stack(
-                children: [
-                  FlutterMap(
-                    options: MapOptions(
-                      initialCenter: LatLng(
-                        geofence.centerLat,
-                        geofence.centerLon,
-                      ),
-                      initialZoom: _calculateZoom(
-                        geofence.radiusM,
-                        geofence.centerLat,
-                      ),
-                      interactionOptions: const InteractionOptions(
-                        flags: InteractiveFlag.none,
-                      ),
-                    ),
-                    children: [
-                      TileLayer(
-                        urlTemplate:
-                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.trackeo.mobile',
-                      ),
-                      CircleLayer(
-                        circles: [
-                          CircleMarker(
-                            point: LatLng(
-                              geofence.centerLat,
-                              geofence.centerLon,
-                            ),
-                            color: AppColors.primary.withValues(alpha: 0.2),
-                            borderColor: AppColors.primary,
-                            borderStrokeWidth: 2,
-                            radius: geofence.radiusM,
-                            useRadiusInMeter: true,
-                          ),
-                        ],
-                      ),
-                      MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: LatLng(
-                              geofence.centerLat,
-                              geofence.centerLon,
-                            ),
-                            width: 20,
-                            height: 20,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    bottom: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.home_rounded,
-                            size: 14,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            geofence.name,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          ),
-          // Info row
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.work_rounded, color: Colors.blue),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Builder(
-                        builder: (_) {
-                          final geoKey =
-                              '${geofence.centerLat},${geofence.centerLon}';
-                          final address = ref
-                              .watch(_reverseGeocodeProvider(geoKey))
-                              .whenOrNull(data: (addr) => addr);
-                          return Text(
-                            address ?? geofence.name,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        },
+          ],
+        ),
+        child: Column(
+          children: [
+            // Map mockup
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              child: SizedBox(
+                height: 140,
+                child: Stack(
+                  children: [
+                    FlutterMap(
+                      options: MapOptions(
+                        initialCenter: LatLng(
+                          geofence.centerLat,
+                          geofence.centerLon,
+                        ),
+                        initialZoom: _calculateZoom(
+                          geofence.radiusM,
+                          geofence.centerLat,
+                        ),
+                        interactionOptions: const InteractionOptions(
+                          flags: InteractiveFlag.none,
+                        ),
                       ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Text(
-                            '${geofence.radiusM.toInt()}m radius',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textHint,
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.trackeo.mobile',
+                        ),
+                        CircleLayer(
+                          circles: [
+                            CircleMarker(
+                              point: LatLng(
+                                geofence.centerLat,
+                                geofence.centerLon,
+                              ),
+                              color: AppColors.primary.withValues(alpha: 0.2),
+                              borderColor: AppColors.primary,
+                              borderStrokeWidth: 2,
+                              radius: geofence.radiusM,
+                              useRadiusInMeter: true,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            '•',
-                            style: TextStyle(color: AppColors.textHint),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            geofence.isActive ? 'Active' : 'Inactive',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (vehicleNames != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.directions_car_rounded,
-                              size: 12,
-                              color: AppColors.textHint,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                vehicleNames,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textHint,
+                          ],
+                        ),
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: LatLng(
+                                geofence.centerLat,
+                                geofence.centerLon,
+                              ),
+                              width: 20,
+                              height: 20,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                child: Center(
+                                  child: Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ],
-                    ],
-                  ),
+                    ),
+                    Positioned(
+                      bottom: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.home_rounded,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              geofence.name,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                Switch.adaptive(
-                  value: geofence.isActive,
-                  activeColor: AppColors.primary,
-                  onChanged: (v) {
-                    ref
-                        .read(geofencesProvider.notifier)
-                        .toggleGeofence(geofence, v);
-                  },
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
-      ),  // end Container
-    );    // end GestureDetector
+            // Info row
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.work_rounded, color: Colors.blue),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Builder(
+                          builder: (context) {
+                            final addressAsync = ref.watch(
+                              reverseGeocodeProvider(
+                                LatLng(geofence.centerLat, geofence.centerLon),
+                              ),
+                            );
+                            return addressAsync.when(
+                              data: (addr) => Text(
+                                addr ?? geofence.name,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              loading: () => const Text(
+                                'Resolving location...',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              error: (_, __) => Text(
+                                geofence.name,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(
+                              '${geofence.radiusM.toInt()}m radius',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textHint,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              '•',
+                              style: TextStyle(color: AppColors.textHint),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              geofence.isActive ? 'Active' : 'Inactive',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (vehicleNames != null) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.directions_car_rounded,
+                                size: 12,
+                                color: AppColors.textHint,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  vehicleNames,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textHint,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: geofence.isActive,
+                    activeColor: AppColors.primary,
+                    onChanged: (v) {
+                      ref
+                          .read(geofencesProvider.notifier)
+                          .toggleGeofence(geofence, v);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ), // end Container
+    ); // end GestureDetector
   }
 
   void _showQuickActionsSheet(Geofence geofence) {
@@ -869,8 +854,7 @@ class _GeofenceActionsSheet extends ConsumerStatefulWidget {
       _GeofenceActionsSheetState();
 }
 
-class _GeofenceActionsSheetState
-    extends ConsumerState<_GeofenceActionsSheet> {
+class _GeofenceActionsSheetState extends ConsumerState<_GeofenceActionsSheet> {
   late Set<int> _selectedIds;
   bool _isSaving = false;
 
@@ -896,9 +880,7 @@ class _GeofenceActionsSheetState
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           'Delete zone?',
           style: TextStyle(color: AppColors.textPrimary),
@@ -1149,9 +1131,7 @@ class _GeofenceActionsSheetState
               onPressed: _isSaving ? null : _confirmDelete,
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.red,
-                side: BorderSide(
-                  color: Colors.red.withValues(alpha: 0.4),
-                ),
+                side: BorderSide(color: Colors.red.withValues(alpha: 0.4)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),

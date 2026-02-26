@@ -559,6 +559,8 @@ feature/
 - **Field naming** : les entités TypeORM utilisent camelCase (ex: `userId`, `deviceId`, `createdAt`), TypeORM sérialise en camelCase JSON — s'assurer que les modèles Flutter `fromJson` utilisent les mêmes clés (ex: `json['userId']`, pas `json['ownerId']` sauf si la colonne s'appelle `owner_id`)
 - **Geofence radiusM** : le DTO attend un entier (`@IsNumber()`) — toujours envoyer `_radius.toInt()` depuis Flutter
 - **Marqueur draggable** (flutter_map) : utiliser `GestureDetector.onPanUpdate` sur le `Marker.child` + conversion pixel→lat/lon via formule `metersPerPixel = 156543 * cos(lat * π/180) / 2^zoom`, puis `latPerPixel = metersPerPixel / 111320`
+- **Reverse Geocoding** : Toujours utiliser le provider global `reverseGeocodeProvider(LatLng)` présent dans `lib/core/providers/geocoding_provider.dart`. Il gère le cache et évite de surcharger l'API Nominatim.
+- **Design System** : Pour les éléments "pill-shaped" (barres de recherche, chips), utiliser `BorderRadius.circular(24)`. Les icônes de véhicules doivent utiliser les couleurs thématiques du mapping dans `VehicleCard` (pastel backgrounds).
 
 ---
 
@@ -581,6 +583,9 @@ feature/
 - [x] Fix Flutter : `Geofence.fromJson` utilise `userId` (était `ownerId`)
 - [x] Flutter Alerts : vue geofences + alertes, empty states premium, couleurs par type
 - [x] Flutter Create Geofence : marqueur draggable (pan gesture), tap-to-place, bouton centrer, zoom ±, coordonnées chip, submit correct (`radiusM.toInt()`)
+- [x] UI Refinement : Design "pill-shaped" (radius 24) pour search bars et chips, counts par filtre (All, Moving, Idle, Offline)
+- [x] Vehicle Card : Couleurs par catégorie, intégration `timeago` pour statuts relatifs (Seen X ago, X stopped)
+- [x] Reverse Geocoding : Implementation globale (provider + cache) intégrée dans Liste, Carte, Historique et Alertes
 
 ### 🔲 À faire (S13-S16 — Déploiement VPS)
 - [ ] API Admin / Interface Next.js

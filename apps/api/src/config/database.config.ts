@@ -8,7 +8,7 @@ import { Alert } from '../alerts/entities/alert.entity';
 import * as pg from 'pg';
 
 // Force parsing of 'timestamp without time zone' (OID 1114) as UTC.
-pg.types.setTypeParser(1114, str => new Date(str + 'Z'));
+pg.types.setTypeParser(1114, (str) => new Date(str + 'Z'));
 
 export default (): TypeOrmModuleOptions => ({
   type: 'postgres',

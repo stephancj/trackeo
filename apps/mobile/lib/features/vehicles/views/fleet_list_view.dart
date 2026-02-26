@@ -41,10 +41,11 @@ class FleetListView extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            '${v.where((x) => x.status != VehicleStatus.offline).length} Active Devices',
+                            '${v.where((x) => x.status != VehicleStatus.offline).length} Active Vehicles',
                             style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary),
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ],
                       ),
@@ -53,8 +54,11 @@ class FleetListView extends ConsumerWidget {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.tune,
-                        color: AppColors.primaryDark, size: 22),
+                    icon: const Icon(
+                      Icons.tune,
+                      color: AppColors.primaryDark,
+                      size: 22,
+                    ),
                     onPressed: () {},
                   ),
                 ],
@@ -80,29 +84,38 @@ class FleetListView extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
                     _FilterTab(
-                      label: 'All Vehicles',
+                      label: 'All Vehicles (${v.length})',
                       isSelected: filter == VehicleFilter.all,
-                      onTap: () => ref
-                          .read(vehicleFilterProvider.notifier)
-                          .state = VehicleFilter.all,
+                      onTap: () =>
+                          ref.read(vehicleFilterProvider.notifier).state =
+                              VehicleFilter.all,
                     ),
                     const SizedBox(width: 8),
                     _FilterTab(
                       label:
                           'Moving (${v.where((x) => x.status == VehicleStatus.online).length})',
                       isSelected: filter == VehicleFilter.moving,
-                      onTap: () => ref
-                          .read(vehicleFilterProvider.notifier)
-                          .state = VehicleFilter.moving,
+                      onTap: () =>
+                          ref.read(vehicleFilterProvider.notifier).state =
+                              VehicleFilter.moving,
                     ),
                     const SizedBox(width: 8),
                     _FilterTab(
                       label:
                           'Idle (${v.where((x) => x.status == VehicleStatus.idle).length})',
                       isSelected: filter == VehicleFilter.idle,
-                      onTap: () => ref
-                          .read(vehicleFilterProvider.notifier)
-                          .state = VehicleFilter.idle,
+                      onTap: () =>
+                          ref.read(vehicleFilterProvider.notifier).state =
+                              VehicleFilter.idle,
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterTab(
+                      label:
+                          'Offline (${v.where((x) => x.status == VehicleStatus.offline).length})',
+                      isSelected: filter == VehicleFilter.offline,
+                      onTap: () =>
+                          ref.read(vehicleFilterProvider.notifier).state =
+                              VehicleFilter.offline,
                     ),
                   ],
                 ),
@@ -119,7 +132,8 @@ class FleetListView extends ConsumerWidget {
                 data: (vehicles) {
                   if (vehicles.isEmpty) {
                     return _EmptyState(
-                      hasFilter: filter != VehicleFilter.all ||
+                      hasFilter:
+                          filter != VehicleFilter.all ||
                           ref.watch(vehicleSearchProvider).isNotEmpty,
                       onClear: () {
                         ref.read(vehicleFilterProvider.notifier).state =
@@ -137,9 +151,8 @@ class FleetListView extends ConsumerWidget {
                       itemBuilder: (_, i) => VehicleCard(
                         vehicle: vehicles[i],
                         onTap: () {
-                          ref
-                              .read(selectedVehicleIdProvider.notifier)
-                              .state = vehicles[i].id;
+                          ref.read(selectedVehicleIdProvider.notifier).state =
+                              vehicles[i].id;
                           // Switch to Map tab so the vehicle card popup appears
                           ref.read(activeTabProvider.notifier).state = 1;
                         },
@@ -148,8 +161,7 @@ class FleetListView extends ConsumerWidget {
                   );
                 },
                 loading: () => const Center(
-                  child:
-                      CircularProgressIndicator(color: AppColors.primary),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
                 error: (e, _) => _ErrorState(
                   onRetry: () => ref.invalidate(vehiclesProvider),
@@ -171,23 +183,20 @@ class _SearchBar extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.divider),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: TextField(
-        onChanged: (v) =>
-            ref.read(vehicleSearchProvider.notifier).state = v,
+        onChanged: (v) => ref.read(vehicleSearchProvider.notifier).state = v,
         decoration: const InputDecoration(
-          hintText: 'Find vehicle or driver...',
-          prefixIcon:
-              Icon(Icons.search, color: AppColors.textHint, size: 20),
+          hintText: 'Search by name or plate number...',
+          prefixIcon: Icon(Icons.search, color: AppColors.textHint, size: 20),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
           fillColor: Colors.transparent,
           filled: true,
-          contentPadding:
-              EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );
@@ -199,10 +208,11 @@ class _FilterTab extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _FilterTab(
-      {required this.label,
-      required this.isSelected,
-      required this.onTap});
+  const _FilterTab({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -210,24 +220,22 @@ class _FilterTab extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color:
-              isSelected ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? AppColors.primaryDark : AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color:
-                isSelected ? AppColors.primary : AppColors.divider,
+            color: isSelected
+                ? AppColors.primaryDark
+                : AppColors.divider.withValues(alpha: 0.5),
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
-            color:
-                isSelected ? Colors.white : AppColors.textSecondary,
+            color: isSelected ? Colors.white : AppColors.textPrimary,
           ),
         ),
       ),
@@ -247,21 +255,30 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.directions_car_outlined,
-              size: 56, color: AppColors.textHint),
+          const Icon(
+            Icons.directions_car_outlined,
+            size: 56,
+            color: AppColors.textHint,
+          ),
           const SizedBox(height: 12),
-          const Text('Aucun véhicule trouvé',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary)),
+          const Text(
+            'Aucun véhicule trouvé',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+          ),
           if (hasFilter) ...[
             const SizedBox(height: 12),
             TextButton(
-                onPressed: onClear,
-                child: const Text('Effacer les filtres',
-                    style: TextStyle(color: AppColors.primary))),
-          ]
+              onPressed: onClear,
+              child: const Text(
+                'Effacer les filtres',
+                style: TextStyle(color: AppColors.primary),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -280,8 +297,10 @@ class _ErrorState extends StatelessWidget {
         children: [
           const Icon(Icons.wifi_off, size: 56, color: AppColors.textHint),
           const SizedBox(height: 12),
-          const Text('Impossible de charger les véhicules',
-              style: TextStyle(color: AppColors.textSecondary)),
+          const Text(
+            'Impossible de charger les véhicules',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: onRetry,

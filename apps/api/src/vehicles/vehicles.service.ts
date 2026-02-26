@@ -71,7 +71,9 @@ export class VehiclesService {
     let lastSeen: Date | null = device.lastUpdate;
 
     if (device.positionid) {
-      const pos = await this.positionsService.getPositionById(device.positionid);
+      const pos = await this.positionsService.getPositionById(
+        device.positionid,
+      );
       if (pos) {
         position = this.toVehiclePosition(pos);
         if (!lastSeen) lastSeen = pos.serverTime ?? pos.deviceTime;
@@ -91,7 +93,11 @@ export class VehiclesService {
       id: device.id,
       name: device.name,
       plate: device.uniqueId,
-      status: this.computeStatus(position?.speedKmh ?? 0, lastSeen, device.status),
+      status: this.computeStatus(
+        position?.speedKmh ?? 0,
+        lastSeen,
+        device.status,
+      ),
       lastUpdate: device.lastUpdate,
       position,
     };
