@@ -13,7 +13,11 @@ export class GeofencesCheckerService {
     private readonly geofencesService: GeofencesService,
     private readonly vehiclesService: VehiclesService,
     private readonly alertsService: AlertsService,
-  ) {}
+  ) { }
+
+  // Cache en mémoire pour éviter le spam et les requêtes DB.
+  // Clé: "{vehicleId}_{geofenceId}", Valeur: boolean (true = inside)
+  private readonly insideGeofencesCache = new Map<string, boolean>();
 
   @Cron('*/15 * * * * *') // Run every 15 seconds
   async checkGeofences() {
@@ -52,22 +56,12 @@ export class GeofencesCheckerService {
 
           const isInside = distanceM <= fence.radiusM;
 
-          // Find latest alert for this device to determine its state (inside or outside?)
-          // Actually, we can check the latest Alert event type (GEOFENCE_ENTER or GEOFENCE_EXIT)
-          const lastEnter = await this.alertsService.findActiveByDeviceAndType(
-            vehicle.id,
-            AlertType.GEOFENCE_ENTER,
-          );
-          const lastExit = await this.alertsService.findActiveByDeviceAndType(
-            vehicle.id,
-            AlertType.GEOFENCE_EXIT,
-          );
-
-          const wasInside =
-            lastEnter &&
-            (!lastExit || lastEnter.createdAt > lastExit.createdAt);
+          const cacheKey = `${vehicle.id}_${fence.id}`;
+          const wasInside = this.insideGeofencesCache.get(cacheKey) ?? false;
 
           if (isInside && !wasInside) {
+            // Mise à jour du cache
+            this.insideGeofencesCache.set(cacheKey, true);
             this.logger.log(
               `🚗 Véhicule ${vehicle.name} ENTERED geofence ${fence.name}`,
             );
@@ -78,6 +72,8 @@ export class GeofencesCheckerService {
               `Le véhicule ${vehicle.name} est entré dans la zone ${fence.name}`,
             );
           } else if (!isInside && wasInside) {
+            // Mise à jour du cache
+            this.insideGeofencesCache.set(cacheKey, false);
             this.logger.log(
               `🚗 Véhicule ${vehicle.name} EXITED geofence ${fence.name}`,
             );
@@ -108,9 +104,9 @@ export class GeofencesCheckerService {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(this.deg2rad(lat1)) *
-        Math.cos(this.deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos(this.deg2rad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }

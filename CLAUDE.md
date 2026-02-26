@@ -55,7 +55,7 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 - Stats trip (distance Haversine, durée, vitesse max)
 - ⚠️ Pas d'algorithme de segmentation — points bruts reliés par polyligne
 
-#### ✅ Geofencing basique
+- ✅ Geofencing basique
 - ✅ Création de zone en base et API (cercle, rayon)
 - ✅ Vérification : "Le dernier point est-il hors du cercle ?" (via Cron et algorithme Haversine)
 - ✅ Alertes d'entrée/sortie (`GEOFENCE_ENTER`, `GEOFENCE_EXIT`) insérées dans la base
@@ -64,6 +64,8 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 - ✅ Flutter : UI geofences + alertes (liste, vide premium)
 - ✅ Flutter : Création de geofence avec marqueur draggable, tap-to-place, bouton centrer
 - ✅ Flutter : taille du cercle a adapter avec le zoom de la carte et slider (geofence view)
+- ✅ **Optimisation Backend** : Cache en mémoire (`insideGeofencesCache`) pour éviter le spam d'alertes multiples et supprimer la surcharge de requêtes `SELECT` sur PostgreSQL.
+- ✅ **Correction Timezone** : Forçage explicite du driver `pg` Node.js en UTC (`pg.types.setTypeParser(1114)`) pour éviter les faux statuts "offline" dus aux décalages horaires locaux vs serveur Traccar.
 - 🔲 Notifications push + WhatsApp
 - 🔲 PostGIS `ST_Contains` pour polygones (workaround avec rayon circulaire 100% fonctionnel)
 
