@@ -3,6 +3,7 @@ import { Device } from '../devices/device.entity';
 import { Position } from '../positions/position.entity';
 import { User } from '../users/user.entity';
 import { DeviceAssignment } from '../admin/device-assignment.entity';
+import { Subscription } from '../admin/subscription.entity';
 import { Geofence } from '../geofences/entities/geofence.entity';
 import { Alert } from '../alerts/entities/alert.entity';
 import * as pg from 'pg';
@@ -17,7 +18,7 @@ export default (): TypeOrmModuleOptions => ({
   username: process.env.DB_USER ?? 'trackeo',
   password: process.env.DB_PASS ?? 'Password_1234',
   database: process.env.DB_NAME ?? 'traccar_db',
-  entities: [Device, Position, User, DeviceAssignment, Geofence, Alert],
+  entities: [Device, Position, User, DeviceAssignment, Subscription, Geofence, Alert],
   // migrations exclues du runtime — lancées manuellement via `npm run migration:run`
   synchronize: false,
   logging: ['error'],

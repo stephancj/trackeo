@@ -67,6 +67,57 @@ export class PositionsService {
     return positions.map((pos) => this.toDto(pos));
   }
 
+  /**
+   * Calcule la distance totale parcourue (km) par un device sur une période.
+   * Utilise la formule Haversine. Filtre les sauts > 5 km (GPS glitch).
+   */
+  async getDistanceSummary(
+    deviceId: number,
+    from: Date,
+    to: Date,
+  ): Promise<{ distanceKm: number; pointCount: number; maxSpeedKmh: number }> {
+    const positions = await this.positionRepo.find({
+      where: { deviceId, deviceTime: Between(from, to), valid: true },
+      order: { deviceTime: 'ASC' },
+      take: 10000,
+    });
+
+    let distanceKm = 0;
+    let maxSpeedKmh = 0;
+
+    for (let i = 1; i < positions.length; i++) {
+      const prev = positions[i - 1];
+      const curr = positions[i];
+      const d = this.haversine(
+        prev.latitude,
+        prev.longitude,
+        curr.latitude,
+        curr.longitude,
+      );
+      if (d < 5) distanceKm += d; // skip GPS glitches > 5 km
+      const spd = Math.round((curr.speed ?? 0) * 1.852 * 10) / 10;
+      if (spd > maxSpeedKmh) maxSpeedKmh = spd;
+    }
+
+    return {
+      distanceKm: Math.round(distanceKm * 10) / 10,
+      pointCount: positions.length,
+      maxSpeedKmh,
+    };
+  }
+
+  private haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
   /** Convertit l'entité en DTO propre (nœuds → km/h, JSON attributes…) */
   private toDto(pos: Position): PositionDto {
     let attributes: Record<string, unknown> | null = null;

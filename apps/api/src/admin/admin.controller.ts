@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
   ParseIntPipe,
   HttpCode,
@@ -124,5 +125,42 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   ackAlert(@Param('id') id: string) {
     return this.adminService.ackAlert(id);
+  }
+
+  // ── Reports ───────────────────────────────────────────────────────────────
+
+  @Get('reports/overview')
+  getReportsOverview() {
+    return this.adminService.getReportsOverview();
+  }
+
+  @Get('reports/vehicles')
+  getVehicleReports(
+    @Query('period') period: 'today' | '7d' | '30d' = '7d',
+  ) {
+    return this.adminService.getVehicleReports(period);
+  }
+
+  // ── Subscriptions ─────────────────────────────────────────────────────────
+
+  @Get('subscriptions')
+  listSubscriptions() {
+    return this.adminService.listSubscriptions();
+  }
+
+  @Patch('subscriptions/:userId')
+  @HttpCode(HttpStatus.OK)
+  upsertSubscription(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body()
+    body: {
+      plan?: string;
+      status?: string;
+      nextBillingDate?: string | null;
+      trialEndsAt?: string | null;
+      notes?: string | null;
+    },
+  ) {
+    return this.adminService.upsertSubscription(userId, body as Parameters<AdminService['upsertSubscription']>[1]);
   }
 }

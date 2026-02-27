@@ -53,3 +53,21 @@ export const deleteGeofence = (id: string) => api.delete(`/admin/geofences/${id}
 // Alerts
 export const getAlerts = () => api.get("/admin/alerts");
 export const ackAlert = (id: string) => api.patch(`/admin/alerts/${id}`);
+
+// Reports
+export const getReportsOverview = () => api.get("/admin/reports/overview");
+export const getVehicleReports = (period: "today" | "7d" | "30d") =>
+  api.get(`/admin/reports/vehicles?period=${period}`);
+
+// Subscriptions
+export const getSubscriptions = () => api.get("/admin/subscriptions");
+export const upsertSubscription = (
+  userId: number,
+  data: {
+    plan?: string;
+    status?: string;
+    nextBillingDate?: string | null;
+    trialEndsAt?: string | null;
+    notes?: string | null;
+  }
+) => api.patch(`/admin/subscriptions/${userId}`, data);
