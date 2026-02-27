@@ -21,7 +21,7 @@ export class VehiclesController {
   constructor(
     private readonly vehiclesService: VehiclesService,
     private readonly positionsService: PositionsService,
-  ) { }
+  ) {}
 
   /**
    * GET /api/vehicles

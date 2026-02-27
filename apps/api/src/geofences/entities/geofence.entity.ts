@@ -32,6 +32,15 @@ export class Geofence {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
+  @Column({ name: 'alert_on_entry', default: true })
+  alertOnEntry: boolean;
+
+  @Column({ name: 'alert_on_exit', default: true })
+  alertOnExit: boolean;
+
+  @Column({ name: 'alert_via_whatsapp', default: false })
+  alertViaWhatsapp: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

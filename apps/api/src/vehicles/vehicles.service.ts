@@ -9,7 +9,7 @@ export class VehiclesService {
   constructor(
     private readonly devicesService: DevicesService,
     private readonly positionsService: PositionsService,
-  ) { }
+  ) {}
 
   /**
    * Retourne tous les véhicules enrichis avec leur dernière position.

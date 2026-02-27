@@ -1,11 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { GeofencesService } from './geofences.service';
 import { VehiclesService } from '../vehicles/vehicles.service';
 import { AlertsService } from '../alerts/alerts.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UsersService } from '../users/users.service';
 import { AlertType } from '../alerts/entities/alert.entity';
+import { DeviceAssignment } from '../admin/device-assignment.entity';
+
+interface AlertSettings {
+  alertsEnabled: boolean;
+  alertSos: boolean;
+  alertLowBattery: boolean;
+  alertSpeedLimit: boolean;
+  alertViaPush: boolean;
+  alertViaWhatsapp: boolean;
+}
 
 @Injectable()
 export class GeofencesCheckerService {
@@ -17,6 +29,8 @@ export class GeofencesCheckerService {
     private readonly alertsService: AlertsService,
     private readonly notificationsService: NotificationsService,
     private readonly usersService: UsersService,
+    @InjectRepository(DeviceAssignment)
+    private readonly assignmentRepo: Repository<DeviceAssignment>,
   ) {}
 
   // Cache en mémoire pour éviter le spam et les requêtes DB.
@@ -25,6 +39,12 @@ export class GeofencesCheckerService {
 
   // Cache du subscription ID OneSignal par userId (évite un SELECT à chaque alerte)
   private readonly subIdCache = new Map<number, string | null>();
+
+  // Cache du numéro de téléphone par userId
+  private readonly phoneCache = new Map<number, string | null>();
+
+  // Cache des paramètres d'alerte par userId
+  private readonly alertSettingsCache = new Map<number, AlertSettings>();
 
   @Cron('*/15 * * * * *')
   async checkGeofences() {
@@ -45,6 +65,12 @@ export class GeofencesCheckerService {
             continue;
           }
 
+          // Alert settings belong to the fence owner, not the vehicle
+          const userAlertSettings = await this.getUserAlertSettings(
+            fence.userId,
+          );
+          if (!userAlertSettings.alertsEnabled) continue;
+
           const distanceM = this.getDistanceFromLatLonInM(
             vehicle.position.lat,
             vehicle.position.lon,
@@ -58,6 +84,9 @@ export class GeofencesCheckerService {
 
           if (isInside && !wasInside) {
             this.insideGeofencesCache.set(cacheKey, true);
+
+            if (!fence.alertOnEntry) continue;
+
             this.logger.log(`🚗 ${vehicle.name} ENTERED ${fence.name}`);
 
             await this.alertsService.createAlert(
@@ -67,20 +96,34 @@ export class GeofencesCheckerService {
               `${vehicle.name} est entré dans la zone ${fence.name}`,
             );
 
-            const subscriptionId = await this.getUserSubId(fence.userId);
-            await this.notificationsService.sendPush({
-              externalUserId: fence.userId.toString(),
-              subscriptionId: subscriptionId ?? undefined,
-              title: '🟢 Entrée de zone',
-              body: `${vehicle.name} est entré dans la zone "${fence.name}"`,
-              data: {
-                type: 'geofence_enter',
-                vehicleId: vehicle.id.toString(),
-                geofenceName: fence.name,
-              },
-            });
+            if (userAlertSettings.alertViaPush) {
+              const subscriptionId = await this.getUserSubId(fence.userId);
+              await this.notificationsService.sendPush({
+                externalUserId: fence.userId.toString(),
+                subscriptionId: subscriptionId ?? undefined,
+                title: '🟢 Entrée de zone',
+                body: `${vehicle.name} est entré dans la zone "${fence.name}"`,
+                data: {
+                  type: 'geofence_enter',
+                  vehicleId: vehicle.id.toString(),
+                  geofenceName: fence.name,
+                },
+              });
+            }
+
+            if (userAlertSettings.alertViaWhatsapp) {
+              await this.sendWhatsAppIfEnabled(
+                fence.userId,
+                vehicle.name,
+                fence.name,
+                'enter',
+              );
+            }
           } else if (!isInside && wasInside) {
             this.insideGeofencesCache.set(cacheKey, false);
+
+            if (!fence.alertOnExit) continue;
+
             this.logger.log(`🚗 ${vehicle.name} EXITED ${fence.name}`);
 
             await this.alertsService.createAlert(
@@ -90,18 +133,29 @@ export class GeofencesCheckerService {
               `${vehicle.name} a quitté la zone ${fence.name}`,
             );
 
-            const subscriptionId = await this.getUserSubId(fence.userId);
-            await this.notificationsService.sendPush({
-              externalUserId: fence.userId.toString(),
-              subscriptionId: subscriptionId ?? undefined,
-              title: '🔴 Sortie de zone',
-              body: `${vehicle.name} a quitté la zone "${fence.name}"`,
-              data: {
-                type: 'geofence_exit',
-                vehicleId: vehicle.id.toString(),
-                geofenceName: fence.name,
-              },
-            });
+            if (userAlertSettings.alertViaPush) {
+              const subscriptionId = await this.getUserSubId(fence.userId);
+              await this.notificationsService.sendPush({
+                externalUserId: fence.userId.toString(),
+                subscriptionId: subscriptionId ?? undefined,
+                title: '🔴 Sortie de zone',
+                body: `${vehicle.name} a quitté la zone "${fence.name}"`,
+                data: {
+                  type: 'geofence_exit',
+                  vehicleId: vehicle.id.toString(),
+                  geofenceName: fence.name,
+                },
+              });
+            }
+
+            if (userAlertSettings.alertViaWhatsapp) {
+              await this.sendWhatsAppIfEnabled(
+                fence.userId,
+                vehicle.name,
+                fence.name,
+                'exit',
+              );
+            }
           }
         }
       }
@@ -110,10 +164,120 @@ export class GeofencesCheckerService {
     }
   }
 
+  // Cache pour éviter le spam d'alertes (clé: vehicleId_alertType)
+  private readonly lastAlertCache = new Map<string, Date>();
+
+  @Cron('*/30 * * * * *')
+  async checkVehicleAlerts() {
+    this.logger.debug('Vérification des alertes véhicule...');
+    try {
+      const vehicles = await this.vehiclesService.findAll();
+
+      // Build deviceId → userId map from assignments table
+      const assignments = await this.assignmentRepo.find();
+      const deviceUserMap = new Map(
+        assignments.map((a) => [a.deviceId, a.userId]),
+      );
+
+      for (const vehicle of vehicles) {
+        if (!vehicle.position || vehicle.status === 'offline') continue;
+
+        const userId = deviceUserMap.get(vehicle.id);
+        if (!userId) continue;
+
+        const userAlertSettings = await this.getUserAlertSettings(userId);
+        if (!userAlertSettings.alertsEnabled) continue;
+
+        // Low Battery Alert
+        if (
+          userAlertSettings.alertLowBattery &&
+          vehicle.position.battery != null &&
+          vehicle.position.battery < 20
+        ) {
+          await this.sendAlertIfNotSpammed(
+            userId,
+            vehicle.id,
+            vehicle.name,
+            AlertType.LOW_BATTERY,
+            `Batterie faible: ${vehicle.position.battery}%`,
+            userAlertSettings,
+          );
+        }
+
+        // Speed Limit Alert
+        if (
+          userAlertSettings.alertSpeedLimit &&
+          vehicle.position.speedKmh != null &&
+          vehicle.position.speedKmh > 120
+        ) {
+          await this.sendAlertIfNotSpammed(
+            userId,
+            vehicle.id,
+            vehicle.name,
+            AlertType.SPEED_LIMIT,
+            `Vitesse excessive: ${vehicle.position.speedKmh} km/h`,
+            userAlertSettings,
+          );
+        }
+      }
+    } catch (e) {
+      this.logger.error('Erreur lors du check alerts véhicule', e);
+    }
+  }
+
+  private async sendAlertIfNotSpammed(
+    userId: number,
+    vehicleId: number,
+    vehicleName: string,
+    alertType: AlertType,
+    message: string,
+    settings: AlertSettings,
+  ): Promise<void> {
+    const cacheKey = `${vehicleId}_${alertType}`;
+    const lastAlert = this.lastAlertCache.get(cacheKey);
+    const now = new Date();
+
+    // Éviter le spam: une alerte toutes les 5 minutes max
+    if (lastAlert && now.getTime() - lastAlert.getTime() < 5 * 60 * 1000) {
+      return;
+    }
+
+    this.lastAlertCache.set(cacheKey, now);
+    this.logger.log(`🚨 ${vehicleName} ${alertType}: ${message}`);
+
+    await this.alertsService.createAlert(userId, vehicleId, alertType, message);
+
+    if (settings.alertViaPush) {
+      const subscriptionId = await this.getUserSubId(userId);
+      const title =
+        alertType === AlertType.LOW_BATTERY
+          ? '🔋 Batterie faible'
+          : '⚡ Vitesse excessive';
+      await this.notificationsService.sendPush({
+        externalUserId: userId.toString(),
+        subscriptionId: subscriptionId ?? undefined,
+        title,
+        body: `${vehicleName}: ${message}`,
+        data: {
+          type: alertType,
+          vehicleId: vehicleId.toString(),
+        },
+      });
+    }
+
+    if (settings.alertViaWhatsapp) {
+      await this.sendWhatsAppIfEnabled(
+        userId,
+        vehicleName,
+        message,
+        alertType === AlertType.LOW_BATTERY ? 'enter' : 'exit',
+      );
+    }
+  }
+
   /**
    * Retourne le subscription ID OneSignal de l'utilisateur.
    * Met en cache le résultat pour éviter les requêtes DB répétitives.
-   * Cache invalidé au redémarrage du serveur — acceptable en MVP.
    */
   private async getUserSubId(userId: number): Promise<string | null> {
     if (this.subIdCache.has(userId)) {
@@ -123,6 +287,65 @@ export class GeofencesCheckerService {
     const subId = user?.onesignalSubId ?? null;
     this.subIdCache.set(userId, subId);
     return subId;
+  }
+
+  /**
+   * Retourne le numéro de téléphone de l'utilisateur.
+   * Met en cache le résultat pour éviter les requêtes DB répétitives.
+   */
+  private async getUserPhone(userId: number): Promise<string | null> {
+    if (this.phoneCache.has(userId)) {
+      return this.phoneCache.get(userId) ?? null;
+    }
+    const user = await this.usersService.findById(userId);
+    const phone = user?.phone ?? null;
+    this.phoneCache.set(userId, phone);
+    return phone;
+  }
+
+  /**
+   * Retourne les paramètres d'alerte de l'utilisateur.
+   * Met en cache le résultat pour éviter les requêtes DB répétitives.
+   */
+  private async getUserAlertSettings(userId: number): Promise<AlertSettings> {
+    if (this.alertSettingsCache.has(userId)) {
+      return this.alertSettingsCache.get(userId)!;
+    }
+    const user = await this.usersService.findById(userId);
+    const settings: AlertSettings = {
+      alertsEnabled: user?.alertsEnabled ?? true,
+      alertSos: user?.alertSos ?? true,
+      alertLowBattery: user?.alertLowBattery ?? true,
+      alertSpeedLimit: user?.alertSpeedLimit ?? false,
+      alertViaPush: user?.alertViaPush ?? true,
+      alertViaWhatsapp: user?.alertViaWhatsapp ?? false,
+    };
+    this.alertSettingsCache.set(userId, settings);
+    return settings;
+  }
+
+  /**
+   * Envoie une notification WhatsApp si l'utilisateur a un numéro de téléphone configuré.
+   */
+  private async sendWhatsAppIfEnabled(
+    userId: number,
+    vehicleName: string,
+    alertMessage: string,
+    alertType: 'enter' | 'exit',
+  ): Promise<void> {
+    const phone = await this.getUserPhone(userId);
+    if (!phone) {
+      this.logger.warn(
+        `User ${userId} n'a pas de numéro de téléphone pour WhatsApp`,
+      );
+      return;
+    }
+    await this.notificationsService.sendWhatsApp({
+      phone,
+      vehicleName,
+      geofenceName: alertMessage,
+      alertType,
+    });
   }
 
   private getDistanceFromLatLonInM(

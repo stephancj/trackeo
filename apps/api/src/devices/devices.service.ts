@@ -8,7 +8,7 @@ export class DevicesService {
   constructor(
     @InjectRepository(Device)
     private readonly deviceRepo: Repository<Device>,
-  ) { }
+  ) {}
 
   findAll(): Promise<Device[]> {
     return this.deviceRepo.find({ order: { id: 'ASC' } });

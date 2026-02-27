@@ -27,6 +27,18 @@ export class CreateGeofenceDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertOnEntry?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertOnExit?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertViaWhatsapp?: boolean;
 }
 
 export class UpdateGeofenceDto {
@@ -54,4 +66,16 @@ export class UpdateGeofenceDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertOnEntry?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertOnExit?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertViaWhatsapp?: boolean;
 }

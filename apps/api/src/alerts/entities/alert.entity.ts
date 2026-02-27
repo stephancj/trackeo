@@ -8,6 +8,9 @@ import {
 export enum AlertType {
   GEOFENCE_ENTER = 'geofence_enter',
   GEOFENCE_EXIT = 'geofence_exit',
+  SOS = 'sos',
+  LOW_BATTERY = 'low_battery',
+  SPEED_LIMIT = 'speed_limit',
 }
 
 @Entity({ name: 'alerts' })
