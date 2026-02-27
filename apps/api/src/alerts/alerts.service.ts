@@ -43,4 +43,9 @@ export class AlertsService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  /** Admin — toutes les alertes sans filtre utilisateur */
+  async findAll(): Promise<Alert[]> {
+    return this.alertsRepository.find({ order: { createdAt: 'DESC' } });
+  }
 }

@@ -62,4 +62,17 @@ export class GeofencesService {
     const geofence = await this.findOne(id, userId);
     await this.geofencesRepository.remove(geofence);
   }
+
+  /** Admin — toutes les geofences sans filtre utilisateur */
+  async findAll(): Promise<Geofence[]> {
+    return this.geofencesRepository.find({ order: { createdAt: 'DESC' } });
+  }
+
+  /** Admin — supprime une geofence sans vérification d'ownership */
+  async removeByIdAdmin(id: string): Promise<void> {
+    const result = await this.geofencesRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Geofence ${id} not found`);
+    }
+  }
 }

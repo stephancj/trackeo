@@ -4,7 +4,9 @@ import { Repository } from 'typeorm';
 import { DeviceAssignment } from './device-assignment.entity';
 import { UsersService } from '../users/users.service';
 import { DevicesService } from '../devices/devices.service';
-import { CreateUserDto } from './admin.dto';
+import { GeofencesService } from '../geofences/geofences.service';
+import { AlertsService } from '../alerts/alerts.service';
+import { CreateUserDto, UpdateUserDto } from './admin.dto';
 import { UserRole } from '../users/user.entity';
 
 @Injectable()
@@ -14,6 +16,8 @@ export class AdminService {
     private readonly assignmentRepo: Repository<DeviceAssignment>,
     private readonly usersService: UsersService,
     private readonly devicesService: DevicesService,
+    private readonly geofencesService: GeofencesService,
+    private readonly alertsService: AlertsService,
   ) {}
 
   // ── Users ────────────────────────────────────────────────────────────────
@@ -29,6 +33,18 @@ export class AdminService {
       name: dto.name,
       role: dto.role ?? UserRole.USER,
     });
+  }
+
+  async updateUser(userId: number, dto: UpdateUserDto) {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new NotFoundException(`User ${userId} not found`);
+    return this.usersService.adminUpdate(userId, dto);
+  }
+
+  async deactivateUser(userId: number) {
+    const user = await this.usersService.findById(userId);
+    if (!user) throw new NotFoundException(`User ${userId} not found`);
+    return this.usersService.adminUpdate(userId, { isActive: false });
   }
 
   // ── Devices ──────────────────────────────────────────────────────────────
@@ -53,15 +69,11 @@ export class AdminService {
   // ── Assignments ───────────────────────────────────────────────────────────
 
   async assignDevice(deviceId: number, userId: number) {
-    // Vérifie que le device et l'user existent
     await this.devicesService.findOne(deviceId);
     const user = await this.usersService.findById(userId);
     if (!user) throw new NotFoundException(`User ${userId} not found`);
 
-    // Upsert : un device ne peut avoir qu'un seul owner
-    const existing = await this.assignmentRepo.findOne({
-      where: { deviceId },
-    });
+    const existing = await this.assignmentRepo.findOne({ where: { deviceId } });
 
     if (existing) {
       existing.userId = userId;
@@ -86,5 +98,21 @@ export class AdminService {
   async getDeviceIdsForUser(userId: number): Promise<number[]> {
     const assignments = await this.assignmentRepo.find({ where: { userId } });
     return assignments.map((a) => a.deviceId);
+  }
+
+  // ── Geofences ────────────────────────────────────────────────────────────
+
+  listGeofences() {
+    return this.geofencesService.findAll();
+  }
+
+  removeGeofence(id: string) {
+    return this.geofencesService.removeByIdAdmin(id);
+  }
+
+  // ── Alerts ───────────────────────────────────────────────────────────────
+
+  listAlerts() {
+    return this.alertsService.findAll();
   }
 }

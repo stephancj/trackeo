@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Param,
   Body,
@@ -14,33 +15,23 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { AdminService } from './admin.service';
-import { CreateUserDto } from './admin.dto';
+import { CreateUserDto, UpdateUserDto } from './admin.dto';
 
 /**
  * Routes admin — accessibles uniquement aux users avec role = 'admin'.
  * Toutes les routes sont protégées par JwtAuthGuard + RolesGuard.
  *
- * Exemples d'appels curl :
- *
- *   # Lister les users
- *   curl -H "Authorization: Bearer <token>" http://localhost:3000/api/admin/users
- *
- *   # Créer un owner
- *   curl -X POST -H "Authorization: Bearer <token>" \
- *        -H "Content-Type: application/json" \
- *        -d '{"email":"owner@test.com","password":"motdepasse","name":"Jean"}' \
- *        http://localhost:3000/api/admin/users
- *
- *   # Lister les devices avec statut d'assignation
- *   curl -H "Authorization: Bearer <token>" http://localhost:3000/api/admin/devices
- *
- *   # Assigner le device 1 au user 2
- *   curl -X POST -H "Authorization: Bearer <token>" \
- *        http://localhost:3000/api/admin/devices/1/assign/2
- *
- *   # Désassigner le device 1
- *   curl -X DELETE -H "Authorization: Bearer <token>" \
- *        http://localhost:3000/api/admin/devices/1/assign
+ * Exemples :
+ *   GET    /api/admin/users
+ *   POST   /api/admin/users
+ *   PATCH  /api/admin/users/:id
+ *   DELETE /api/admin/users/:id        (désactivation)
+ *   GET    /api/admin/devices
+ *   POST   /api/admin/devices/:deviceId/assign/:userId
+ *   DELETE /api/admin/devices/:deviceId/assign
+ *   GET    /api/admin/geofences
+ *   DELETE /api/admin/geofences/:id
+ *   GET    /api/admin/alerts
  */
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -50,27 +41,38 @@ export class AdminController {
 
   // ── Users ────────────────────────────────────────────────────────────────
 
-  /** Liste tous les comptes (id, email, name, role, isActive, createdAt) */
   @Get('users')
   listUsers() {
     return this.adminService.listUsers();
   }
 
-  /** Créer un compte owner (ou admin). Mot de passe hashé automatiquement. */
   @Post('users')
   createUser(@Body() dto: CreateUserDto) {
     return this.adminService.createUser(dto);
   }
 
+  @Patch('users/:id')
+  updateUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.adminService.updateUser(id, dto);
+  }
+
+  /** Désactivation douce — ne supprime pas le compte */
+  @Delete('users/:id')
+  @HttpCode(HttpStatus.OK)
+  deactivateUser(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.deactivateUser(id);
+  }
+
   // ── Devices ──────────────────────────────────────────────────────────────
 
-  /** Liste tous les devices Traccar avec leur user assigné (null si non assigné) */
   @Get('devices')
   listDevices() {
     return this.adminService.listDevices();
   }
 
-  /** Lier un device Traccar à un owner. Remplace l'assignation existante. */
   @Post('devices/:deviceId/assign/:userId')
   @HttpCode(HttpStatus.OK)
   assignDevice(
@@ -80,10 +82,29 @@ export class AdminController {
     return this.adminService.assignDevice(deviceId, userId);
   }
 
-  /** Retirer l'assignation d'un device */
   @Delete('devices/:deviceId/assign')
   @HttpCode(HttpStatus.NO_CONTENT)
   unassignDevice(@Param('deviceId', ParseIntPipe) deviceId: number) {
     return this.adminService.unassignDevice(deviceId);
+  }
+
+  // ── Geofences ────────────────────────────────────────────────────────────
+
+  @Get('geofences')
+  listGeofences() {
+    return this.adminService.listGeofences();
+  }
+
+  @Delete('geofences/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeGeofence(@Param('id') id: string) {
+    return this.adminService.removeGeofence(id);
+  }
+
+  // ── Alerts ───────────────────────────────────────────────────────────────
+
+  @Get('alerts')
+  listAlerts() {
+    return this.adminService.listAlerts();
   }
 }

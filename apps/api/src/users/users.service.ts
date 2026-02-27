@@ -47,7 +47,41 @@ export class UsersService {
     await this.userRepo.update(userId, { onesignalSubId: subId });
   }
 
+  /** Met à jour le profil utilisateur (name, phone). */
+  async updateUser(
+    userId: number,
+    data: { name?: string; phone?: string },
+  ): Promise<User | null> {
+    await this.userRepo.update(userId, data);
+    return this.findById(userId);
+  }
+
+  /** Met à jour les paramètres d'alerte de l'utilisateur. */
+  async updateAlertSettings(
+    userId: number,
+    data: {
+      alertsEnabled?: boolean;
+      alertSos?: boolean;
+      alertLowBattery?: boolean;
+      alertSpeedLimit?: boolean;
+      alertViaPush?: boolean;
+      alertViaWhatsapp?: boolean;
+    },
+  ): Promise<User | null> {
+    await this.userRepo.update(userId, data);
+    return this.findById(userId);
+  }
+
   findAll(): Promise<User[]> {
     return this.userRepo.find({ order: { createdAt: 'DESC' } });
+  }
+
+  /** Admin — mise à jour étendue (role, isActive inclus) */
+  async adminUpdate(
+    userId: number,
+    data: { name?: string; phone?: string; role?: UserRole; isActive?: boolean },
+  ): Promise<User | null> {
+    await this.userRepo.update(userId, data);
+    return this.userRepo.findOneBy({ id: userId });
   }
 }
