@@ -8,11 +8,14 @@ import {
   Get,
   UseGuards,
   Request,
+  Patch,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateAlertSettingsDto } from './dto/update-alert-settings.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
@@ -70,5 +73,38 @@ export class AuthController {
       body.subscriptionId,
     );
     return { ok: true };
+  }
+
+  /**
+   * PATCH /api/auth/profile
+   * { "name": "John Doe", "phone": "+261341234567" }
+   * Met à jour le profil de l'utilisateur connecté.
+   */
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(@Request() req, @Body() dto: UpdateProfileDto) {
+    const updated = await this.usersService.updateUser(
+      req.user.id as number,
+      dto,
+    );
+    return updated;
+  }
+
+  /**
+   * PATCH /api/auth/alert-settings
+   * { "alertsEnabled": true, "alertSos": true, "alertLowBattery": true, ... }
+   * Met à jour les paramètres d'alerte de l'utilisateur connecté.
+   */
+  @Patch('alert-settings')
+  @UseGuards(JwtAuthGuard)
+  async updateAlertSettings(
+    @Request() req,
+    @Body() dto: UpdateAlertSettingsDto,
+  ) {
+    const updated = await this.usersService.updateAlertSettings(
+      req.user.id as number,
+      dto,
+    );
+    return updated;
   }
 }

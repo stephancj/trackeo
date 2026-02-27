@@ -16,6 +16,13 @@ export interface PushPayload {
   data?: Record<string, string>;
 }
 
+export interface WhatsAppPayload {
+  phone: string;
+  vehicleName: string;
+  geofenceName: string;
+  alertType: 'enter' | 'exit';
+}
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -78,5 +85,71 @@ export class NotificationsService {
     } catch (e) {
       this.logger.error('Erreur réseau OneSignal', e);
     }
+  }
+
+  /**
+   * Envoie une notification WhatsApp via Meta WhatsApp Business API.
+   * Ne lance pas d'exception si WhatsApp n'est pas configuré (MVP graceful).
+   */
+  async sendWhatsApp(payload: WhatsAppPayload): Promise<void> {
+    const token = process.env.WHATSAPP_API_TOKEN;
+    const phoneId = process.env.WHATSAPP_PHONE_ID;
+
+    if (!token || !phoneId) {
+      this.logger.warn(
+        'WhatsApp non configuré — ajoutez WHATSAPP_API_TOKEN et WHATSAPP_PHONE_ID dans .env',
+      );
+      return;
+    }
+
+    const action =
+      payload.alertType === 'enter' ? 'est entré dans' : 'a quitté';
+    const message = `🚗 *Trackeo Alert*\n\n${payload.vehicleName} ${action} la zone "${payload.geofenceName}".\n\n🔔 Connectez-vous à l'app pour plus de détails.`;
+
+    const formattedPhone = this.formatPhoneForWhatsApp(payload.phone);
+
+    try {
+      const res = await fetch(
+        `https://graph.facebook.com/v18.0/${phoneId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: formattedPhone,
+            type: 'text',
+            text: { body: message },
+          }),
+        },
+      );
+
+      if (!res.ok) {
+        const err = await res.text();
+        this.logger.error(`WhatsApp ${res.status}: ${err}`);
+      } else {
+        this.logger.log(
+          `✅ WhatsApp envoyé → ${formattedPhone} | ${payload.alertType} ${payload.geofenceName}`,
+        );
+      }
+    } catch (e) {
+      this.logger.error('Erreur réseau WhatsApp', e);
+    }
+  }
+
+  private formatPhoneForWhatsApp(phone: string): string {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.startsWith('261')) {
+      return digits;
+    }
+    if (digits.startsWith('0')) {
+      return '261' + digits.slice(1);
+    }
+    if (digits.length === 9) {
+      return '261' + digits;
+    }
+    return digits;
   }
 }
