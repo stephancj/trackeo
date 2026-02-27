@@ -393,6 +393,32 @@ TOTAL_POINTS=30
 | `DELETE` | `/api/geofences/:id` | Supprimer une geofence |
 | `GET` | `/api/alerts` | Alertes de l'utilisateur (geofence_enter / geofence_exit) |
 
+### Admin (implémentés)
+
+| Méthode | Route | Description |
+|---|---|---|
+| `GET` | `/api/admin/users` | Liste tous les utilisateurs avec vehicleCount |
+| `GET` | `/api/admin/users/:id` | Détail user (véhicules, alertes, geofences) |
+| `POST` | `/api/admin/users` | Créer un utilisateur |
+| `PATCH` | `/api/admin/users/:id` | Modifier un utilisateur |
+| `DELETE` | `/api/admin/users/:id` | Désactiver un utilisateur (soft) |
+| `GET` | `/api/admin/vehicles` | Liste enrichie (statut, user assigné, alertes open) |
+| `GET` | `/api/admin/vehicles/:id` | Détail véhicule (alertes récentes, geofences, user) |
+| `POST` | `/api/admin/devices/:deviceId/assign/:userId` | Assigner un device à un user |
+| `DELETE` | `/api/admin/devices/:deviceId/assign` | Désassigner un device |
+| `GET` | `/api/admin/geofences` | Toutes les geofences |
+| `DELETE` | `/api/admin/geofences/:id` | Supprimer une geofence |
+| `GET` | `/api/admin/alerts` | Toutes les alertes |
+| `PATCH` | `/api/admin/alerts/:id` | Ack une alerte |
+| `GET` | `/api/admin/reports/overview` | Stats globales (users, véhicules, alertes) |
+| `GET` | `/api/admin/reports/vehicles?period=today\|7d\|30d` | Rapport par véhicule (distance, vitesse max, alertes) |
+| `GET` | `/api/admin/reports/vehicle/:deviceId/activity?period=today\|7d\|30d` | Résumé activité par véhicule (distance, idle, trips, max speed) |
+| `GET` | `/api/admin/reports/vehicle/:deviceId/trip-log?from=&to=` | Trajets reconstitués (segmentation gap > 10 min) |
+| `GET` | `/api/admin/reports/vehicle/:deviceId/speed-violations?from=&to=&threshold=` | Épisodes vitesse excessive |
+| `GET` | `/api/admin/reports/vehicle/:deviceId/idle?from=&to=` | Épisodes immobilisation prolongée |
+| `GET` | `/api/admin/subscriptions` | Tous les users avec leur abonnement |
+| `PATCH` | `/api/admin/subscriptions/:userId` | Créer/modifier l'abonnement d'un user |
+
 ### Near-term (à implémenter)
 
 | Méthode | Route | Description |
@@ -400,13 +426,11 @@ TOTAL_POINTS=30
 | `POST` | `/api/auth/register` | Inscription + provisionnement device |
 | `POST` | `/api/provision/request-otp` | Demande OTP pour activation device |
 | `POST` | `/api/provision/claim` | Valide OTP + lie device au compte |
-| `GET` | `/api/vehicles/:id/reports/distance` | Totaux distance par période (`?start=&end=&interval=daily\|weekly\|monthly`) |
-| `GET` | `/api/vehicles/:id/trips` | Liste des trajets segmentés (`?start=&end=&page=`) |
-| `POST` | `/api/geofences` | Créer une geofence (cercle ou polygone) |
-| `GET` | `/api/geofences` | Liste des geofences de l'utilisateur |
-| `DELETE` | `/api/geofences/:id` | Supprimer une geofence |
+| `GET` | `/api/vehicles/:id/reports/activity?period=` | Résumé activité (distance, idle, trips, max speed) — côté utilisateur |
+| `GET` | `/api/vehicles/:id/reports/speed-violations?from=&to=&threshold=` | Épisodes vitesse excessive — côté utilisateur |
+| `GET` | `/api/vehicles/:id/reports/idle?from=&to=` | Épisodes immobilisation moteur allumé — côté utilisateur |
+| `GET` | `/api/vehicles/:id/reports/trip-log?from=&to=` | Trajets reconstitués — côté utilisateur |
 | `POST` | `/api/devices/:id/theft` | Déclencher le mode récupération vol |
-| `GET` | `/api/alerts` | File d'alertes de l'utilisateur |
 | `POST` | `/api/alerts/:id/escalate` | Escalader une alerte au partenaire |
 
 ---
@@ -522,14 +546,20 @@ CREATE TABLE installations (
   installed_at timestamptz DEFAULT now()
 );
 
--- Abonnements
+-- Abonnements (migration 007_subscriptions.sql — implémenté)
 CREATE TABLE subscriptions (
-  id uuid PRIMARY KEY,
-  user_id uuid,
-  plan text,
-  status text,
-  next_billing_date timestamptz
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id INTEGER NOT NULL UNIQUE REFERENCES users(id),
+  plan TEXT NOT NULL DEFAULT 'free',          -- 'free' | 'basic' | 'premium'
+  status TEXT NOT NULL DEFAULT 'trial',       -- 'trial' | 'active' | 'suspended' | 'cancelled'
+  vehicle_limit INTEGER NOT NULL DEFAULT 1,   -- 1 (free) | 5 (basic) | 999 (premium)
+  next_billing_date TIMESTAMPTZ,
+  trial_ends_at TIMESTAMPTZ,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+-- PLAN_VEHICLE_LIMITS : free=1, basic=5, premium=999
 ```
 
 ---
@@ -595,13 +625,50 @@ feature/
 
 ---
 
+## Stratégie Rapports
+
+### Principe clé
+**Les rapports utiles aux utilisateurs finaux sont aussi consultables par l'admin.** L'admin doit pouvoir ouvrir la page détail d'un véhicule et voir exactement ce que voit le client — pour le support, le diagnostic, et démontrer la valeur du produit.
+
+### Types de rapports — par audience
+
+| Rapport | Admin (`/reports`) | Utilisateur (Flutter) | Priorité |
+|---------|-------------------|-----------------------|----------|
+| Résumé flotte (distance, alertes, statut) | ✅ Fait | 🔲 À faire | P1 |
+| Trip log (trajets reconstitués) | ✅ Fait | 🔲 À faire | P1 |
+| Violations de vitesse | ✅ Fait | 🔲 À faire | P1 |
+| Idle time (moteur allumé, arrêté) | ✅ Fait | 🔲 À faire | P2 |
+| Activité geofence (entrées/sorties par zone) | 🔲 À faire | 🔲 À faire | P2 |
+| Email mensuel automatique | 🔲 À faire | — | P2 |
+| Export PDF | 🔲 À faire | 🔲 À faire | P3 |
+| Driver behavior score | 🔲 À faire | 🔲 À faire | Near-term |
+
+### Trip segmentation (sans table `trips`)
+En attendant le worker de segmentation Near-term, on peut reconstituer les trajets depuis `tc_positions` :
+- Un **gap > 10 min** sans position valide = fin d'un trajet, début d'un autre
+- Chaque segment = liste de positions ordonnées → distance Haversine, durée, vitesse max
+- Limite : 1 000 positions par requête, period max 30 jours
+- **Ce n'est pas du trip segmentation complet** — pas de détection d'arrêt moteur, pas de clustering — mais suffisant pour un trip log MVP
+
+### Algorithme idle time
+- `speed < 2 km/h` ET gap entre points `< 5 min` = segment idle
+- Épisodes consécutifs fusionnés → durée totale + localisation (première position du segment)
+- Filtrer les épisodes < 3 min (arrêts à un feu rouge)
+
+### Violations de vitesse
+- Position avec `speed > threshold` (défaut 120 km/h) = événement vitesse
+- Regrouper les positions consécutives > seuil en un seul épisode
+- Retourner : timestamp, lat/lon, vitesse max, durée de l'épisode
+
+---
+
 ## Règles pour Claude
 
 - **Ne pas modifier** le schéma Traccar (`synchronize: false` dans TypeORM)
 - **Ne jamais** committer de credentials réels — utiliser `.env` (gitignored)
 - **Toujours** passer par le `VehicleRepository` / `DeviceRepository` dans Flutter, pas appeler Dio directement dans les vues
 - **Pas de WebSocket pour le MVP** — utiliser le polling toutes les 10s uniquement (WebSocket prévu en V2 avec l'app mobile native)
-- **Pas d'algorithme de segmentation de trajets dans le MVP** — afficher les points bruts reliés par une polyligne (segmentation = Near-term avec table `trips`)
+- **Segmentation de trajets (admin)** : `PositionsService.getTripLog()` reconstruit les trajets depuis `tc_positions` (gap > 10 min = nouveau trajet). Pas de table `trips` dédiée — calcul à la volée, limite 10 000 points. Disponible admin uniquement pour l'instant. **Flutter côté utilisateur** : toujours points bruts en polyligne — l'exposition via `VehiclesController` est Near-term.
 - Avant d'ajouter un nouveau protocole Traccar, vérifier qu'il n'est pas déjà activé dans `traccar.xml`
 - Les migrations TypeORM sont uniquement pour les tables **propres à l'API** (pas les tables `tc_*`)
 - **selectedVehicle** : stocker uniquement l'id dans `selectedVehicleIdProvider`, dériver le `Vehicle?` via `Provider` depuis la liste live — toujours fraîche
@@ -661,25 +728,56 @@ feature/
 - [x] Geofences — Owner column, coordinates column, delete
 - [x] Scoping mobile : `GET /api/vehicles` retourne uniquement les véhicules assignés à l'user connecté (`findAllForUser`), ownership check sur tous les endpoints véhicule
 
-### 🔲 À faire — Admin "Super App" (prochaine itération)
+### ✅ Admin Next.js — Super App (implémenté)
+- [x] **User detail page** (`/users/[id]`) — profil, statut alertes, geofences count, liste véhicules assignés avec statut live
+- [x] **Vehicle detail page** (`/vehicles/[id]`) — OSM map, télémétrie (batterie, ignition, vitesse), alertes récentes, geofences liées, assignation
+- [x] **Live Fleet Map** (`/map`) — tous les véhicules sur OSM (Leaflet), marqueurs colorés, sidebar véhicule avec batterie + alertes, auto-refresh 15s
+- [x] **Global search** (`⌘K`) — recherche unifiée users + vehicles + alerts, debounce 250ms, navigation clavier
+- [x] **Battery + Ignition columns** dans la liste véhicules
+- [x] **Alert count badge** par véhicule dans la liste
+- [x] **WhatsApp quick-action** dans users list + user detail page
+- [x] **CSV export** dans la liste utilisateurs
+- [x] **Vehicles count** par utilisateur dans la liste
+- [x] `findByIdAdmin()` dans UsersService — pas de filtre `isActive` pour le contexte admin
+- [x] `getUserDetail()` — user + vehicles + openAlertsCount + geofencesCount
+- [x] `getVehicleDetail()` — vehicle + recentAlerts (20) + linkedGeofences + assignedUser
 
-#### Users
-- [ ] **Vehicles count badge** — colonne "X vehicles" cliquable dans la liste utilisateurs
-- [ ] **User detail page** (`/users/[id]`) — profil complet : véhicules assignés (avec statut live), nb alertes open, geofences, actions rapides (Edit, WhatsApp, Assign Vehicle)
-- [ ] **WhatsApp quick-action** — bouton dans la liste et la page détail → ouvre `wa.me/{phone}`
-- [ ] **Last login column** — horodatage relatif de la dernière connexion JWT
-- [ ] **Export CSV** — exporter la liste des utilisateurs (nom, email, téléphone, nb véhicules, statut)
+### ✅ Admin Next.js — Reports & Subscriptions (implémenté)
+- [x] **Reports overview** — 4 stat cards, fleet status bars, alerts by type breakdown
+- [x] **Vehicle report table** — distance, max speed (rouge si >120 km/h), GPS points, alerts, par période Today/7d/30d
+- [x] **CSV export** de la table véhicules
+- [x] **Subscriptions page** — liste users avec plan/status badges, filter tabs All/Active/Trial/Suspended/Free/Basic/Premium
+- [x] **Edit subscription sheet** — plan picker, status selector, trial/billing dates, notes internes
+- [x] `Subscription` entity + migration `007_subscriptions.sql` + `PLAN_VEHICLE_LIMITS`
+- [x] Admin endpoints : `GET /admin/reports/overview`, `GET /admin/reports/vehicles?period=`, `GET /admin/subscriptions`, `PATCH /admin/subscriptions/:userId`
 
-#### Vehicles
-- [ ] **Vehicle detail page** (`/vehicles/[id]`) — mini-map OSM (position actuelle), batterie (barre %), ignition indicator, vitesse actuelle, historique alertes récentes, geofences liées
-- [ ] **Battery + ignition columns** — barre batterie visuelle et icône 🔑 ignition dans la liste (déjà dans l'API response)
-- [ ] **Address column** — adresse reverse-geocodée (Nominatim) pour la dernière position connue
-- [ ] **Alert count badge** — nb alertes ouvertes par véhicule dans la liste
-- [ ] **Live fleet map** (`/map`) — tous les véhicules sur une carte OSM (Leaflet), marqueurs colorés par statut, click → `/vehicles/[id]`
+### ✅ Admin Next.js — Reports détaillés par véhicule (implémenté)
 
-#### Cross-cutting
-- [ ] **Global search** (`⌘K` palette) — recherche unifiée users + vehicles + alerts
-- [ ] **Activity feed** — panneau latéral temps-réel (polling 15s) des derniers événements (nouvelles alertes, véhicule offline, assignation)
+> **Principe** : Les rapports utiles aux utilisateurs finaux (clients Trackeo) sont aussi consultables par l'admin — pour le support et le diagnostic.
+
+#### Backend — `PositionsService` + `AdminService` + `AdminController`
+- [x] `PositionsService.getTripLog()` — segmentation gap > 10 min, Haversine, filtre micro-mouvements < 100 m
+- [x] `PositionsService.getSpeedViolations()` — regroupe positions consécutives > seuil en épisodes
+- [x] `PositionsService.getIdleTime()` — speed < 2 km/h, gap < 5 min, filtre épisodes < 3 min
+- [x] `PositionsService.getActivitySummary()` — `Promise.all` sur les 3 ci-dessus + distanceSummary
+- [x] `GET /admin/reports/vehicle/:deviceId/activity?period=` — résumé activité (distance, idle time, trips count, max speed)
+- [x] `GET /admin/reports/vehicle/:deviceId/trip-log?from=&to=` — trajets reconstitués
+- [x] `GET /admin/reports/vehicle/:deviceId/speed-violations?from=&to=&threshold=` — épisodes vitesse excessive
+- [x] `GET /admin/reports/vehicle/:deviceId/idle?from=&to=` — épisodes immobilisation prolongée
+
+#### Admin Frontend
+- [x] **`VehicleDrillDown`** dans `/reports` — sélecteur de véhicule + 4 tabs (Activity / Trip Log / Speed Violations / Idle Time) + période Today/7d/30d
+- [x] **`VehicleReports`** dans `/vehicles/[id]`— section pleine largeur, mêmes 4 tabs + période
+- [x] `lib/api.ts` — `getVehicleActivitySummary`, `getVehicleTripLog`, `getVehicleSpeedViolations`, `getVehicleIdleTime`
+
+#### 🔲 Flutter (utilisateur final) — mêmes rapports côté mobile (à faire)
+- [ ] **Vue "Rapports"** dans l'app Flutter (onglet dédié ou section Paramètres)
+  - Résumé mensuel du mois en cours
+  - Trip log (liste trajets)
+  - Violations de vitesse
+  - Export PDF (Near-term)
+- [ ] **Endpoints utilisateur** — `GET /api/vehicles/:id/reports/activity|trip-log|speed-violations|idle` dans `VehiclesController`
+- [ ] **Email mensuel automatique** — `@Cron` le 1er de chaque mois → récapitulatif (distance, nb trajets, nb alertes, violations)
 
 ### 🔲 À faire (S13-S16 — Déploiement VPS)
 - [ ] Onboarding QR/OTP pour activation device

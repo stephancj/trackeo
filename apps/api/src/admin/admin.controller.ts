@@ -141,6 +141,56 @@ export class AdminController {
     return this.adminService.getVehicleReports(period);
   }
 
+  /** Résumé d'activité pour un véhicule donné */
+  @Get('reports/vehicle/:deviceId/activity')
+  getVehicleActivitySummary(
+    @Param('deviceId', ParseIntPipe) deviceId: number,
+    @Query('period') period: 'today' | '7d' | '30d' = '7d',
+  ) {
+    return this.adminService.getVehicleActivitySummary(deviceId, period);
+  }
+
+  /** Trip log pour un véhicule */
+  @Get('reports/vehicle/:deviceId/trip-log')
+  getVehicleTripLog(
+    @Param('deviceId', ParseIntPipe) deviceId: number,
+    @Query('from') from: string,
+    @Query('to') to: string,
+  ) {
+    const now = new Date();
+    const fromDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const toDate = to ? new Date(to) : now;
+    return this.adminService.getVehicleTripLog(deviceId, fromDate, toDate);
+  }
+
+  /** Violations de vitesse pour un véhicule */
+  @Get('reports/vehicle/:deviceId/speed-violations')
+  getVehicleSpeedViolations(
+    @Param('deviceId', ParseIntPipe) deviceId: number,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Query('threshold') threshold?: string,
+  ) {
+    const now = new Date();
+    const fromDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const toDate = to ? new Date(to) : now;
+    const thresholdKmh = threshold ? parseInt(threshold, 10) : 120;
+    return this.adminService.getVehicleSpeedViolations(deviceId, fromDate, toDate, thresholdKmh);
+  }
+
+  /** Temps d'immobilisation moteur allumé pour un véhicule */
+  @Get('reports/vehicle/:deviceId/idle')
+  getVehicleIdleTime(
+    @Param('deviceId', ParseIntPipe) deviceId: number,
+    @Query('from') from: string,
+    @Query('to') to: string,
+  ) {
+    const now = new Date();
+    const fromDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const toDate = to ? new Date(to) : now;
+    return this.adminService.getVehicleIdleTime(deviceId, fromDate, toDate);
+  }
+
   // ── Subscriptions ─────────────────────────────────────────────────────────
 
   @Get('subscriptions')

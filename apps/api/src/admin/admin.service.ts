@@ -368,4 +368,65 @@ export class AdminService {
 
     return this.subscriptionRepo.save(sub);
   }
+
+  // ── Detailed vehicle reports ──────────────────────────────────────────────
+
+  private periodToDates(period: 'today' | '7d' | '30d'): { from: Date; to: Date } {
+    const now = new Date();
+    let from: Date;
+    if (period === 'today') {
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (period === '7d') {
+      from = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    } else {
+      from = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+    }
+    return { from, to: now };
+  }
+
+  async getVehicleActivitySummary(
+    deviceId: number,
+    period: 'today' | '7d' | '30d',
+  ) {
+    const { from, to } = this.periodToDates(period);
+    const summary = await this.positionsService
+      .getActivitySummary(deviceId, from, to)
+      .catch(() => ({
+        distanceKm: 0,
+        drivingMinutes: 0,
+        idleMinutes: 0,
+        maxSpeedKmh: 0,
+        tripCount: 0,
+        speedViolationCount: 0,
+        pointCount: 0,
+      }));
+    return { deviceId, period, from, to, ...summary };
+  }
+
+  async getVehicleTripLog(deviceId: number, from: Date, to: Date) {
+    const trips = await this.positionsService
+      .getTripLog(deviceId, from, to)
+      .catch(() => []);
+    return { deviceId, from, to, trips };
+  }
+
+  async getVehicleSpeedViolations(
+    deviceId: number,
+    from: Date,
+    to: Date,
+    thresholdKmh = 120,
+  ) {
+    const violations = await this.positionsService
+      .getSpeedViolations(deviceId, from, to, thresholdKmh)
+      .catch(() => []);
+    return { deviceId, from, to, thresholdKmh, violations };
+  }
+
+  async getVehicleIdleTime(deviceId: number, from: Date, to: Date) {
+    const episodes = await this.positionsService
+      .getIdleTime(deviceId, from, to)
+      .catch((): Awaited<ReturnType<typeof this.positionsService.getIdleTime>> => []);
+    const totalIdleMinutes = episodes.reduce((s, e) => s + e.durationMin, 0);
+    return { deviceId, from, to, totalIdleMinutes, episodes };
+  }
 }

@@ -54,10 +54,38 @@ export const deleteGeofence = (id: string) => api.delete(`/admin/geofences/${id}
 export const getAlerts = () => api.get("/admin/alerts");
 export const ackAlert = (id: string) => api.patch(`/admin/alerts/${id}`);
 
-// Reports
+// Reports — fleet overview
 export const getReportsOverview = () => api.get("/admin/reports/overview");
 export const getVehicleReports = (period: "today" | "7d" | "30d") =>
   api.get(`/admin/reports/vehicles?period=${period}`);
+
+// Reports — per-vehicle detail
+export const getVehicleActivitySummary = (
+  deviceId: number,
+  period: "today" | "7d" | "30d"
+) => api.get(`/admin/reports/vehicle/${deviceId}/activity?period=${period}`);
+
+export const getVehicleTripLog = (
+  deviceId: number,
+  from: string,
+  to: string
+) => api.get(`/admin/reports/vehicle/${deviceId}/trip-log?from=${from}&to=${to}`);
+
+export const getVehicleSpeedViolations = (
+  deviceId: number,
+  from: string,
+  to: string,
+  threshold = 120
+) =>
+  api.get(
+    `/admin/reports/vehicle/${deviceId}/speed-violations?from=${from}&to=${to}&threshold=${threshold}`
+  );
+
+export const getVehicleIdleTime = (
+  deviceId: number,
+  from: string,
+  to: string
+) => api.get(`/admin/reports/vehicle/${deviceId}/idle?from=${from}&to=${to}`);
 
 // Subscriptions
 export const getSubscriptions = () => api.get("/admin/subscriptions");

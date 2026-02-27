@@ -9,8 +9,19 @@ import {
   TrendingUp,
   Download,
   RefreshCw,
+  Route,
+  Gauge,
+  Clock,
 } from "lucide-react";
-import { getReportsOverview, getVehicleReports } from "@/lib/api";
+import {
+  getReportsOverview,
+  getVehicleReports,
+  getAdminVehicles,
+  getVehicleActivitySummary,
+  getVehicleTripLog,
+  getVehicleSpeedViolations,
+  getVehicleIdleTime,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +52,386 @@ interface VehicleReport {
 }
 
 type Period = "today" | "7d" | "30d";
+type DrillTab = "activity" | "trips" | "violations" | "idle";
+
+interface VehicleOption {
+  id: number;
+  name: string;
+  plate: string | null;
+  status: string;
+}
+
+// ── Per-vehicle drill-down component ──────────────────────────────────────────
+
+function VehicleDrillDown({ vehicles }: { vehicles: VehicleOption[] }) {
+  const [selectedId, setSelectedId] = useState<number | null>(
+    vehicles[0]?.id ?? null
+  );
+  const [tab, setTab] = useState<DrillTab>("activity");
+  const [period, setPeriod] = useState<Period>("7d");
+  const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [data, setData] = useState<any>(null);
+
+  const periodToRange = (p: Period) => {
+    const now = new Date();
+    let from: Date;
+    if (p === "today")
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    else if (p === "7d")
+      from = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    else from = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+    return { from: from.toISOString(), to: now.toISOString() };
+  };
+
+  useEffect(() => {
+    if (!selectedId) return;
+    setLoading(true);
+    setData(null);
+    const { from, to } = periodToRange(period);
+    const fetcher =
+      tab === "activity"
+        ? getVehicleActivitySummary(selectedId, period)
+        : tab === "trips"
+        ? getVehicleTripLog(selectedId, from, to)
+        : tab === "violations"
+        ? getVehicleSpeedViolations(selectedId, from, to)
+        : getVehicleIdleTime(selectedId, from, to);
+
+    fetcher
+      .then((r) => setData(r.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [selectedId, tab, period]);
+
+  const DRILL_TABS: {
+    key: DrillTab;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }[] = [
+    { key: "activity", label: "Activity", icon: BarChart2 },
+    { key: "trips", label: "Trip Log", icon: Route },
+    { key: "violations", label: "Speed Violations", icon: Gauge },
+    { key: "idle", label: "Idle Time", icon: Clock },
+  ];
+
+  const selected = vehicles.find((v) => v.id === selectedId);
+
+  return (
+    <div className="rounded-lg border bg-card overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b">
+        <h2 className="font-semibold flex items-center gap-2 mb-3">
+          <Car className="h-4 w-4 text-muted-foreground" />
+          Vehicle Detail Reports
+        </h2>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Vehicle selector */}
+          <select
+            className="rounded-md border bg-background px-3 py-1.5 text-sm min-w-48"
+            value={selectedId ?? ""}
+            onChange={(e) => setSelectedId(Number(e.target.value))}
+          >
+            {vehicles.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
+                {v.plate ? ` · ${v.plate}` : ""}
+              </option>
+            ))}
+          </select>
+
+          {/* Tab selector */}
+          <div className="flex gap-0.5">
+            {DRILL_TABS.map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  tab === key
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Period selector */}
+          <div className="ml-auto flex rounded-md border overflow-hidden text-xs">
+            {(["today", "7d", "30d"] as Period[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={cn(
+                  "px-3 py-1.5 transition-colors",
+                  period === p
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                {p === "today" ? "Today" : p === "7d" ? "Last 7d" : "Last 30d"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {selected && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Showing data for{" "}
+            <span className="font-medium text-foreground">{selected.name}</span>
+            {selected.plate && (
+              <span className="font-mono ml-1">({selected.plate})</span>
+            )}
+          </p>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-5">
+        {loading ? (
+          <div className="flex items-center justify-center h-28 text-sm text-muted-foreground">
+            Loading…
+          </div>
+        ) : !data ? (
+          <div className="flex items-center justify-center h-28 text-sm text-muted-foreground">
+            Select a vehicle to view reports.
+          </div>
+        ) : (
+          <>
+            {/* Activity */}
+            {tab === "activity" && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
+                {[
+                  { label: "Distance", value: `${data.distanceKm} km` },
+                  { label: "Driving Time", value: `${data.drivingMinutes} min` },
+                  { label: "Idle Time", value: `${data.idleMinutes} min` },
+                  {
+                    label: "Max Speed",
+                    value: `${data.maxSpeedKmh} km/h`,
+                    warn: data.maxSpeedKmh > 120,
+                  },
+                  { label: "Trips", value: data.tripCount },
+                  { label: "Violations", value: data.speedViolationCount },
+                  {
+                    label: "GPS Points",
+                    value: data.pointCount?.toLocaleString(),
+                  },
+                ].map(({ label, value, warn }) => (
+                  <div
+                    key={label}
+                    className={cn(
+                      "rounded-lg border p-4 text-center",
+                      warn ? "border-rose-300 bg-rose-50" : "bg-muted/30"
+                    )}
+                  >
+                    <p
+                      className={cn(
+                        "text-2xl font-bold",
+                        warn && "text-rose-600"
+                      )}
+                    >
+                      {value}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {label}
+                    </p>
+                    {warn && (
+                      <p className="text-xs text-rose-500 mt-0.5">⚠️ exceeded</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Trip log */}
+            {tab === "trips" && (
+              <div className="overflow-x-auto">
+                {!data.trips || data.trips.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No trips recorded in this period.
+                  </p>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-muted-foreground text-left">
+                        <th className="pb-2 font-medium">Start</th>
+                        <th className="pb-2 font-medium">End</th>
+                        <th className="pb-2 font-medium">Duration</th>
+                        <th className="pb-2 font-medium">Distance</th>
+                        <th className="pb-2 font-medium">Max Speed</th>
+                        <th className="pb-2 font-medium">Points</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {data.trips.map((t: any, i: number) => (
+                        <tr key={i} className="hover:bg-muted/30">
+                          <td className="py-2 tabular-nums text-sm">
+                            {new Date(t.startTime).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                          <td className="py-2 tabular-nums text-sm text-muted-foreground">
+                            {new Date(t.endTime).toLocaleString("en-US", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                          <td className="py-2 font-mono">{t.durationMin}m</td>
+                          <td className="py-2 font-mono">
+                            {t.distanceKm?.toFixed(1)} km
+                          </td>
+                          <td
+                            className={cn(
+                              "py-2 font-mono",
+                              t.maxSpeedKmh > 120 &&
+                                "text-rose-600 font-semibold"
+                            )}
+                          >
+                            {t.maxSpeedKmh} km/h
+                          </td>
+                          <td className="py-2 text-muted-foreground">
+                            {t.pointCount}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {/* Speed violations */}
+            {tab === "violations" && (
+              <div className="overflow-x-auto">
+                {!data.violations || data.violations.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    ✅ No speed violations (threshold: {data.thresholdKmh}{" "}
+                    km/h).
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Threshold: {data.thresholdKmh} km/h ·{" "}
+                      <span className="text-rose-600 font-medium">
+                        {data.violations.length} event
+                        {data.violations.length !== 1 ? "s" : ""}
+                      </span>
+                    </p>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-muted-foreground text-left">
+                          <th className="pb-2 font-medium">Time</th>
+                          <th className="pb-2 font-medium">Location</th>
+                          <th className="pb-2 font-medium">Max Speed</th>
+                          <th className="pb-2 font-medium">Duration</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {data.violations.map((v: any, i: number) => (
+                          <tr key={i} className="hover:bg-muted/30">
+                            <td className="py-2 tabular-nums">
+                              {new Date(v.startTime).toLocaleString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </td>
+                            <td className="py-2 font-mono text-xs text-muted-foreground">
+                              {v.lat?.toFixed(4)}, {v.lon?.toFixed(4)}
+                            </td>
+                            <td className="py-2 font-mono font-semibold text-rose-600">
+                              {v.maxSpeedKmh} km/h
+                            </td>
+                            <td className="py-2 text-muted-foreground">
+                              {v.durationSec}s
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Idle time */}
+            {tab === "idle" && (
+              <div className="overflow-x-auto">
+                {!data.episodes || data.episodes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No idle episodes recorded in this period.
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Total idle:{" "}
+                      <span className="font-medium text-foreground">
+                        {data.totalIdleMinutes} min
+                      </span>{" "}
+                      across {data.episodes.length} episode
+                      {data.episodes.length !== 1 ? "s" : ""}
+                    </p>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-muted-foreground text-left">
+                          <th className="pb-2 font-medium">Start</th>
+                          <th className="pb-2 font-medium">End</th>
+                          <th className="pb-2 font-medium">Duration</th>
+                          <th className="pb-2 font-medium">Location</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {data.episodes.map((e: any, i: number) => (
+                          <tr key={i} className="hover:bg-muted/30">
+                            <td className="py-2 tabular-nums">
+                              {new Date(e.startTime).toLocaleString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </td>
+                            <td className="py-2 tabular-nums text-muted-foreground">
+                              {new Date(e.endTime).toLocaleString("en-US", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </td>
+                            <td
+                              className={cn(
+                                "py-2 font-mono font-medium",
+                                e.durationMin >= 30 && "text-amber-600"
+                              )}
+                            >
+                              {e.durationMin} min
+                            </td>
+                            <td className="py-2 font-mono text-xs text-muted-foreground">
+                              {e.lat?.toFixed(4)}, {e.lon?.toFixed(4)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const PERIOD_LABELS: Record<Period, string> = {
   today: "Today",
@@ -161,18 +552,27 @@ export default function ReportsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [sortKey, setSortKey] = useState<keyof VehicleReport>("distanceKm");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [vehicleOptions, setVehicleOptions] = useState<VehicleOption[]>([]);
 
   const load = useCallback(
     async (p: Period, quiet = false) => {
       if (!quiet) setLoading(true);
       else setRefreshing(true);
       try {
-        const [ov, vr] = await Promise.all([
+        const [ov, vr, vehicles] = await Promise.all([
           getReportsOverview(),
           getVehicleReports(p),
+          getAdminVehicles(),
         ]);
         setOverview(ov.data as Overview);
         setVehicleData(vr.data as { from: string; to: string; vehicles: VehicleReport[] });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setVehicleOptions((vehicles.data as any[]).map((v) => ({
+          id: v.id,
+          name: v.name,
+          plate: v.plate ?? null,
+          status: v.status,
+        })));
       } catch {
         // silently fail
       } finally {
@@ -527,6 +927,11 @@ export default function ReportsPage() {
           </table>
         </div>
       </div>
+
+      {/* Per-vehicle drill-down */}
+      {vehicleOptions.length > 0 && (
+        <VehicleDrillDown vehicles={vehicleOptions} />
+      )}
     </div>
   );
 }
