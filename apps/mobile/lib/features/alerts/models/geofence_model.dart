@@ -9,6 +9,9 @@ class Geofence extends Equatable {
   final double radiusM;
   final bool isActive;
   final int userId;
+  final bool alertOnEntry;
+  final bool alertOnExit;
+  final bool alertViaWhatsapp;
 
   const Geofence({
     required this.id,
@@ -19,6 +22,9 @@ class Geofence extends Equatable {
     required this.radiusM,
     required this.isActive,
     required this.userId,
+    this.alertOnEntry = true,
+    this.alertOnExit = true,
+    this.alertViaWhatsapp = false,
   });
 
   factory Geofence.fromJson(Map<String, dynamic> json) => Geofence(
@@ -30,6 +36,9 @@ class Geofence extends Equatable {
     radiusM: (json['radiusM'] as num).toDouble(),
     isActive: json['isActive'] as bool? ?? true,
     userId: json['userId'] as int,
+    alertOnEntry: json['alertOnEntry'] as bool? ?? true,
+    alertOnExit: json['alertOnExit'] as bool? ?? true,
+    alertViaWhatsapp: json['alertViaWhatsapp'] as bool? ?? false,
   );
 
   @override
@@ -42,5 +51,8 @@ class Geofence extends Equatable {
     radiusM,
     isActive,
     userId,
+    alertOnEntry,
+    alertOnExit,
+    alertViaWhatsapp,
   ];
 }

@@ -24,7 +24,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
   final MapController _mapController = MapController();
   double _radius = 500;
   bool _onEntry = true;
-  bool _onExit = false;
+  bool _onExit = true;
   LatLng _center = const LatLng(-18.8792, 47.5079);
   bool _isSaving = false;
   bool _isDragging = false;
@@ -45,6 +45,8 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
       _nameController = TextEditingController(text: gf.name);
       _center = LatLng(gf.centerLat, gf.centerLon);
       _radius = gf.radiusM;
+      _onEntry = gf.alertOnEntry;
+      _onExit = gf.alertOnExit;
       if (gf.deviceIds != null) _selectedVehicleIds.addAll(gf.deviceIds!);
       // Fit circle into view after the map widget is ready
       WidgetsBinding.instance.addPostFrameCallback(
@@ -190,6 +192,8 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
       'radiusM': _radius.toInt(),
       'isActive': widget.geofence?.isActive ?? true,
       'deviceIds': _selectedVehicleIds.toList(),
+      'alertOnEntry': _onEntry,
+      'alertOnExit': _onExit,
     };
 
     final notifier = ref.read(geofencesProvider.notifier);
@@ -1002,11 +1006,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                     : AppColors.divider.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                icon,
-                color: isActive ? AppColors.primary : AppColors.textHint,
-                size: 18,
-              ),
+              child: Icon(Icons.send_rounded, color: Colors.green, size: 18),
             ),
             const SizedBox(width: 10),
             Expanded(

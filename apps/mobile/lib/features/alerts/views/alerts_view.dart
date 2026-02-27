@@ -24,11 +24,6 @@ class AlertsView extends ConsumerStatefulWidget {
 }
 
 class _AlertsViewState extends ConsumerState<AlertsView> {
-  bool sosAlerts = true;
-  bool lowBattery = true;
-  bool speedLimit = false;
-  bool homeZoneActive = true;
-
   @override
   Widget build(BuildContext context) {
     final geofencesState = ref.watch(geofencesProvider);
@@ -88,11 +83,6 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
               error: (e, st) => _buildErrorState('$e'),
             ),
             const SizedBox(height: 32),
-
-            _buildSectionHeader('ALERT SETTINGS'),
-            const SizedBox(height: 12),
-            _buildAlertSettings(),
-            const SizedBox(height: 24),
 
             _buildSectionHeader(
               'RECENT ACTIVITY',
@@ -455,111 +445,6 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _GeofenceActionsSheet(geofence: geofence),
-    );
-  }
-
-  Widget _buildAlertSettings() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildSettingItem(
-            icon: Icons.warning_rounded,
-            iconColor: Colors.red,
-            iconBg: Colors.red.withValues(alpha: 0.1),
-            title: 'SOS Alerts',
-            subtitle: 'Instant notification on emergency',
-            value: sosAlerts,
-            onChanged: (v) => setState(() => sosAlerts = v),
-          ),
-          const Divider(height: 1, indent: 64, color: AppColors.divider),
-          _buildSettingItem(
-            icon: Icons.battery_alert_rounded,
-            iconColor: Colors.amber,
-            iconBg: Colors.amber.withValues(alpha: 0.1),
-            title: 'Low Battery',
-            subtitle: 'Below 20% battery level',
-            value: lowBattery,
-            onChanged: (v) => setState(() => lowBattery = v),
-          ),
-          const Divider(height: 1, indent: 64, color: AppColors.divider),
-          _buildSettingItem(
-            icon: Icons.speed_rounded,
-            iconColor: Colors.purple,
-            iconBg: Colors.purple.withValues(alpha: 0.1),
-            title: 'Speed Limit',
-            subtitle: 'Exceeding 120 km/h',
-            value: speedLimit,
-            onChanged: (v) => setState(() => speedLimit = v),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingItem({
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBg,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textHint,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch.adaptive(
-            value: value,
-            activeColor: AppColors.primary,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
     );
   }
 

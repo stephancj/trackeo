@@ -14,20 +14,15 @@ class AuthState {
   final String? token;
   final String? error;
 
-  const AuthState._({
-    required this.status,
-    this.user,
-    this.token,
-    this.error,
-  });
+  const AuthState._({required this.status, this.user, this.token, this.error});
 
   const AuthState.loading() : this._(status: AuthStatus.loading);
 
   const AuthState.unauthenticated({String? error})
-      : this._(status: AuthStatus.unauthenticated, error: error);
+    : this._(status: AuthStatus.unauthenticated, error: error);
 
   AuthState.authenticated({required String token, required AuthUser user})
-      : this._(status: AuthStatus.authenticated, token: token, user: user);
+    : this._(status: AuthStatus.authenticated, token: token, user: user);
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isLoading => status == AuthStatus.loading;
@@ -48,6 +43,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         id: session.userId ?? 0,
         email: session.email!,
         name: session.name,
+        phone: session.phone,
         role: 'user',
       );
       state = AuthState.authenticated(token: session.token!, user: user);
@@ -67,6 +63,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         email: response.user.email,
         userId: response.user.id,
         name: response.user.name,
+        phone: response.user.phone,
       );
       state = AuthState.authenticated(
         token: response.accessToken,
@@ -90,8 +87,43 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Lie cet utilisateur à OneSignal pour recevoir les push ciblés.
   void _linkOneSignal(int userId) {
     OneSignal.login(userId.toString()); // mobile (natif)
-    oneSignalLoginPlatform(userId.toString()); // web (JS direct — le plugin ne bridge pas login sur web)
+    oneSignalLoginPlatform(
+      userId.toString(),
+    ); // web (JS direct — le plugin ne bridge pas login sur web)
     _tryRegisterPushToken(); // Enregistre le subscription ID côté backend (fire & forget)
+  }
+
+  /// Met à jour le profil utilisateur (name, phone).
+  Future<void> updateProfile({String? name, String? phone}) async {
+    final updatedUser = await _repo.updateProfile(name: name, phone: phone);
+    state = AuthState.authenticated(token: state.token!, user: updatedUser);
+    await TokenStorage.saveSession(
+      token: state.token!,
+      email: updatedUser.email,
+      userId: updatedUser.id,
+      name: updatedUser.name,
+      phone: updatedUser.phone,
+    );
+  }
+
+  /// Met à jour les paramètres d'alerte.
+  Future<void> updateAlertSettings({
+    bool? alertsEnabled,
+    bool? alertSos,
+    bool? alertLowBattery,
+    bool? alertSpeedLimit,
+    bool? alertViaPush,
+    bool? alertViaWhatsapp,
+  }) async {
+    final updatedUser = await _repo.updateAlertSettings(
+      alertsEnabled: alertsEnabled,
+      alertSos: alertSos,
+      alertLowBattery: alertLowBattery,
+      alertSpeedLimit: alertSpeedLimit,
+      alertViaPush: alertViaPush,
+      alertViaWhatsapp: alertViaWhatsapp,
+    );
+    state = AuthState.authenticated(token: state.token!, user: updatedUser);
   }
 
   /// Lit le subscription ID OneSignal (web) et l'enregistre côté backend.

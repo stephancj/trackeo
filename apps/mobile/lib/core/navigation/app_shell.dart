@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../../features/vehicles/views/fleet_list_view.dart';
 import '../../features/map/views/map_view.dart';
 import '../../features/alerts/views/alerts_view.dart';
+import '../../features/settings/views/settings_view.dart';
 
 /// Index de l'onglet actif : 0=List, 1=Map, 2=Alerts, 3=Settings
 final activeTabProvider = StateProvider<int>((ref) => 0);
@@ -22,7 +23,7 @@ class AppShell extends ConsumerWidget {
           FleetListView(),
           MapView(),
           AlertsView(),
-          _PlaceholderView(icon: Icons.settings_outlined, label: 'Paramètres'),
+          SettingsView(),
         ],
       ),
       bottomNavigationBar: _TrackeoBottomNav(
@@ -186,43 +187,6 @@ class _NavItem extends StatelessWidget {
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                 color: isActive ? AppColors.primary : AppColors.textHint,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Placeholder pour les écrans à venir ────────────────────────────────────
-
-class _PlaceholderView extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _PlaceholderView({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 64, color: AppColors.textHint),
-            const SizedBox(height: 16),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Disponible en V2',
-              style: TextStyle(color: AppColors.textHint),
             ),
           ],
         ),
