@@ -30,9 +30,50 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 | Ingestion GPS | MQTT + HTTP custom | **Traccar** | Gère nativement des milliers de protocoles GPS binaires |
 | Backend | Microservices | **NestJS monolithe modulaire** | Plus simple à gérer seul |
 | Frontend | React Native + ReactJS | **Flutter Web (PWA) → Mobile** | Un seul codebase Flutter, PWA d'abord, mobile ensuite |
-| Interface Admin | Intégrée au frontend | **Next.js (Reporté)** | L'interface d'administration back-office sera développée en Next.js plus tard |
-| Live Tracking | WebSocket temps réel | **Polling 10s → WebSocket (V2)** | Polling suffisant pour MVP, WebSocket en V2 mobile |
-| Infra | Cloud AWS | **Docker sur VPS / Local** | Local First, portable, économique |
+| Interface Admin | Intégrée au frontend | **Next.js** | Interface d'administration back-office |
+
+---
+
+### Interface Admin Next.js
+
+#### Fonctionnalités
+
+| Module | Description |
+|---|---|
+| **Gestion Utilisateurs** | Liste des utilisateurs avec recherche/filtre, création, édition, désactivation, visualisation des véhicules et geofences |
+| **Gestion Devices** | Liste des devices Traccar, assignation aux utilisateurs, détails device (IMEI, statut, dernière position) |
+| **Gestion Geofences** | Visualisation de toutes les geofences, suppression, détails |
+| **Gestion Alertes** | Visualisation globale de toutes les alertes, filtrage par type/utilisateur/date, acknowledgement, statistiques |
+| **Rapports & Analytique** | Rapports de distance par véhicule/utilisateur, historique des trajets, statistiques d'utilisation |
+| **Abonnements** | Statut des abonnements utilisateurs, activation/désactivation, gestion des plans |
+| **Configuration Système** | Paramètres API (Traccar), notifications (OneSignal, WhatsApp), monitoring |
+
+#### Stack Technique
+
+- **Framework**: Next.js (App Router)
+- **UI**: Tailwind CSS + shadcn/ui
+- **API**: Endpoints NestJS existants
+- **Auth**: JWT (partagé avec le backend)
+
+#### Structure du projet
+
+```
+apps/admin/
+├── app/
+│   ├── (auth)/           # Login, forgot password
+│   ├── (dashboard)/      # Protected routes
+│   │   ├── users/        # User management
+│   │   ├── devices/      # Device management
+│   │   ├── geofences/   # Geofence management
+│   │   ├── alerts/       # Alert management
+│   │   ├── reports/      # Reports & analytics
+│   │   ├── subscriptions/ # Subscription management
+│   │   └── settings/     # System configuration
+│   └── layout.tsx
+├── components/           # Shared components
+├── lib/                  # API clients, utils
+└── package.json
+```
 
 ---
 
@@ -71,7 +112,8 @@ Développement 100% local d'abord, déploiement VPS en fin de cycle.
 - ✅ **Notifications Push OneSignal** : `NotificationsService` (NestJS) appelle l'API REST OneSignal à chaque alerte geofence. Flutter SDK `onesignal_flutter` lié au `userId` via `OneSignal.login()` après login/restore session. Service worker web (`web/OneSignalSDKWorker.js`) + init JS dans `web/index.html` pour support PWA.
 - ✅ **Fix Push Ciblage (Subscription ID)** : `OneSignal.login()` (web SDK) ne persistait pas le External ID côté serveur OneSignal → push échouait avec "All included players are not subscribed". Fix : enregistrement du **subscription ID** (`OneSignal.User.PushSubscription.id`) en base (`users.onesignal_sub_id`) via `POST /api/auth/push-token` après login. Backend utilise désormais `include_subscription_ids` (ciblage direct, sans dépendance au External ID). Migration `004_onesignal_sub_id.sql`.
 - ✅ **SQL Logging** : `logging: ['error']` dans `database.config.ts` — seules les erreurs SQL sont loggées (plus de spam SELECT toutes les 15s).
-- 🔲 Notifications WhatsApp
+- ✅ **Notifications WhatsApp** : `NotificationsService.sendWhatsApp()` via Meta WhatsApp Business API. Chaque geofence a `alertOnEntry` (défaut: true), `alertOnExit` (défaut: true). Les paramètres globaux d'alerte (`alertsEnabled`, `alertViaPush`, `alertViaWhatsapp`) sont configurables par utilisateur via `PATCH /api/auth/alert-settings`. L'utilisateur doit avoir un numéro `phone` enregistré. Migration `005_geofence_alerts_whatsapp.sql`.
+- ✅ **Paramètres d'Alerte Globaux** : Ajout de `alertsEnabled`, `alertSos`, `alertLowBattery`, `alertSpeedLimit`, `alertViaPush`, `alertViaWhatsapp` dans la table `users`. Nouvelle vue Flutter "Alert Settings" accessible depuis Paramètres. Cron `checkVehicleAlerts()` (toutes les 30s) vérifie batterie <20% et vitesse >120 km/h. Migration `006_alert_settings.sql`.
 - 🔲 PostGIS `ST_Contains` pour polygones (workaround avec rayon circulaire 100% fonctionnel)
 
 #### 🔲 Onboarding & Activation appareil (QR / OTP)
@@ -337,6 +379,10 @@ TOTAL_POINTS=30
 | Méthode | Route | Description |
 |---|---|---|
 | `POST` | `/api/auth/login` | Login → retourne JWT |
+| `GET` | `/api/auth/me` | Retourne l'utilisateur connecté |
+| `PATCH` | `/api/auth/profile` | Met à jour le profil (name, phone) |
+| `PATCH` | `/api/auth/alert-settings` | Met à jour les paramètres d'alerte |
+| `POST` | `/api/auth/push-token` | Enregistre le subscription ID OneSignal |
 | `GET` | `/api/vehicles` | Liste tous les véhicules avec statut + dernière position |
 | `GET` | `/api/vehicles/:id/position` | Dernière position d'un véhicule (polling 10s) |
 | `PATCH` | `/api/vehicles/:id` | Mise à jour complète (nom, plaque, IMEI, photo) |
@@ -602,10 +648,18 @@ feature/
 - [x] Notifications Push OneSignal : Backend `NotificationsService` + Flutter SDK lié au userId + service worker web (`OneSignalSDKWorker.js`) + init JS dans `index.html`.
 - [x] Fix SQL logging : `logging: ['error']` — suppression du spam SELECT dans la console NestJS.
 - [x] Fix Push Ciblage OneSignal : Subscription ID enregistré en base (`users.onesignal_sub_id`) via `POST /api/auth/push-token` + `include_subscription_ids` côté backend. Contourne le bug External ID non persisté du SDK web OneSignal. Migration `004_onesignal_sub_id.sql`.
+- [x] Notifications WhatsApp : `sendWhatsApp()` via Meta API + phone sur users + migration `005_geofence_alerts_whatsapp.sql`.
+- [x] Paramètres d'Alerte : Vue Flutter (Enable "Alert Settings" Alerts, SOS, Low Battery, Speed Limit, Push/WhatsApp) + API `PATCH /api/auth/alert-settings` + cron `checkVehicleAlerts()` (batterie <20%, vitesse >120 km/h) + migration `006_alert_settings.sql`.
 
 ### 🔲 À faire (S13-S16 — Déploiement VPS)
-- [ ] API Admin / Interface Next.js
-- [ ] Notifications WhatsApp (geofence alerts)
+- [ ] Interface Admin Next.js
+  - [ ] Gestion Utilisateurs (CRUD, search, filter)
+  - [ ] Gestion Devices (list, assign, details)
+  - [ ] Gestion Geofences (view all, delete)
+  - [ ] Gestion Alertes (view all, filter, ack)
+  - [ ] Rapports & Analytique
+  - [ ] Gestion Abonnements
+  - [ ] Configuration Système
 - [ ] Onboarding QR/OTP pour activation device
 
 ### 🔲 Prochaines Étapes Immédiates (Déploiement VPS & Setup Prod)
@@ -616,7 +670,12 @@ Maintenant que le MVP (S1-S10) est opérationnel, l'objectif est de le mettre en
    - [ ] Réserver le nom de domaine `trackeo.mg`.
    - [ ] Faire pointer le sous-domaine `api.trackeo.mg` et Traccar vers l'IP du VPS.
 
-2. **Déploiement & Sécurité**
+2. **WhatsApp Business API**
+   - [ ] Créer un compte développeur Meta (developers.facebook.com).
+   - [ ] Créer une app WhatsApp et obtenir `WHATSAPP_PHONE_ID`, `WHATSAPP_API_TOKEN`, `WHATSAPP_BUSINESS_ACCOUNT_ID`.
+   - [ ] Configurer les credentials dans `.env` de l'API.
+
+3. **Déploiement & Sécurité**
    - [ ] Installer Docker & Docker Compose sur le VPS.
    - [ ] Mettre en place un proxy inversé (ex: Nginx Proxy Manager ou Traefik) pour gérer les certificats SSL automatistés (HTTPS).
    - [ ] Mettre en place un script de CI/CD basique (Github Actions ou hooks git) pour mettre à jour l'API et la web app.
