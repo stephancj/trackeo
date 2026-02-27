@@ -9,6 +9,7 @@ import {
   UseGuards,
   BadRequestException,
   NotFoundException,
+  Request,
 } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { PositionsService } from '../positions/positions.service';
@@ -25,29 +26,37 @@ export class VehiclesController {
 
   /**
    * GET /api/vehicles
-   * Retourne tous les véhicules enrichis (nom, plaque, statut, position, batterie).
-   * Utilisé par la Fleet List et la carte.
+   * Retourne uniquement les véhicules assignés à l'utilisateur connecté.
    */
   @Get()
-  findAll() {
-    return this.vehiclesService.findAll();
+  findAll(@Request() req: { user: { id: number } }) {
+    return this.vehiclesService.findAllForUser(req.user.id);
   }
 
   /**
    * GET /api/vehicles/:id
-   * Détails complets d'un seul véhicule.
+   * Détails complets d'un seul véhicule — vérifie que le device appartient à l'user.
    */
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
     return this.vehiclesService.findOne(id);
   }
 
   /**
    * PATCH /api/vehicles/:id
-   * Mise à jour des informations d'un véhicule (ex: nom).
+   * Mise à jour des informations d'un véhicule — vérifie ownership.
    */
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() data: Partial<Device>) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: Partial<Device>,
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
     return this.vehiclesService.update(id, data);
   }
 
@@ -56,7 +65,11 @@ export class VehiclesController {
    * Dernière position — endpoint de polling Flutter (toutes les 10s).
    */
   @Get(':id/position')
-  async getLastPosition(@Param('id', ParseIntPipe) id: number) {
+  async getLastPosition(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
     const position = await this.vehiclesService.getLastPosition(id);
     if (!position) {
       throw new NotFoundException(
@@ -71,12 +84,15 @@ export class VehiclesController {
    * Historique des positions pour tracer le trajet (polyligne Flutter).
    */
   @Get(':id/history')
-  getHistory(
+  async getHistory(
     @Param('id', ParseIntPipe) id: number,
     @Query('from') from: string,
     @Query('to') to: string,
-    @Query('limit') limit?: string,
+    @Query('limit') limit: string | undefined,
+    @Request() req: { user: { id: number } },
   ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
+
     if (!from || !to) {
       throw new BadRequestException(
         'Les paramètres "from" et "to" sont requis (ISO 8601)',

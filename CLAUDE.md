@@ -651,15 +651,37 @@ feature/
 - [x] Notifications WhatsApp : `sendWhatsApp()` via Meta API + phone sur users + migration `005_geofence_alerts_whatsapp.sql`.
 - [x] Paramètres d'Alerte : Vue Flutter (Enable "Alert Settings" Alerts, SOS, Low Battery, Speed Limit, Push/WhatsApp) + API `PATCH /api/auth/alert-settings` + cron `checkVehicleAlerts()` (batterie <20%, vitesse >120 km/h) + migration `006_alert_settings.sql`.
 
+### ✅ Admin Next.js — Base (implémenté)
+- [x] Auth middleware (`proxy.ts`) — unauthenticated → `/login`, authenticated `/login` → `/`
+- [x] Layout sidebar avec badge alertes (auto-refresh 60s)
+- [x] Dashboard — stats (Users / Vehicles / Open Alerts / Unassigned) + 5 dernières alertes avec Ack inline
+- [x] Users — CRUD complet (Create Sheet, Edit Sheet, Activate/Deactivate, Delete), filter tabs All/Active/Inactive, toasts
+- [x] Vehicles — liste enrichie (statut coloré, Last Seen relatif), filter tabs All/Online/Idle/Offline/Unassigned, Assign/Reassign/Unassign, toasts, auto-refresh 30s
+- [x] Alerts — filter tabs All/Open/Acked, Ack button, auto-refresh 30s, open rows tintées rouge
+- [x] Geofences — Owner column, coordinates column, delete
+- [x] Scoping mobile : `GET /api/vehicles` retourne uniquement les véhicules assignés à l'user connecté (`findAllForUser`), ownership check sur tous les endpoints véhicule
+
+### 🔲 À faire — Admin "Super App" (prochaine itération)
+
+#### Users
+- [ ] **Vehicles count badge** — colonne "X vehicles" cliquable dans la liste utilisateurs
+- [ ] **User detail page** (`/users/[id]`) — profil complet : véhicules assignés (avec statut live), nb alertes open, geofences, actions rapides (Edit, WhatsApp, Assign Vehicle)
+- [ ] **WhatsApp quick-action** — bouton dans la liste et la page détail → ouvre `wa.me/{phone}`
+- [ ] **Last login column** — horodatage relatif de la dernière connexion JWT
+- [ ] **Export CSV** — exporter la liste des utilisateurs (nom, email, téléphone, nb véhicules, statut)
+
+#### Vehicles
+- [ ] **Vehicle detail page** (`/vehicles/[id]`) — mini-map OSM (position actuelle), batterie (barre %), ignition indicator, vitesse actuelle, historique alertes récentes, geofences liées
+- [ ] **Battery + ignition columns** — barre batterie visuelle et icône 🔑 ignition dans la liste (déjà dans l'API response)
+- [ ] **Address column** — adresse reverse-geocodée (Nominatim) pour la dernière position connue
+- [ ] **Alert count badge** — nb alertes ouvertes par véhicule dans la liste
+- [ ] **Live fleet map** (`/map`) — tous les véhicules sur une carte OSM (Leaflet), marqueurs colorés par statut, click → `/vehicles/[id]`
+
+#### Cross-cutting
+- [ ] **Global search** (`⌘K` palette) — recherche unifiée users + vehicles + alerts
+- [ ] **Activity feed** — panneau latéral temps-réel (polling 15s) des derniers événements (nouvelles alertes, véhicule offline, assignation)
+
 ### 🔲 À faire (S13-S16 — Déploiement VPS)
-- [ ] Interface Admin Next.js
-  - [ ] Gestion Utilisateurs (CRUD, search, filter)
-  - [ ] Gestion Devices (list, assign, details)
-  - [ ] Gestion Geofences (view all, delete)
-  - [ ] Gestion Alertes (view all, filter, ack)
-  - [ ] Rapports & Analytique
-  - [ ] Gestion Abonnements
-  - [ ] Configuration Système
 - [ ] Onboarding QR/OTP pour activation device
 
 ### 🔲 Prochaines Étapes Immédiates (Déploiement VPS & Setup Prod)

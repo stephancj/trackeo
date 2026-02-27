@@ -21,17 +21,17 @@ import { CreateUserDto, UpdateUserDto } from './admin.dto';
  * Routes admin — accessibles uniquement aux users avec role = 'admin'.
  * Toutes les routes sont protégées par JwtAuthGuard + RolesGuard.
  *
- * Exemples :
  *   GET    /api/admin/users
  *   POST   /api/admin/users
  *   PATCH  /api/admin/users/:id
  *   DELETE /api/admin/users/:id        (désactivation)
- *   GET    /api/admin/devices
+ *   GET    /api/admin/vehicles
  *   POST   /api/admin/devices/:deviceId/assign/:userId
  *   DELETE /api/admin/devices/:deviceId/assign
  *   GET    /api/admin/geofences
  *   DELETE /api/admin/geofences/:id
  *   GET    /api/admin/alerts
+ *   PATCH  /api/admin/alerts/:id       (ack)
  */
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -44,6 +44,11 @@ export class AdminController {
   @Get('users')
   listUsers() {
     return this.adminService.listUsers();
+  }
+
+  @Get('users/:id')
+  getUserDetail(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.getUserDetail(id);
   }
 
   @Post('users')
@@ -66,12 +71,19 @@ export class AdminController {
     return this.adminService.deactivateUser(id);
   }
 
-  // ── Devices ──────────────────────────────────────────────────────────────
+  // ── Vehicles (enriched view — replaces raw devices list) ─────────────────
 
-  @Get('devices')
-  listDevices() {
-    return this.adminService.listDevices();
+  @Get('vehicles')
+  listVehicles() {
+    return this.adminService.listVehicles();
   }
+
+  @Get('vehicles/:id')
+  getVehicleDetail(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.getVehicleDetail(id);
+  }
+
+  // ── Device assignments ────────────────────────────────────────────────────
 
   @Post('devices/:deviceId/assign/:userId')
   @HttpCode(HttpStatus.OK)
@@ -106,5 +118,11 @@ export class AdminController {
   @Get('alerts')
   listAlerts() {
     return this.adminService.listAlerts();
+  }
+
+  @Patch('alerts/:id')
+  @HttpCode(HttpStatus.OK)
+  ackAlert(@Param('id') id: string) {
+    return this.adminService.ackAlert(id);
   }
 }

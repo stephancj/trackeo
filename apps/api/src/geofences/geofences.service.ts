@@ -68,6 +68,20 @@ export class GeofencesService {
     return this.geofencesRepository.find({ order: { createdAt: 'DESC' } });
   }
 
+  /** Geofences liées à un device donné (deviceIds @> [deviceId]) */
+  async findByDeviceId(deviceId: number): Promise<Geofence[]> {
+    return this.geofencesRepository
+      .createQueryBuilder('g')
+      .where(':deviceId = ANY(g.device_ids)', { deviceId })
+      .orderBy('g.created_at', 'DESC')
+      .getMany();
+  }
+
+  /** Compte les geofences d'un user donné */
+  async countForUser(userId: number): Promise<number> {
+    return this.geofencesRepository.count({ where: { userId } });
+  }
+
   /** Admin — supprime une geofence sans vérification d'ownership */
   async removeByIdAdmin(id: string): Promise<void> {
     const result = await this.geofencesRepository.delete(id);

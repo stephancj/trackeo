@@ -48,4 +48,33 @@ export class AlertsService {
   async findAll(): Promise<Alert[]> {
     return this.alertsRepository.find({ order: { createdAt: 'DESC' } });
   }
+
+  /** Admin — alertes d'un device spécifique (pour la page détail véhicule) */
+  async findByDeviceId(deviceId: number, limit = 20): Promise<Alert[]> {
+    return this.alertsRepository.find({
+      where: { deviceId },
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+  }
+
+  /** Count open alerts for a user */
+  async countOpenForUser(ownerId: number): Promise<number> {
+    return this.alertsRepository.count({ where: { ownerId, status: 'open' } });
+  }
+
+  /** Count open alerts for a device */
+  async countOpenForDevice(deviceId: number): Promise<number> {
+    return this.alertsRepository.count({
+      where: { deviceId, status: 'open' },
+    });
+  }
+
+  /** Admin — acquitter une alerte */
+  async ackAlert(id: string): Promise<Alert> {
+    const alert = await this.alertsRepository.findOne({ where: { id } });
+    if (!alert) throw new Error(`Alert ${id} not found`);
+    alert.status = 'acked';
+    return this.alertsRepository.save(alert);
+  }
 }

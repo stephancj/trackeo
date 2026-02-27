@@ -25,6 +25,11 @@ export class UsersService {
     return this.userRepo.findOneBy({ id, isActive: true });
   }
 
+  /** Admin — recherche sans filtre isActive (inclut les comptes désactivés) */
+  findByIdAdmin(id: number): Promise<User | null> {
+    return this.userRepo.findOneBy({ id });
+  }
+
   async create(data: {
     email: string;
     password: string;

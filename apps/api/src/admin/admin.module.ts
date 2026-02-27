@@ -5,6 +5,7 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { UsersModule } from '../users/users.module';
 import { DevicesModule } from '../devices/devices.module';
+import { VehiclesModule } from '../vehicles/vehicles.module';
 import { GeofencesModule } from '../geofences/geofences.module';
 import { AlertsModule } from '../alerts/alerts.module';
 
@@ -13,6 +14,7 @@ import { AlertsModule } from '../alerts/alerts.module';
     TypeOrmModule.forFeature([DeviceAssignment]),
     UsersModule,
     DevicesModule,
+    VehiclesModule,
     GeofencesModule,
     AlertsModule,
   ],

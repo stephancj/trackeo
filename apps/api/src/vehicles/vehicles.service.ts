@@ -1,19 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { DevicesService } from '../devices/devices.service';
 import { PositionsService, PositionDto } from '../positions/positions.service';
 import { VehicleDto, VehiclePositionDto, VehicleStatus } from './vehicle.dto';
 import { Device } from '../devices/device.entity';
+import { DeviceAssignment } from '../admin/device-assignment.entity';
 
 @Injectable()
 export class VehiclesService {
   constructor(
     private readonly devicesService: DevicesService,
     private readonly positionsService: PositionsService,
+    @InjectRepository(DeviceAssignment)
+    private readonly assignmentRepo: Repository<DeviceAssignment>,
   ) {}
 
   /**
    * Retourne tous les véhicules enrichis avec leur dernière position.
-   * Utilisé par le Fleet List et la carte.
+   * Sans filtre utilisateur — utilisé par l'admin.
    */
   async findAll(): Promise<VehicleDto[]> {
     const devices = await this.devicesService.findAll();
@@ -28,6 +33,32 @@ export class VehiclesService {
           r.status === 'fulfilled',
       )
       .map((r) => r.value);
+  }
+
+  /**
+   * Retourne uniquement les véhicules assignés à cet utilisateur.
+   * Utilisé par les endpoints mobiles (fleet list, carte).
+   */
+  async findAllForUser(userId: number): Promise<VehicleDto[]> {
+    const assignments = await this.assignmentRepo.find({ where: { userId } });
+    if (assignments.length === 0) return [];
+
+    const deviceIds = new Set(assignments.map((a) => a.deviceId));
+    const all = await this.findAll();
+    return all.filter((v) => deviceIds.has(v.id));
+  }
+
+  /**
+   * Vérifie que le device appartient à cet utilisateur.
+   * Lève NotFoundException si non (ne révèle pas l'existence du device à d'autres users).
+   */
+  async assertOwner(deviceId: number, userId: number): Promise<void> {
+    const assignment = await this.assignmentRepo.findOne({
+      where: { deviceId, userId },
+    });
+    if (!assignment) {
+      throw new NotFoundException(`Vehicle #${deviceId} not found`);
+    }
   }
 
   /**
@@ -121,9 +152,6 @@ export class VehiclesService {
     };
   }
 
-  /**
-   * Retourne une image personnalisée ou un mockup selon le nom.
-   */
   private extractImageUrl(device: Device): string | null {
     if (device.attributes?.imageUrl) {
       return device.attributes.imageUrl as string;
@@ -134,13 +162,9 @@ export class VehiclesService {
       return 'https://images.info-auto.fr/toyota-rav4-2019-1.jpg';
     if (n.includes('hilux'))
       return 'https://images.info-auto.fr/toyota-hilux-2021.jpg';
-    // Fallback image generic 4x4
     return 'https://images.info-auto.fr/vehicule-generique.jpg';
   }
 
-  /**
-   * Statut combiné : device.lastUpdate (primaire) + tc_devices.status Traccar (secondaire).
-   */
   private computeStatus(
     speedKmh: number,
     lastUpdate: Date | null,
@@ -182,7 +206,6 @@ export class VehiclesService {
     attributes: Record<string, unknown> | null,
   ): number | null {
     if (!attributes) return null;
-    // rssi : 0-31 (GSM) ou 0-100 (WiFi)
     const raw = attributes['rssi'] ?? attributes['signal'];
     if (typeof raw === 'number') return raw;
     return null;

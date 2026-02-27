@@ -33,13 +33,18 @@ export const login = (email: string, password: string) =>
 
 // Users
 export const getUsers = () => api.get("/admin/users");
-export const getUserById = (id: string) => api.get(`/admin/users/${id}`);
+export const getUserDetail = (id: number) => api.get(`/admin/users/${id}`);
 export const createUser = (data: unknown) => api.post("/admin/users", data);
-export const updateUser = (id: string, data: unknown) => api.patch(`/admin/users/${id}`, data);
-export const deleteUser = (id: string) => api.delete(`/admin/users/${id}`);
+export const updateUser = (id: string | number, data: unknown) => api.patch(`/admin/users/${id}`, data);
+export const deleteUser = (id: string | number) => api.delete(`/admin/users/${id}`);
 
-// Devices
-export const getDevices = () => api.get("/admin/devices");
+// Vehicles (enriched: device + position + assignment)
+export const getAdminVehicles = () => api.get("/admin/vehicles");
+export const getVehicleDetail = (id: number) => api.get(`/admin/vehicles/${id}`);
+export const assignDevice = (deviceId: number, userId: number) =>
+  api.post(`/admin/devices/${deviceId}/assign/${userId}`);
+export const unassignDevice = (deviceId: number) =>
+  api.delete(`/admin/devices/${deviceId}/assign`);
 
 // Geofences
 export const getGeofences = () => api.get("/admin/geofences");
@@ -47,6 +52,4 @@ export const deleteGeofence = (id: string) => api.delete(`/admin/geofences/${id}
 
 // Alerts
 export const getAlerts = () => api.get("/admin/alerts");
-
-// Vehicles
-export const getVehicles = () => api.get("/vehicles");
+export const ackAlert = (id: string) => api.patch(`/admin/alerts/${id}`);

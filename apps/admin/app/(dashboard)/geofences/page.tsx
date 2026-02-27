@@ -26,18 +26,20 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface Geofence {
-  id: string;
+  id: number;
   name: string;
   radiusM: number;
-  active: boolean;
+  isActive: boolean;
   createdAt: string;
-  userId: string;
+  userId: number;
+  centerLat?: number;
+  centerLon?: number;
 }
 
 export default function GeofencesPage() {
   const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   useEffect(() => {
     getGeofences()
@@ -48,7 +50,7 @@ export default function GeofencesPage() {
 
   async function handleDelete() {
     if (!deleteId) return;
-    await deleteGeofence(deleteId);
+    await deleteGeofence(String(deleteId));
     setGeofences((prev) => prev.filter((g) => g.id !== deleteId));
     setDeleteId(null);
   }
@@ -61,17 +63,19 @@ export default function GeofencesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Owner (User ID)</TableHead>
               <TableHead>Radius</TableHead>
+              <TableHead>Coordinates</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
-              <TableHead className="w-16"></TableHead>
+              <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 5 }).map((_, j) => (
+                  {Array.from({ length: 7 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -80,7 +84,7 @@ export default function GeofencesPage() {
               ))
             ) : geofences.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   No geofences found
                 </TableCell>
               </TableRow>
@@ -88,10 +92,16 @@ export default function GeofencesPage() {
               geofences.map((g) => (
                 <TableRow key={g.id}>
                   <TableCell className="font-medium">{g.name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">#{g.userId}</TableCell>
                   <TableCell>{g.radiusM} m</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {g.centerLat != null && g.centerLon != null
+                      ? `${g.centerLat.toFixed(4)}, ${g.centerLon.toFixed(4)}`
+                      : "—"}
+                  </TableCell>
                   <TableCell>
-                    <Badge variant={g.active ? "default" : "secondary"}>
-                      {g.active ? "Active" : "Inactive"}
+                    <Badge variant={g.isActive ? "default" : "secondary"}>
+                      {g.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
@@ -101,7 +111,7 @@ export default function GeofencesPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => setDeleteId(g.id)}
+                      onClick={() => setDeleteId(g.id as number)}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -124,7 +134,10 @@ export default function GeofencesPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
