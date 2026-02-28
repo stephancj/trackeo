@@ -79,6 +79,123 @@ export class VehiclesController {
     return position;
   }
 
+  // ── Reports ──────────────────────────────────────────────────────────────
+
+  private periodToDates(period: string): { from: Date; to: Date } {
+    const now = new Date();
+    let from: Date;
+    if (period === 'today') {
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (period === '30d') {
+      from = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+    } else {
+      from = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    }
+    return { from, to: now };
+  }
+
+  /**
+   * GET /api/vehicles/:id/reports/activity?period=today|7d|30d
+   * Résumé activité : distance, trajets, idle, vitesse max, violations.
+   */
+  @Get(':id/reports/activity')
+  async getActivitySummary(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('period') period = '7d',
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
+    const { from, to } = this.periodToDates(period);
+    const summary = await this.positionsService
+      .getActivitySummary(id, from, to)
+      .catch(() => ({
+        distanceKm: 0,
+        drivingMinutes: 0,
+        idleMinutes: 0,
+        maxSpeedKmh: 0,
+        tripCount: 0,
+        speedViolationCount: 0,
+        pointCount: 0,
+      }));
+    return { deviceId: id, period, from, to, ...summary };
+  }
+
+  /**
+   * GET /api/vehicles/:id/reports/trip-log?from=ISO&to=ISO
+   * Trajets reconstitués (segmentation gap > 10 min).
+   */
+  @Get(':id/reports/trip-log')
+  async getTripLog(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
+    const now = new Date();
+    const fromDate = from
+      ? new Date(from)
+      : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const toDate = to ? new Date(to) : now;
+    const trips = await this.positionsService
+      .getTripLog(id, fromDate, toDate)
+      .catch(() => []);
+    return { deviceId: id, from: fromDate, to: toDate, trips };
+  }
+
+  /**
+   * GET /api/vehicles/:id/reports/speed-violations?from=ISO&to=ISO&threshold=120
+   * Épisodes de vitesse excessive.
+   */
+  @Get(':id/reports/speed-violations')
+  async getSpeedViolations(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Query('threshold') threshold: string | undefined,
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
+    const now = new Date();
+    const fromDate = from
+      ? new Date(from)
+      : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const toDate = to ? new Date(to) : now;
+    const thresholdKmh = threshold ? parseInt(threshold, 10) : 120;
+    const violations = await this.positionsService
+      .getSpeedViolations(id, fromDate, toDate, thresholdKmh)
+      .catch(() => []);
+    return { deviceId: id, from: fromDate, to: toDate, thresholdKmh, violations };
+  }
+
+  /**
+   * GET /api/vehicles/:id/reports/idle?from=ISO&to=ISO
+   * Épisodes d'immobilisation prolongée.
+   */
+  @Get(':id/reports/idle')
+  async getIdleTime(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
+    const now = new Date();
+    const fromDate = from
+      ? new Date(from)
+      : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const toDate = to ? new Date(to) : now;
+    const episodes = await this.positionsService
+      .getIdleTime(id, fromDate, toDate)
+      .catch(
+        (): Awaited<ReturnType<typeof this.positionsService.getIdleTime>> => [],
+      );
+    const totalIdleMinutes = episodes.reduce((s, e) => s + e.durationMin, 0);
+    return { deviceId: id, from: fromDate, to: toDate, totalIdleMinutes, episodes };
+  }
+
+  // ── History ───────────────────────────────────────────────────────────────
+
   /**
    * GET /api/vehicles/:id/history?from=ISO&to=ISO&limit=1000
    * Historique des positions pour tracer le trajet (polyligne Flutter).

@@ -392,6 +392,10 @@ TOTAL_POINTS=30
 | `PATCH` | `/api/geofences/:id` | Mettre à jour une geofence (ex : activer/désactiver) |
 | `DELETE` | `/api/geofences/:id` | Supprimer une geofence |
 | `GET` | `/api/alerts` | Alertes de l'utilisateur (geofence_enter / geofence_exit) |
+| `GET` | `/api/vehicles/:id/reports/activity?period=today\|7d\|30d` | Résumé activité (distance, idle, trips, max speed) |
+| `GET` | `/api/vehicles/:id/reports/trip-log?from=&to=` | Trajets reconstitués (gap > 10 min) |
+| `GET` | `/api/vehicles/:id/reports/speed-violations?from=&to=&threshold=` | Épisodes vitesse excessive |
+| `GET` | `/api/vehicles/:id/reports/idle?from=&to=` | Épisodes immobilisation prolongée |
 
 ### Admin (implémentés)
 
@@ -426,10 +430,6 @@ TOTAL_POINTS=30
 | `POST` | `/api/auth/register` | Inscription + provisionnement device |
 | `POST` | `/api/provision/request-otp` | Demande OTP pour activation device |
 | `POST` | `/api/provision/claim` | Valide OTP + lie device au compte |
-| `GET` | `/api/vehicles/:id/reports/activity?period=` | Résumé activité (distance, idle, trips, max speed) — côté utilisateur |
-| `GET` | `/api/vehicles/:id/reports/speed-violations?from=&to=&threshold=` | Épisodes vitesse excessive — côté utilisateur |
-| `GET` | `/api/vehicles/:id/reports/idle?from=&to=` | Épisodes immobilisation moteur allumé — côté utilisateur |
-| `GET` | `/api/vehicles/:id/reports/trip-log?from=&to=` | Trajets reconstitués — côté utilisateur |
 | `POST` | `/api/devices/:id/theft` | Déclencher le mode récupération vol |
 | `POST` | `/api/alerts/:id/escalate` | Escalader une alerte au partenaire |
 
@@ -635,9 +635,9 @@ feature/
 | Rapport | Admin (`/reports`) | Utilisateur (Flutter) | Priorité |
 |---------|-------------------|-----------------------|----------|
 | Résumé flotte (distance, alertes, statut) | ✅ Fait | 🔲 À faire | P1 |
-| Trip log (trajets reconstitués) | ✅ Fait | 🔲 À faire | P1 |
-| Violations de vitesse | ✅ Fait | 🔲 À faire | P1 |
-| Idle time (moteur allumé, arrêté) | ✅ Fait | 🔲 À faire | P2 |
+| Trip log (trajets reconstitués) | ✅ Fait | ✅ Fait | P1 |
+| Violations de vitesse | ✅ Fait | ✅ Fait | P1 |
+| Idle time (moteur allumé, arrêté) | ✅ Fait | ✅ Fait | P2 |
 | Activité geofence (entrées/sorties par zone) | 🔲 À faire | 🔲 À faire | P2 |
 | Email mensuel automatique | 🔲 À faire | — | P2 |
 | Export PDF | 🔲 À faire | 🔲 À faire | P3 |
@@ -770,14 +770,24 @@ En attendant le worker de segmentation Near-term, on peut reconstituer les traje
 - [x] **`VehicleReports`** dans `/vehicles/[id]`— section pleine largeur, mêmes 4 tabs + période
 - [x] `lib/api.ts` — `getVehicleActivitySummary`, `getVehicleTripLog`, `getVehicleSpeedViolations`, `getVehicleIdleTime`
 
-#### 🔲 Flutter (utilisateur final) — mêmes rapports côté mobile (à faire)
-- [ ] **Vue "Rapports"** dans l'app Flutter (onglet dédié ou section Paramètres)
-  - Résumé mensuel du mois en cours
-  - Trip log (liste trajets)
-  - Violations de vitesse
-  - Export PDF (Near-term)
-- [ ] **Endpoints utilisateur** — `GET /api/vehicles/:id/reports/activity|trip-log|speed-violations|idle` dans `VehiclesController`
-- [ ] **Email mensuel automatique** — `@Cron` le 1er de chaque mois → récapitulatif (distance, nb trajets, nb alertes, violations)
+#### ✅ Flutter (utilisateur final) — rapports côté mobile (implémenté)
+- [x] **Vue "Rapports"** (`ReportsView`) — accessible depuis Paramètres → "Rapports de conduite"
+  - Sélecteur de véhicule (dropdown, affiché si plusieurs véhicules)
+  - Sélecteur de période : Aujourd'hui / 7 jours / 30 jours
+  - 4 onglets : Activité / Trajets / Vitesse / Inactivité
+- [x] **Onglet Activité** — grille 6 stats (distance, trajets, conduite, inactif, vitesse max, excès)
+- [x] **Onglet Trajets** — liste des trajets avec départ/arrivée, durée, distance, vitesse max
+- [x] **Onglet Vitesse** — liste des épisodes d'excès de vitesse avec badge rouge + durée
+- [x] **Onglet Inactivité** — liste des épisodes avec total inactif en en-tête
+- [x] **Endpoints utilisateur** — `GET /api/vehicles/:id/reports/activity|trip-log|speed-violations|idle` dans `VehiclesController`
+- [x] `lib/features/reports/models/report_models.dart` — `ActivitySummary`, `TripLogEntry`, `SpeedViolation`, `IdleEpisode`
+- [x] `lib/features/reports/repositories/reports_repository.dart` — `ReportsRepository` + `RemoteReportsRepository`
+- [x] `lib/features/reports/providers/reports_provider.dart` — 4 `FutureProvider.autoDispose.family` avec tuples Dart 3 (epoch ms pour from/to)
+- [x] `lib/features/reports/views/reports_view.dart` — vue complète avec `ConsumerStatefulWidget` + `TabController`
+- [x] `settings_view.dart` — tile "Rapports de conduite" (section RAPPORTS) → `Navigator.push(ReportsView)`
+
+#### 🔲 Email mensuel automatique (à faire)
+- [ ] `@Cron` le 1er de chaque mois → récapitulatif (distance, nb trajets, nb alertes, violations)
 
 ### 🔲 À faire (S13-S16 — Déploiement VPS)
 - [ ] Onboarding QR/OTP pour activation device
