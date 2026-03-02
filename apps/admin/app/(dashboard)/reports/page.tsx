@@ -12,6 +12,7 @@ import {
   Route,
   Gauge,
   Clock,
+  MapPin,
 } from "lucide-react";
 import {
   getReportsOverview,
@@ -21,6 +22,7 @@ import {
   getVehicleTripLog,
   getVehicleSpeedViolations,
   getVehicleIdleTime,
+  getVehicleGeofenceActivity,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -52,7 +54,7 @@ interface VehicleReport {
 }
 
 type Period = "today" | "7d" | "30d";
-type DrillTab = "activity" | "trips" | "violations" | "idle";
+type DrillTab = "activity" | "trips" | "violations" | "idle" | "geofences";
 
 interface VehicleOption {
   id: number;
@@ -96,6 +98,8 @@ function VehicleDrillDown({ vehicles }: { vehicles: VehicleOption[] }) {
         ? getVehicleTripLog(selectedId, from, to)
         : tab === "violations"
         ? getVehicleSpeedViolations(selectedId, from, to)
+        : tab === "geofences"
+        ? getVehicleGeofenceActivity(selectedId, from, to)
         : getVehicleIdleTime(selectedId, from, to);
 
     fetcher
@@ -113,6 +117,7 @@ function VehicleDrillDown({ vehicles }: { vehicles: VehicleOption[] }) {
     { key: "trips", label: "Trip Log", icon: Route },
     { key: "violations", label: "Speed Violations", icon: Gauge },
     { key: "idle", label: "Idle Time", icon: Clock },
+    { key: "geofences", label: "Zones", icon: MapPin },
   ];
 
   const selected = vehicles.find((v) => v.id === selectedId);
@@ -417,6 +422,92 @@ function VehicleDrillDown({ vehicles }: { vehicles: VehicleOption[] }) {
                             </td>
                             <td className="py-2 font-mono text-xs text-muted-foreground">
                               {e.lat?.toFixed(4)}, {e.lon?.toFixed(4)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Geofence activity */}
+            {tab === "geofences" && (
+              <div className="overflow-x-auto">
+                {!data.geofences || data.geofences.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No geofences configured for this vehicle.
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {data.geofences.length} zone
+                      {data.geofences.length !== 1 ? "s" : ""} ·{" "}
+                      <span className="font-medium text-foreground">
+                        {data.geofences.reduce(
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          (s: number, g: any) => s + g.totalEvents,
+                          0
+                        )}{" "}
+                        events
+                      </span>{" "}
+                      total
+                    </p>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-muted-foreground text-left">
+                          <th className="pb-2 font-medium">Zone</th>
+                          <th className="pb-2 font-medium">Status</th>
+                          <th className="pb-2 font-medium">Entries</th>
+                          <th className="pb-2 font-medium">Exits</th>
+                          <th className="pb-2 font-medium">Total</th>
+                          <th className="pb-2 font-medium">Last Event</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {data.geofences.map((g: any, i: number) => (
+                          <tr
+                            key={i}
+                            className={cn(
+                              "hover:bg-muted/30",
+                              g.totalEvents === 0 && "opacity-50"
+                            )}
+                          >
+                            <td className="py-2 font-medium">{g.geofenceName}</td>
+                            <td className="py-2">
+                              {g.isActive ? (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+                                  Active
+                                </span>
+                              ) : (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                  Inactive
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2 font-mono text-emerald-600 font-medium">
+                              {g.enterCount > 0 ? `+${g.enterCount}` : "—"}
+                            </td>
+                            <td className="py-2 font-mono text-rose-600 font-medium">
+                              {g.exitCount > 0 ? `-${g.exitCount}` : "—"}
+                            </td>
+                            <td className="py-2 font-mono font-bold">
+                              {g.totalEvents}
+                            </td>
+                            <td className="py-2 text-xs text-muted-foreground tabular-nums">
+                              {g.lastEventAt
+                                ? new Date(g.lastEventAt).toLocaleString(
+                                    "en-US",
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )
+                                : "—"}
                             </td>
                           </tr>
                         ))}

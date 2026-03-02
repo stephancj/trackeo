@@ -396,6 +396,7 @@ TOTAL_POINTS=30
 | `GET` | `/api/vehicles/:id/reports/trip-log?from=&to=` | Trajets reconstitués (gap > 10 min) |
 | `GET` | `/api/vehicles/:id/reports/speed-violations?from=&to=&threshold=` | Épisodes vitesse excessive |
 | `GET` | `/api/vehicles/:id/reports/idle?from=&to=` | Épisodes immobilisation prolongée |
+| `GET` | `/api/vehicles/:id/reports/geofence-activity?period=today\|7d\|30d` | Activité geofence (entrées/sorties par zone) |
 
 ### Admin (implémentés)
 
@@ -420,6 +421,7 @@ TOTAL_POINTS=30
 | `GET` | `/api/admin/reports/vehicle/:deviceId/trip-log?from=&to=` | Trajets reconstitués (segmentation gap > 10 min) |
 | `GET` | `/api/admin/reports/vehicle/:deviceId/speed-violations?from=&to=&threshold=` | Épisodes vitesse excessive |
 | `GET` | `/api/admin/reports/vehicle/:deviceId/idle?from=&to=` | Épisodes immobilisation prolongée |
+| `GET` | `/api/admin/reports/vehicle/:deviceId/geofence-activity?from=&to=` | Activité geofence (entrées/sorties par zone) |
 | `GET` | `/api/admin/subscriptions` | Tous les users avec leur abonnement |
 | `PATCH` | `/api/admin/subscriptions/:userId` | Créer/modifier l'abonnement d'un user |
 
@@ -638,8 +640,8 @@ feature/
 | Trip log (trajets reconstitués) | ✅ Fait | ✅ Fait | P1 |
 | Violations de vitesse | ✅ Fait | ✅ Fait | P1 |
 | Idle time (moteur allumé, arrêté) | ✅ Fait | ✅ Fait | P2 |
-| Activité geofence (entrées/sorties par zone) | 🔲 À faire | 🔲 À faire | P2 |
-| Email mensuel automatique | 🔲 À faire | — | P2 |
+| Activité geofence (entrées/sorties par zone) | ✅ Fait | ✅ Fait | P2 |
+| Email mensuel automatique | 🔲 Post-launch | — | P2 |
 | Export PDF | 🔲 À faire | 🔲 À faire | P3 |
 | Driver behavior score | 🔲 À faire | 🔲 À faire | Near-term |
 
@@ -785,8 +787,20 @@ En attendant le worker de segmentation Near-term, on peut reconstituer les traje
 - [x] `lib/features/reports/providers/reports_provider.dart` — 4 `FutureProvider.autoDispose.family` avec tuples Dart 3 (epoch ms pour from/to)
 - [x] `lib/features/reports/views/reports_view.dart` — vue complète avec `ConsumerStatefulWidget` + `TabController`
 - [x] `settings_view.dart` — tile "Rapports de conduite" (section RAPPORTS) → `Navigator.push(ReportsView)`
+- [x] **Onglet Zones** — 5ème onglet dans `ReportsView` : activité geofence (entrées/sorties par zone), badge total événements, tri par activité décroissante
+- [x] **`GeofenceActivityEntry`** dans `report_models.dart` — geofenceId, geofenceName, isActive, enterCount, exitCount, totalEvents, lastEventAt, lastEventType
+- [x] **`getGeofenceActivity(vehicleId, period)`** dans `ReportsRepository` → `GET /vehicles/:id/reports/geofence-activity?period=`
+- [x] **`geofenceActivityProvider`** dans `reports_provider.dart` — `FutureProvider.autoDispose.family<List<GeofenceActivityEntry>, (int, String)>`
+- [x] **`GET /api/vehicles/:id/reports/geofence-activity?period=`** dans `VehiclesController` — ownership check + délégation à `AlertsService.getGeofenceActivity()`
+- [x] **`AlertsService.getGeofenceActivity(deviceId, from, to)`** — cross-référence alertes × geofences (liées au device + globales), groupe par nom dans le message
+- [x] **`AlertsModule`** — ajout de `Geofence` dans `TypeOrmModule.forFeature` (injection directe du repo dans `AlertsService`)
+- [x] **`VehiclesModule`** — import de `AlertsModule` pour injecter `AlertsService` dans `VehiclesController`
+- [x] **Admin — onglet Zones** dans `VehicleDrillDown` (`/reports`) — tableau zones avec entrées/sorties/total/dernier événement/statut actif
+- [x] **Admin `api.ts`** — `getVehicleGeofenceActivity(deviceId, from, to)` → `GET /admin/reports/vehicle/:deviceId/geofence-activity`
+- [x] **Admin `AdminService.getVehicleGeofenceActivity()`** + **`AdminController` `GET /admin/reports/vehicle/:deviceId/geofence-activity`**
 
-#### 🔲 Email mensuel automatique (à faire)
+#### 🔲 Email mensuel automatique (post-launch — mid-term)
+> **Décision** : Reporté après le déploiement VPS. Priorité mid-term, pas avant le Go Live.
 - [ ] `@Cron` le 1er de chaque mois → récapitulatif (distance, nb trajets, nb alertes, violations)
 
 ### 🔲 À faire (S13-S16 — Déploiement VPS)

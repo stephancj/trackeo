@@ -12,6 +12,8 @@ abstract class ReportsRepository {
       {int threshold = 120});
   Future<List<IdleEpisode>> getIdleTime(
       int vehicleId, DateTime from, DateTime to);
+  Future<List<GeofenceActivityEntry>> getGeofenceActivity(
+      int vehicleId, String period);
 }
 
 class RemoteReportsRepository implements ReportsRepository {
@@ -76,6 +78,20 @@ class RemoteReportsRepository implements ReportsRepository {
     final episodes = (response.data!['episodes'] as List<dynamic>?) ?? [];
     return episodes
         .map((e) => IdleEpisode.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<List<GeofenceActivityEntry>> getGeofenceActivity(
+      int vehicleId, String period) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/vehicles/$vehicleId/reports/geofence-activity',
+      queryParameters: {'period': period},
+    );
+    final geofences =
+        (response.data!['geofences'] as List<dynamic>?) ?? [];
+    return geofences
+        .map((e) => GeofenceActivityEntry.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 }

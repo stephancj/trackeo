@@ -429,4 +429,11 @@ export class AdminService {
     const totalIdleMinutes = episodes.reduce((s, e) => s + e.durationMin, 0);
     return { deviceId, from, to, totalIdleMinutes, episodes };
   }
+
+  async getVehicleGeofenceActivity(deviceId: number, from: Date, to: Date) {
+    const geofences = await this.alertsService
+      .getGeofenceActivity(deviceId, from, to)
+      .catch(() => []);
+    return { deviceId, from, to, geofences };
+  }
 }

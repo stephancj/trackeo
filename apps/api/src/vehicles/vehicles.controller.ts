@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { PositionsService } from '../positions/positions.service';
+import { AlertsService } from '../alerts/alerts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Device } from '../devices/device.entity';
 
@@ -22,7 +23,8 @@ export class VehiclesController {
   constructor(
     private readonly vehiclesService: VehiclesService,
     private readonly positionsService: PositionsService,
-  ) {}
+    private readonly alertsService: AlertsService,
+  ) { }
 
   /**
    * GET /api/vehicles
@@ -165,7 +167,13 @@ export class VehiclesController {
     const violations = await this.positionsService
       .getSpeedViolations(id, fromDate, toDate, thresholdKmh)
       .catch(() => []);
-    return { deviceId: id, from: fromDate, to: toDate, thresholdKmh, violations };
+    return {
+      deviceId: id,
+      from: fromDate,
+      to: toDate,
+      thresholdKmh,
+      violations,
+    };
   }
 
   /**
@@ -191,7 +199,31 @@ export class VehiclesController {
         (): Awaited<ReturnType<typeof this.positionsService.getIdleTime>> => [],
       );
     const totalIdleMinutes = episodes.reduce((s, e) => s + e.durationMin, 0);
-    return { deviceId: id, from: fromDate, to: toDate, totalIdleMinutes, episodes };
+    return {
+      deviceId: id,
+      from: fromDate,
+      to: toDate,
+      totalIdleMinutes,
+      episodes,
+    };
+  }
+
+  /**
+   * GET /api/vehicles/:id/reports/geofence-activity?period=today|7d|30d
+   * Activité geofence : entrées/sorties par zone sur la période.
+   */
+  @Get(':id/reports/geofence-activity')
+  async getGeofenceActivity(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('period') period = '7d',
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
+    const { from, to } = this.periodToDates(period);
+    const geofences = await this.alertsService
+      .getGeofenceActivity(id, from, to)
+      .catch(() => []);
+    return { deviceId: id, period, from, to, geofences };
   }
 
   // ── History ───────────────────────────────────────────────────────────────

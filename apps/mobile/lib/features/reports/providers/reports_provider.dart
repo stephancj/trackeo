@@ -44,3 +44,12 @@ final idleTimeProvider = FutureProvider.autoDispose
         DateTime.fromMillisecondsSinceEpoch(toMs),
       );
 });
+
+// (vehicleId, period) → List<GeofenceActivityEntry>
+final geofenceActivityProvider = FutureProvider.autoDispose
+    .family<List<GeofenceActivityEntry>, (int, String)>((ref, params) {
+  final (vehicleId, period) = params;
+  return ref
+      .read(reportsRepositoryProvider)
+      .getGeofenceActivity(vehicleId, period);
+});

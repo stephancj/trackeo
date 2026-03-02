@@ -191,6 +191,19 @@ export class AdminController {
     return this.adminService.getVehicleIdleTime(deviceId, fromDate, toDate);
   }
 
+  /** Activité geofence (entrées/sorties par zone) pour un véhicule */
+  @Get('reports/vehicle/:deviceId/geofence-activity')
+  getVehicleGeofenceActivity(
+    @Param('deviceId', ParseIntPipe) deviceId: number,
+    @Query('from') from: string,
+    @Query('to') to: string,
+  ) {
+    const now = new Date();
+    const fromDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const toDate = to ? new Date(to) : now;
+    return this.adminService.getVehicleGeofenceActivity(deviceId, fromDate, toDate);
+  }
+
   // ── Subscriptions ─────────────────────────────────────────────────────────
 
   @Get('subscriptions')

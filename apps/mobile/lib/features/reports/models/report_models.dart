@@ -141,3 +141,52 @@ class IdleEpisode extends Equatable {
   @override
   List<Object?> get props => [startTime, durationMin];
 }
+
+class GeofenceActivityEntry extends Equatable {
+  final int geofenceId;
+  final String geofenceName;
+  final bool isActive;
+  final double centerLat;
+  final double centerLon;
+  final int radiusM;
+  final int enterCount;
+  final int exitCount;
+  final int totalEvents;
+  final DateTime? lastEventAt;
+  final String? lastEventType; // 'geofence_enter' | 'geofence_exit' | null
+
+  const GeofenceActivityEntry({
+    required this.geofenceId,
+    required this.geofenceName,
+    required this.isActive,
+    required this.centerLat,
+    required this.centerLon,
+    required this.radiusM,
+    required this.enterCount,
+    required this.exitCount,
+    required this.totalEvents,
+    this.lastEventAt,
+    this.lastEventType,
+  });
+
+  factory GeofenceActivityEntry.fromJson(Map<String, dynamic> json) =>
+      GeofenceActivityEntry(
+        geofenceId: (json['geofenceId'] as num).toInt(),
+        geofenceName: json['geofenceName'] as String,
+        isActive: json['isActive'] as bool? ?? true,
+        centerLat: (json['centerLat'] as num).toDouble(),
+        centerLon: (json['centerLon'] as num).toDouble(),
+        radiusM: (json['radiusM'] as num).toInt(),
+        enterCount: (json['enterCount'] as num?)?.toInt() ?? 0,
+        exitCount: (json['exitCount'] as num?)?.toInt() ?? 0,
+        totalEvents: (json['totalEvents'] as num?)?.toInt() ?? 0,
+        lastEventAt: json['lastEventAt'] != null
+            ? DateTime.parse(json['lastEventAt'] as String)
+            : null,
+        lastEventType: json['lastEventType'] as String?,
+      );
+
+  @override
+  List<Object?> get props =>
+      [geofenceId, enterCount, exitCount, lastEventAt];
+}

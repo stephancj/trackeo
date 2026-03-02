@@ -48,7 +48,7 @@ class _ReportsViewState extends ConsumerState<ReportsView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -116,6 +116,8 @@ class _ReportsViewState extends ConsumerState<ReportsView>
               labelColor: AppColors.primary,
               unselectedLabelColor: AppColors.textSecondary,
               indicatorColor: AppColors.primary,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
               labelStyle: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -125,6 +127,7 @@ class _ReportsViewState extends ConsumerState<ReportsView>
                 Tab(text: 'Trajets'),
                 Tab(text: 'Vitesse'),
                 Tab(text: 'Inactivité'),
+                Tab(text: 'Zones'),
               ],
             ),
           ),
@@ -151,6 +154,10 @@ class _ReportsViewState extends ConsumerState<ReportsView>
                       _IdleTab(
                         vehicleId: _selectedVehicleId!,
                         dateRange: _dateRange,
+                      ),
+                      _GeofenceTab(
+                        vehicleId: _selectedVehicleId!,
+                        period: _period,
                       ),
                     ],
                   ),
@@ -879,6 +886,225 @@ class _IdleCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Geofence Activity Tab ─────────────────────────────────────────────────────
+
+class _GeofenceTab extends ConsumerWidget {
+  final int vehicleId;
+  final String period;
+
+  const _GeofenceTab({required this.vehicleId, required this.period});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final geofencesAsync =
+        ref.watch(geofenceActivityProvider((vehicleId, period)));
+
+    return geofencesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Erreur: $e')),
+      data: (geofences) {
+        if (geofences.isEmpty) {
+          return const _EmptyList(
+            icon: Icons.location_on_outlined,
+            message: 'Aucune zone géographique configurée',
+          );
+        }
+
+        // Sort: most active first, then alphabetical
+        final sorted = [...geofences]
+          ..sort((a, b) {
+            final cmp = b.totalEvents.compareTo(a.totalEvents);
+            return cmp != 0 ? cmp : a.geofenceName.compareTo(b.geofenceName);
+          });
+
+        final totalEvents = geofences.fold(0, (s, g) => s + g.totalEvents);
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: sorted.length + 1,
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (_, i) {
+            if (i == 0) {
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on_outlined,
+                        color: AppColors.primary),
+                    const SizedBox(width: 10),
+                    Text(
+                      '$totalEvents événement${totalEvents > 1 ? 's' : ''} au total',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${geofences.length} zone${geofences.length > 1 ? 's' : ''}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return _GeofenceCard(entry: sorted[i - 1]);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _GeofenceCard extends StatelessWidget {
+  final GeofenceActivityEntry entry;
+
+  const _GeofenceCard({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasActivity = entry.totalEvents > 0;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.location_on_outlined,
+                color: AppColors.primary, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        entry.geofenceName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (!entry.isActive)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.textHint.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Inactif',
+                          style: TextStyle(
+                              fontSize: 10, color: AppColors.textHint),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                if (hasActivity) ...[
+                  Row(
+                    children: [
+                      _EventBadge(
+                        label: '${entry.enterCount} entrée${entry.enterCount > 1 ? 's' : ''}',
+                        color: AppColors.statusOnline,
+                      ),
+                      const SizedBox(width: 8),
+                      _EventBadge(
+                        label: '${entry.exitCount} sortie${entry.exitCount > 1 ? 's' : ''}',
+                        color: AppColors.statusAlert,
+                      ),
+                    ],
+                  ),
+                  if (entry.lastEventAt != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Dernier : ${_fmtDate(entry.lastEventAt!)}',
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ] else
+                  const Text(
+                    'Aucune activité sur cette période',
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary),
+                  ),
+              ],
+            ),
+          ),
+          if (hasActivity)
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '${entry.totalEvents}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EventBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _EventBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }

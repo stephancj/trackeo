@@ -87,6 +87,15 @@ export const getVehicleIdleTime = (
   to: string
 ) => api.get(`/admin/reports/vehicle/${deviceId}/idle?from=${from}&to=${to}`);
 
+export const getVehicleGeofenceActivity = (
+  deviceId: number,
+  from: string,
+  to: string
+) =>
+  api.get(
+    `/admin/reports/vehicle/${deviceId}/geofence-activity?from=${from}&to=${to}`
+  );
+
 // Subscriptions
 export const getSubscriptions = () => api.get("/admin/subscriptions");
 export const upsertSubscription = (
