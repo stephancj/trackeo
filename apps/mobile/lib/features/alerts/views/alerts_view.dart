@@ -11,7 +11,9 @@ import '../providers/geofences_provider.dart';
 import '../models/geofence_model.dart';
 import '../models/alert_model.dart';
 import 'create_geofence_view.dart';
+import 'all_alerts_view.dart';
 import 'widgets/alert_skeletons.dart';
+import 'widgets/alert_detail_sheet.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
 import '../../../core/providers/geocoding_provider.dart';
 
@@ -32,7 +34,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Alerts & Geofencing'),
+        title: const Text('Alertes & Zones'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: AppColors.primary),
@@ -46,8 +48,8 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionHeader(
-              'ACTIVE GEOFENCES',
-              action: '+ Add New',
+              'ZONES ACTIVES',
+              action: '+ Ajouter',
               onActionTap: () {
                 Navigator.push(
                   context,
@@ -80,11 +82,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
             ),
             const SizedBox(height: 32),
 
-            _buildSectionHeader(
-              'RECENT ACTIVITY',
-              action: 'Clear All',
-              onActionTap: () {},
-            ),
+            _buildActivitySectionHeader(),
             const SizedBox(height: 12),
             alertsState.when(
               data: (alerts) => _buildRecentActivityList(alerts),
@@ -131,6 +129,81 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
     );
   }
 
+  /// En-tête "RECENT ACTIVITY" avec menu 3-points.
+  Widget _buildActivitySectionHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          'ACTIVITÉ RÉCENTE',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textHint,
+            letterSpacing: 0.5,
+          ),
+        ),
+        SizedBox(
+          height: 28,
+          width: 28,
+          child: PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            icon: const Icon(
+              Icons.more_horiz_rounded,
+              color: AppColors.textHint,
+              size: 20,
+            ),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            onSelected: (value) async {
+              if (value == 'mark_read') {
+                await ref.read(alertsProvider.notifier).markAllRead();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Toutes les alertes marquées comme lues'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } else if (value == 'view_all') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const AllAlertsView()),
+                );
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'mark_read',
+                child: Row(
+                  children: [
+                    Icon(Icons.done_all_rounded,
+                        size: 18, color: AppColors.textSecondary),
+                    SizedBox(width: 10),
+                    Text('Marquer tout comme lu'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'view_all',
+                child: Row(
+                  children: [
+                    Icon(Icons.list_alt_rounded,
+                        size: 18, color: AppColors.textSecondary),
+                    SizedBox(width: 10),
+                    Text('Voir tout'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   /// Returns a comma-separated list of vehicle names for the geofence,
   /// or null if no filter is applied (= all vehicles).
   String? _vehicleNamesFor(Geofence geofence) {
@@ -144,12 +217,12 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                 .map((v) => v.name)
                 .toList();
             if (names.isEmpty) {
-              return '${ids.length} vehicle${ids.length > 1 ? 's' : ''}';
+              return '${ids.length} véhicule${ids.length > 1 ? 's' : ''}';
             }
             return names.join(', ');
           },
         ) ??
-        '${ids.length} vehicle${ids.length > 1 ? 's' : ''}';
+        '${ids.length} véhicule${ids.length > 1 ? 's' : ''}';
   }
 
   Widget _buildActiveGeofenceCard(Geofence geofence) {
@@ -342,7 +415,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               loading: () => const Text(
-                                'Resolving location...',
+                                'Localisation...',
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -364,7 +437,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                         Row(
                           children: [
                             Text(
-                              '${geofence.radiusM.toInt()}m radius',
+                              'Rayon ${geofence.radiusM.toInt()} m',
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: AppColors.textHint,
@@ -443,32 +516,72 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
     if (alerts.isEmpty) {
       return _buildActivityEmptyState();
     }
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+
+    const maxVisible = 5;
+    final displayed = alerts.take(maxVisible).toList();
+    final hasMore = alerts.length > maxVisible;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < displayed.length; i++) ...[
+                if (i > 0)
+                  const Divider(
+                      height: 1, indent: 32, color: AppColors.divider),
+                _buildActivityItem(displayed[i]),
+              ],
+            ],
+          ),
+        ),
+        if (hasMore) ...[
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AllAlertsView()),
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: AppColors.divider.withValues(alpha: 0.8)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Voir tout (${alerts.length})',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.arrow_forward_rounded,
+                      color: AppColors.primary, size: 16),
+                ],
+              ),
+            ),
           ),
         ],
-      ),
-      child: Column(
-        children: [
-          for (var i = 0; i < alerts.length; i++) ...[
-            if (i > 0)
-              const Divider(height: 1, indent: 32, color: AppColors.divider),
-            _buildActivityItem(
-              dotColor: _alertDotColor(alerts[i].type),
-              title: _alertTitle(alerts[i].type),
-              subtitle: alerts[i].message ?? 'No details provided',
-              time: timeago.format(alerts[i].createdAt),
-            ),
-          ],
-        ],
-      ),
+      ],
     );
   }
 
@@ -486,9 +599,9 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
   String _alertTitle(String type) {
     switch (type) {
       case 'geofence_enter':
-        return 'Entered zone';
+        return 'Entrée dans la zone';
       case 'geofence_exit':
-        return 'Exited zone';
+        return 'Sortie de la zone';
       default:
         return type;
     }
@@ -538,7 +651,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'No zones yet',
+                    'Aucune zone',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -547,7 +660,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Tap here to create your first geofence and get alerts when vehicles enter or exit.',
+                    'Appuyez ici pour créer votre première zone et recevoir des alertes à l\'entrée ou la sortie.',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textHint,
@@ -565,7 +678,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
-                '+ New',
+                '+ Créer',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -610,7 +723,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'All clear',
+            'Tout est calme',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -619,7 +732,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'No alerts triggered recently.\nYour vehicles are within their zones.',
+            'Aucune alerte récente.\nVos véhicules sont dans leurs zones.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
@@ -655,52 +768,101 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
     );
   }
 
-  Widget _buildActivityItem({
-    required Color dotColor,
-    required String title,
-    required String subtitle,
-    required String time,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textHint,
-                  ),
-                ),
-              ],
+  Widget _buildActivityItem(AlertModel alert) {
+    final isOpen = alert.status == 'open';
+    final dotColor = isOpen ? _alertDotColor(alert.type) : AppColors.textHint;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => AlertDetailSheet.show(context, ref, alert),
+      child: Container(
+        // Légère teinte de fond pour les alertes non lues
+        color: isOpen
+            ? _alertDotColor(alert.type).withValues(alpha: 0.04)
+            : Colors.transparent,
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Indicateur lu/non-lu
+            Container(
+              margin: const EdgeInsets.only(top: 5),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
             ),
-          ),
-          Text(
-            time,
-            style: const TextStyle(fontSize: 12, color: AppColors.textHint),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _alertTitle(alert.type),
+                          style: TextStyle(
+                            fontSize: 14,
+                            // Gras si non lu, normal si lu
+                            fontWeight: isOpen
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isOpen
+                                ? AppColors.textPrimary
+                                : AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      if (isOpen)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _alertDotColor(alert.type)
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Nouveau',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: _alertDotColor(alert.type),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    alert.message ?? 'Aucun détail',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isOpen
+                          ? AppColors.textHint
+                          : AppColors.textHint.withValues(alpha: 0.7),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              timeago.format(alert.createdAt),
+              style: TextStyle(
+                fontSize: 11,
+                color: isOpen
+                    ? AppColors.textHint
+                    : AppColors.textHint.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -758,22 +920,22 @@ class _GeofenceActionsSheetState extends ConsumerState<_GeofenceActionsSheet> {
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          'Delete zone?',
+          'Supprimer la zone ?',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
-          'Are you sure you want to delete "${widget.geofence.name}"?\nThis cannot be undone.',
+          'Supprimer la zone "${widget.geofence.name}" ?\nCette action est irréversible.',
           style: const TextStyle(color: AppColors.textHint),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text('Annuler'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: const Text('Supprimer'),
           ),
         ],
       ),
@@ -846,7 +1008,7 @@ class _GeofenceActionsSheetState extends ConsumerState<_GeofenceActionsSheet> {
                       ),
                     ),
                     Text(
-                      '${widget.geofence.radiusM.toInt()}m radius',
+                      'Rayon ${widget.geofence.radiusM.toInt()} m',
                       style: const TextStyle(
                         fontSize: 13,
                         color: AppColors.textHint,
@@ -859,7 +1021,7 @@ class _GeofenceActionsSheetState extends ConsumerState<_GeofenceActionsSheet> {
           ),
           const SizedBox(height: 20),
           const Text(
-            'MONITORED VEHICLES',
+            'VÉHICULES SURVEILLÉS',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -870,8 +1032,8 @@ class _GeofenceActionsSheetState extends ConsumerState<_GeofenceActionsSheet> {
           const SizedBox(height: 4),
           Text(
             _selectedIds.isEmpty
-                ? 'All vehicles (no filter)'
-                : '${_selectedIds.length} vehicle${_selectedIds.length > 1 ? 's' : ''} selected',
+                ? 'Tous les véhicules (aucun filtre)'
+                : '${_selectedIds.length} véhicule${_selectedIds.length > 1 ? 's' : ''} sélectionné${_selectedIds.length > 1 ? 's' : ''}',
             style: const TextStyle(fontSize: 12, color: AppColors.textHint),
           ),
           const SizedBox(height: 10),
@@ -879,7 +1041,7 @@ class _GeofenceActionsSheetState extends ConsumerState<_GeofenceActionsSheet> {
             data: (vehicles) {
               if (vehicles.isEmpty) {
                 return const Text(
-                  'No vehicles available',
+                  'Aucun véhicule disponible',
                   style: TextStyle(color: AppColors.textHint, fontSize: 13),
                 );
               }
@@ -993,7 +1155,7 @@ class _GeofenceActionsSheetState extends ConsumerState<_GeofenceActionsSheet> {
                       ),
                     )
                   : const Text(
-                      'Apply',
+                      'Appliquer',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
             ),
@@ -1018,7 +1180,7 @@ class _GeofenceActionsSheetState extends ConsumerState<_GeofenceActionsSheet> {
                   Icon(Icons.delete_outline_rounded, size: 18),
                   SizedBox(width: 8),
                   Text(
-                    'Delete Zone',
+                    'Supprimer la zone',
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ],

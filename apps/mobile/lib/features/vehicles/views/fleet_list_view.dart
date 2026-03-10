@@ -34,7 +34,7 @@ class FleetListView extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'My Vehicles',
+                            'Mes Véhicules',
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
@@ -42,7 +42,7 @@ class FleetListView extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            '${v.where((x) => x.status != VehicleStatus.offline).length} Active Vehicles',
+                            '${v.where((x) => x.status != VehicleStatus.offline).length} véhicule(s) actif(s)',
                             style: const TextStyle(
                               fontSize: 13,
                               color: AppColors.textSecondary,
@@ -85,7 +85,7 @@ class FleetListView extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
                     _FilterTab(
-                      label: 'All Vehicles (${v.length})',
+                      label: 'Tous (${v.length})',
                       isSelected: filter == VehicleFilter.all,
                       onTap: () =>
                           ref.read(vehicleFilterProvider.notifier).state =
@@ -94,7 +94,7 @@ class FleetListView extends ConsumerWidget {
                     const SizedBox(width: 8),
                     _FilterTab(
                       label:
-                          'Moving (${v.where((x) => x.status == VehicleStatus.online).length})',
+                          'En route (${v.where((x) => x.status == VehicleStatus.online).length})',
                       isSelected: filter == VehicleFilter.moving,
                       onTap: () =>
                           ref.read(vehicleFilterProvider.notifier).state =
@@ -103,7 +103,7 @@ class FleetListView extends ConsumerWidget {
                     const SizedBox(width: 8),
                     _FilterTab(
                       label:
-                          'Idle (${v.where((x) => x.status == VehicleStatus.idle).length})',
+                          'Arrêté (${v.where((x) => x.status == VehicleStatus.idle).length})',
                       isSelected: filter == VehicleFilter.idle,
                       onTap: () =>
                           ref.read(vehicleFilterProvider.notifier).state =
@@ -112,7 +112,7 @@ class FleetListView extends ConsumerWidget {
                     const SizedBox(width: 8),
                     _FilterTab(
                       label:
-                          'Offline (${v.where((x) => x.status == VehicleStatus.offline).length})',
+                          'Hors ligne (${v.where((x) => x.status == VehicleStatus.offline).length})',
                       isSelected: filter == VehicleFilter.offline,
                       onTap: () =>
                           ref.read(vehicleFilterProvider.notifier).state =
@@ -193,7 +193,7 @@ class _SearchBar extends ConsumerWidget {
       child: TextField(
         onChanged: (v) => ref.read(vehicleSearchProvider.notifier).state = v,
         decoration: const InputDecoration(
-          hintText: 'Search by name or plate number...',
+          hintText: 'Rechercher par nom ou plaque...',
           prefixIcon: Icon(Icons.search, color: AppColors.textHint, size: 20),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,

@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, Repository } from 'typeorm';
 import { Alert, AlertType } from './entities/alert.entity';
 import { Geofence } from '../geofences/entities/geofence.entity';
+import { DeviceAssignment } from '../admin/device-assignment.entity';
 
 export interface GeofenceActivityEntry {
   geofenceId: number;
@@ -25,7 +26,15 @@ export class AlertsService {
     private readonly alertsRepository: Repository<Alert>,
     @InjectRepository(Geofence)
     private readonly geofenceRepository: Repository<Geofence>,
+    @InjectRepository(DeviceAssignment)
+    private readonly assignmentRepo: Repository<DeviceAssignment>,
   ) {}
+
+  /** Résout les device IDs actuellement assignés à un utilisateur */
+  private async getAssignedDeviceIds(userId: number): Promise<number[]> {
+    const assignments = await this.assignmentRepo.find({ where: { userId } });
+    return assignments.map((a) => a.deviceId);
+  }
 
   async createAlert(
     ownerId: number,
@@ -54,9 +63,16 @@ export class AlertsService {
     });
   }
 
-  async findAllForUser(ownerId: number): Promise<Alert[]> {
+  /**
+   * Retourne les alertes des véhicules ACTUELLEMENT assignés à l'utilisateur.
+   * Filtre par device_assignments (pas par ownerId) pour que les alertes
+   * suivent le véhicule, même en cas de réassignation.
+   */
+  async findAllForUser(userId: number): Promise<Alert[]> {
+    const deviceIds = await this.getAssignedDeviceIds(userId);
+    if (deviceIds.length === 0) return [];
     return this.alertsRepository.find({
-      where: { ownerId },
+      where: { deviceId: In(deviceIds) },
       order: { createdAt: 'DESC' },
     });
   }
@@ -75,9 +91,13 @@ export class AlertsService {
     });
   }
 
-  /** Count open alerts for a user */
-  async countOpenForUser(ownerId: number): Promise<number> {
-    return this.alertsRepository.count({ where: { ownerId, status: 'open' } });
+  /** Count open alerts for a user — based on currently assigned vehicles */
+  async countOpenForUser(userId: number): Promise<number> {
+    const deviceIds = await this.getAssignedDeviceIds(userId);
+    if (deviceIds.length === 0) return 0;
+    return this.alertsRepository.count({
+      where: { deviceId: In(deviceIds), status: 'open' },
+    });
   }
 
   /** Count open alerts for a device */
@@ -93,6 +113,39 @@ export class AlertsService {
     if (!alert) throw new Error(`Alert ${id} not found`);
     alert.status = 'acked';
     return this.alertsRepository.save(alert);
+  }
+
+  /**
+   * Acquitte une alerte d'un utilisateur (vérifie que le device appartient à l'user).
+   * Retourne l'alerte mise à jour.
+   */
+  async ackAlertForUser(alertId: string, userId: number): Promise<Alert> {
+    const deviceIds = await this.getAssignedDeviceIds(userId);
+    const alert = await this.alertsRepository.findOne({
+      where: { id: alertId },
+    });
+    if (!alert || !deviceIds.includes(alert.deviceId)) {
+      throw new NotFoundException(`Alerte introuvable`);
+    }
+    alert.status = 'acked';
+    return this.alertsRepository.save(alert);
+  }
+
+  /**
+   * Marque toutes les alertes ouvertes des véhicules assignés à l'utilisateur comme lues.
+   * Retourne le nombre d'alertes mises à jour.
+   */
+  async markAllReadForUser(userId: number): Promise<{ updated: number }> {
+    const deviceIds = await this.getAssignedDeviceIds(userId);
+    if (deviceIds.length === 0) return { updated: 0 };
+    const result = await this.alertsRepository
+      .createQueryBuilder()
+      .update(Alert)
+      .set({ status: 'acked' })
+      .where('device_id = ANY(:deviceIds)', { deviceIds })
+      .andWhere('status = :status', { status: 'open' })
+      .execute();
+    return { updated: result.affected ?? 0 };
   }
 
   /**

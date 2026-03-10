@@ -29,6 +29,25 @@ class AlertModel extends Equatable {
     createdAt: DateTime.parse(json['createdAt'] as String),
   );
 
+  AlertModel copyWith({
+    String? id,
+    int? deviceId,
+    int? ownerId,
+    String? type,
+    String? message,
+    String? status,
+    DateTime? createdAt,
+  }) =>
+      AlertModel(
+        id: id ?? this.id,
+        deviceId: deviceId ?? this.deviceId,
+        ownerId: ownerId ?? this.ownerId,
+        type: type ?? this.type,
+        message: message ?? this.message,
+        status: status ?? this.status,
+        createdAt: createdAt ?? this.createdAt,
+      );
+
   @override
   List<Object?> get props => [
     id,

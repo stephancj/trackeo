@@ -357,7 +357,7 @@ class _DateSelector extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  isToday ? 'Today' : _dayName(date),
+                  isToday ? 'Aujourd\'hui' : _dayName(date),
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.textSecondary,
@@ -397,23 +397,23 @@ class _DateSelector extends ConsumerWidget {
   String _formatDate(DateTime d) {
     const m = [
       'Jan',
-      'Feb',
+      'Fév',
       'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
+      'Avr',
+      'Mai',
+      'Juin',
+      'Juil',
+      'Aoû',
       'Sep',
       'Oct',
       'Nov',
-      'Dec',
+      'Déc',
     ];
     return '${m[d.month - 1]} ${d.day}, ${d.year}';
   }
 
   String _dayName(DateTime d) {
-    const w = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const w = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
     return w[d.weekday - 1];
   }
 }
@@ -443,7 +443,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const Text(
-            'No trips recorded',
+            'Aucun trajet enregistré',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 17,
@@ -452,7 +452,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'No data found for $vehicleName on this date.',
+            'Aucune donnée pour $vehicleName à cette date.',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 13,
@@ -496,7 +496,7 @@ class _TripPanel extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Trip Summary',
+                'Résumé du trajet',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 17,
@@ -513,7 +513,7 @@ class _TripPanel extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
-                  'COMPLETED',
+                  'TERMINÉ',
                   style: TextStyle(
                     color: AppColors.primary,
                     fontSize: 10,
@@ -549,7 +549,7 @@ class _TripPanel extends StatelessWidget {
                     icon: Icons.timer_outlined,
                     iconColor: const Color(0xFFF97316),
                     iconBg: const Color(0xFFFFF3E8),
-                    label: 'DURATION',
+                    label: 'DURÉE',
                     value: stats.formattedDuration,
                   ),
                   Container(width: 1, color: AppColors.divider),
@@ -557,7 +557,7 @@ class _TripPanel extends StatelessWidget {
                     icon: Icons.speed_outlined,
                     iconColor: const Color(0xFF9333EA),
                     iconBg: const Color(0xFFF5EEFF),
-                    label: 'TOP SPEED',
+                    label: 'VITESSE MAX',
                     value: stats.formattedTopSpeed,
                   ),
                 ],
@@ -569,7 +569,7 @@ class _TripPanel extends StatelessWidget {
 
           // ── Journey Timeline ──────────────────────────────────────────
           const Text(
-            'JOURNEY TIMELINE',
+            'CHRONOLOGIE',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -684,7 +684,7 @@ class _JourneyTimeline extends StatelessWidget {
           isStart: true,
           time: _hhmm(start.deviceTime),
           latLng: LatLng(start.lat, start.lon),
-          fallback: start.address ?? 'Departure point',
+          fallback: start.address ?? 'Point de départ',
         ),
         // Connecting line
         Padding(
@@ -698,7 +698,7 @@ class _JourneyTimeline extends StatelessWidget {
           isStart: false,
           time: _hhmm(end.deviceTime),
           latLng: LatLng(end.lat, end.lon),
-          fallback: end.address ?? 'Arrival point',
+          fallback: end.address ?? 'Point d\'arrivée',
         ),
       ],
     );
@@ -773,7 +773,7 @@ class _TimelineItem extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     loading: () => const Text(
-                      'Resolving...',
+                      'Localisation...',
                       style: TextStyle(fontSize: 13, color: AppColors.textHint),
                     ),
                     error: (_, __) => Text(

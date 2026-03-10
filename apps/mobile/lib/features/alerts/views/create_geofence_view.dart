@@ -53,7 +53,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
         (_) => _ensureCircleVisible(),
       );
     } else {
-      _nameController = TextEditingController(text: 'Home');
+      _nameController = TextEditingController(text: 'Domicile');
     }
     _pulseController = AnimationController(
       vsync: this,
@@ -125,22 +125,22 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
-          'Delete zone?',
+          'Supprimer la zone ?',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
-          'Are you sure you want to delete "${_nameController.text.trim()}"?\nThis cannot be undone.',
+          'Supprimer "${_nameController.text.trim()}" ?\nCette action est irréversible.',
           style: const TextStyle(color: AppColors.textHint),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text('Annuler'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: const Text('Supprimer'),
           ),
         ],
       ),
@@ -156,7 +156,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Failed to delete zone. Please try again.'),
+          content: const Text('Impossible de supprimer. Veuillez réessayer.'),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -172,7 +172,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please enter a zone name'),
+          content: const Text('Veuillez saisir un nom de zone'),
           backgroundColor: Colors.orange.shade700,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -212,8 +212,8 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
         SnackBar(
           content: Text(
             _isEditing
-                ? 'Failed to update zone. Please try again.'
-                : 'Failed to save zone. Please try again.',
+                ? 'Impossible de mettre à jour. Veuillez réessayer.'
+                : 'Impossible d\'enregistrer. Veuillez réessayer.',
           ),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
@@ -376,7 +376,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                         ),
                         SizedBox(width: 6),
                         Text(
-                          'Drag pin or tap map to position',
+                          'Déplacez l\'épingle ou touchez la carte',
                           style: TextStyle(color: Colors.white, fontSize: 12),
                         ),
                       ],
@@ -417,7 +417,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                       ],
                     ),
                     child: Text(
-                      _isEditing ? 'Edit Zone' : 'New Geofence',
+                      _isEditing ? 'Modifier la zone' : 'Nouvelle zone',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -445,7 +445,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                 _buildMapFabButton(
                   icon: Icons.my_location_rounded,
                   onTap: _centerOnMarker,
-                  tooltip: 'Center on pin',
+                  tooltip: 'Centrer sur l\'épingle',
                   isPrimary: true,
                 ),
                 const SizedBox(height: 8),
@@ -547,7 +547,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                     ),
 
                     // ── Zone Name ──────────────────────────────────────────
-                    _buildLabel('Zone Name'),
+                    _buildLabel('Nom de la zone'),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _nameController,
@@ -562,7 +562,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                           color: AppColors.textHint,
                           size: 20,
                         ),
-                        hintText: 'e.g. Home, Office…',
+                        hintText: 'ex. Domicile, Bureau…',
                         hintStyle: const TextStyle(color: AppColors.textHint),
                         filled: true,
                         fillColor: AppColors.background,
@@ -589,7 +589,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildLabel('Zone Radius'),
+                        _buildLabel('Rayon de la zone'),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -664,12 +664,12 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                     const SizedBox(height: 20),
 
                     // ── Monitored Vehicles ─────────────────────────────────
-                    _buildLabel('Monitored Vehicles'),
+                    _buildLabel('Véhicules surveillés'),
                     const SizedBox(height: 4),
                     Text(
                       _selectedVehicleIds.isEmpty
-                          ? 'All vehicles (no filter)'
-                          : '${_selectedVehicleIds.length} vehicle${_selectedVehicleIds.length > 1 ? 's' : ''} selected',
+                          ? 'Tous les véhicules (aucun filtre)'
+                          : '${_selectedVehicleIds.length} véhicule${_selectedVehicleIds.length > 1 ? 's' : ''} sélectionné${_selectedVehicleIds.length > 1 ? 's' : ''}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textHint,
@@ -680,13 +680,13 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                     const SizedBox(height: 20),
 
                     // ── Alert Triggers ─────────────────────────────────────
-                    _buildLabel('Alert Triggers'),
+                    _buildLabel('Déclencheurs d\'alertes'),
                     const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
                           child: _buildTriggerCard(
-                            'On Entry',
+                            'À l\'entrée',
                             Icons.login_rounded,
                             _onEntry,
                             (v) => setState(() => _onEntry = v),
@@ -695,7 +695,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                         const SizedBox(width: 12),
                         Expanded(
                           child: _buildTriggerCard(
-                            'On Exit',
+                            'À la sortie',
                             Icons.logout_rounded,
                             _onExit,
                             (v) => setState(() => _onExit = v),
@@ -742,7 +742,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    _isEditing ? 'Update Zone' : 'Save Zone',
+                                    _isEditing ? 'Mettre à jour' : 'Enregistrer',
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700,
@@ -775,7 +775,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                               Icon(Icons.delete_outline_rounded, size: 18),
                               SizedBox(width: 8),
                               Text(
-                                'Delete Zone',
+                                'Supprimer la zone',
                                 style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                             ],
@@ -805,7 +805,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Text(
-              'No vehicles available',
+              'Aucun véhicule disponible',
               style: TextStyle(color: AppColors.textHint, fontSize: 13),
             ),
           );

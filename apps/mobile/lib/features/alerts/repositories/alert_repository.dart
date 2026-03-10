@@ -13,4 +13,14 @@ class AlertRepository {
         .map((e) => AlertModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  /// Marque toutes les alertes ouvertes comme lues côté serveur.
+  Future<void> markAllRead() async {
+    await _dio.patch('/alerts/mark-all-read');
+  }
+
+  /// Acquitte une alerte spécifique.
+  Future<void> ackAlert(String id) async {
+    await _dio.patch('/alerts/$id/ack');
+  }
 }

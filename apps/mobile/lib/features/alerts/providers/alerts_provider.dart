@@ -24,6 +24,31 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<AlertModel>>> {
       state = AsyncValue.error(e, st);
     }
   }
+
+  /// Marque toutes les alertes comme lues puis rafraîchit la liste.
+  Future<void> markAllRead() async {
+    await _repository.markAllRead();
+    await refresh();
+  }
+
+  /// Acquitte une alerte avec mise à jour optimiste immédiate.
+  Future<void> ackAlert(String alertId) async {
+    // Mise à jour optimiste : on marque localement sans recharger
+    final current = state.valueOrNull;
+    if (current != null) {
+      state = AsyncValue.data(
+        current
+            .map((a) => a.id == alertId ? a.copyWith(status: 'acked') : a)
+            .toList(),
+      );
+    }
+    try {
+      await _repository.ackAlert(alertId);
+    } catch (_) {
+      // En cas d'erreur, on recharge l'état réel depuis le serveur
+      await refresh();
+    }
+  }
 }
 
 final alertsProvider =

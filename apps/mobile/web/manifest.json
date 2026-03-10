@@ -1,11 +1,11 @@
 {
-    "name": "mobile",
-    "short_name": "mobile",
+    "name": "Trackeo",
+    "short_name": "Trackeo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#ffffff",
-    "description": "A new Flutter project.",
+    "description": "Suivi GPS en temps réel de vos véhicules.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

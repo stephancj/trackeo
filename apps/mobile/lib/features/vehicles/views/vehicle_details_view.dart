@@ -73,7 +73,7 @@ class VehicleDetailsView extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Vehicle Details'),
+        title: const Text('Détails du véhicule'),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -200,10 +200,10 @@ class VehicleDetailsView extends ConsumerWidget {
                 children: [
                   _StatCard(
                     icon: Icons.battery_charging_full_rounded,
-                    label: 'Battery',
+                    label: 'Batterie',
                     value: pos?.battery != null ? '${pos!.battery}%' : '--',
                     trailing: Text(
-                      (pos?.battery ?? 0) > 20 ? 'Good' : 'Low',
+                      (pos?.battery ?? 0) > 20 ? 'OK' : 'Faible',
                       style: TextStyle(
                         color: (pos?.battery ?? 0) > 20
                             ? AppColors.primary
@@ -219,8 +219,8 @@ class VehicleDetailsView extends ConsumerWidget {
                   ),
                   _StatCard(
                     icon: Icons.power_settings_new_rounded,
-                    label: 'Engine',
-                    value: pos?.ignition == true ? 'On' : 'Off',
+                    label: 'Moteur',
+                    value: pos?.ignition == true ? 'Allumé' : 'Éteint',
                     trailing: const SizedBox(),
                     progress: pos?.ignition == true ? 1.0 : 0.0,
                     color: pos?.ignition == true
@@ -229,10 +229,10 @@ class VehicleDetailsView extends ConsumerWidget {
                   ),
                   _StatCard(
                     icon: Icons.signal_cellular_alt_rounded,
-                    label: 'GPS Signal',
-                    value: (pos?.rssi ?? 31) > 20 ? 'Excellent' : 'Weak',
+                    label: 'Signal GPS',
+                    value: (pos?.rssi ?? 31) > 20 ? 'Excellent' : 'Faible',
                     trailing: const Text(
-                      'Strong',
+                      'Fort',
                       style: TextStyle(
                         color: AppColors.primary,
                         fontSize: 11,
@@ -244,10 +244,10 @@ class VehicleDetailsView extends ConsumerWidget {
                   ),
                   _StatCard(
                     icon: Icons.access_time_rounded,
-                    label: 'Last Update',
+                    label: 'Màj',
                     value: vehicle.lastUpdate != null
                         ? timeago.format(vehicle.lastUpdate!)
-                        : 'Unknown',
+                        : 'Inconnu',
                     trailing: Transform.scale(
                       scale: 0.8,
                       alignment: Alignment.centerRight,
@@ -367,7 +367,7 @@ class VehicleDetailsView extends ConsumerWidget {
                                         data: (addr) => Text(
                                           addr ??
                                               pos?.address ??
-                                              'Unknown Location',
+                                              'Position inconnue',
                                           style: const TextStyle(
                                             fontWeight: FontWeight.w700,
                                             fontSize: 13,
@@ -376,16 +376,16 @@ class VehicleDetailsView extends ConsumerWidget {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         loading: () => const Text(
-                                          'Resolving...',
+                                          'Localisation...',
                                           style: TextStyle(fontSize: 13),
                                         ),
                                         error: (_, __) => const Text(
-                                          'Unknown Location',
+                                          'Position inconnue',
                                           style: TextStyle(fontSize: 13),
                                         ),
                                       ) ??
                                       const Text(
-                                        'Unknown Location',
+                                        'Position inconnue',
                                         style: TextStyle(fontSize: 13),
                                       ),
                                   Text(
@@ -441,14 +441,14 @@ class VehicleDetailsView extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Remote Lock',
+                            'Verrouillage à distance',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
                             ),
                           ),
                           Text(
-                            'Tap to secure vehicle',
+                            'Appuyer pour sécuriser',
                             style: TextStyle(
                               color: AppColors.textHint,
                               fontSize: 12,
@@ -490,7 +490,7 @@ class VehicleDetailsView extends ConsumerWidget {
                       ),
                       SizedBox(width: 12),
                       Text(
-                        'Emergency Cut-off',
+                        'Coupure d\'urgence',
                         style: TextStyle(
                           color: AppColors.statusAlert,
                           fontWeight: FontWeight.w700,
@@ -522,7 +522,7 @@ class VehicleDetailsView extends ConsumerWidget {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Edit Vehicle'),
+        title: const Text('Modifier le véhicule'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -530,30 +530,30 @@ class VehicleDetailsView extends ConsumerWidget {
               TextField(
                 controller: nameController,
                 decoration: const InputDecoration(
-                  labelText: 'Vehicle Name',
-                  hintText: 'e.g. Toyota RAV4',
+                  labelText: 'Nom du véhicule',
+                  hintText: 'ex. Toyota RAV4',
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: plateController,
                 decoration: const InputDecoration(
-                  labelText: 'License Plate',
-                  hintText: 'e.g. ABC-1234',
+                  labelText: 'Plaque d\'immatriculation',
+                  hintText: 'ex. ABC-1234',
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: serialController,
                 decoration: const InputDecoration(
-                  labelText: 'Serial Number / IMEI',
+                  labelText: 'Numéro de série / IMEI',
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: imageController,
                 decoration: const InputDecoration(
-                  labelText: 'Mockup Image URL',
+                  labelText: 'URL de la photo',
                   hintText: 'https://...',
                 ),
               ),
@@ -563,7 +563,7 @@ class VehicleDetailsView extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Annuler'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -576,7 +576,7 @@ class VehicleDetailsView extends ConsumerWidget {
                 },
               });
             },
-            child: const Text('Save'),
+            child: const Text('Enregistrer'),
           ),
         ],
       ),
@@ -589,13 +589,13 @@ class VehicleDetailsView extends ConsumerWidget {
             .updateVehicle(vehicle.id, result);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vehicle updated successfully')),
+            const SnackBar(content: Text('Véhicule mis à jour')),
           );
         }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update vehicle: $e')),
+            SnackBar(content: Text('Erreur de mise à jour : $e')),
           );
         }
       }

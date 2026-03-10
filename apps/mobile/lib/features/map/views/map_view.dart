@@ -517,7 +517,7 @@ class _MapSearchBar extends ConsumerWidget {
                 color: AppColors.textPrimary,
               ),
               decoration: const InputDecoration(
-                hintText: 'Find vehicle or driver...',
+                hintText: 'Rechercher un véhicule...',
                 hintStyle: TextStyle(color: AppColors.textHint, fontSize: 14),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
@@ -565,28 +565,28 @@ class _MapFilterRow extends ConsumerWidget {
       child: Row(
         children: [
           _Chip(
-            label: 'All Vehicles',
+            label: 'Tous',
             selected: filter == VehicleFilter.all,
             onTap: () =>
                 ref.read(mapFilterProvider.notifier).state = VehicleFilter.all,
           ),
           const SizedBox(width: 8),
           _Chip(
-            label: 'Moving ($moving)',
+            label: 'En route ($moving)',
             selected: filter == VehicleFilter.moving,
             onTap: () => ref.read(mapFilterProvider.notifier).state =
                 VehicleFilter.moving,
           ),
           const SizedBox(width: 8),
           _Chip(
-            label: 'Idle ($idle)',
+            label: 'Arrêté ($idle)',
             selected: filter == VehicleFilter.idle,
             onTap: () =>
                 ref.read(mapFilterProvider.notifier).state = VehicleFilter.idle,
           ),
           const SizedBox(width: 8),
           _Chip(
-            label: 'Offline ($offline)',
+            label: 'Hors ligne ($offline)',
             selected: filter == VehicleFilter.offline,
             onTap: () => ref.read(mapFilterProvider.notifier).state =
                 VehicleFilter.offline,
@@ -739,7 +739,7 @@ class _VehicleCard extends ConsumerWidget {
                                     data: (address) => Text(
                                       address ??
                                           pos.address ??
-                                          'Location unknown',
+                                          'Position inconnue',
                                       style: const TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textSecondary,
@@ -748,14 +748,14 @@ class _VehicleCard extends ConsumerWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     loading: () => const Text(
-                                      'Resolving location...',
+                                      'Localisation...',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textSecondary,
                                       ),
                                     ),
                                     error: (err, _) => const Text(
-                                      'Location unknown',
+                                      'Position inconnue',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textSecondary,
@@ -763,7 +763,7 @@ class _VehicleCard extends ConsumerWidget {
                                     ),
                                   )
                                 : const Text(
-                                    'Location unknown',
+                                    'Position inconnue',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: AppColors.textSecondary,
@@ -819,7 +819,7 @@ class _VehicleCard extends ConsumerWidget {
                   if (updatedAgo != null) ...[
                     const SizedBox(height: 5),
                     Text(
-                      'Updated $updatedAgo',
+                      'Mis à jour $updatedAgo',
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textHint,
@@ -841,7 +841,7 @@ class _VehicleCard extends ConsumerWidget {
               children: [
                 // Speed
                 _StatBox(
-                  label: 'Speed',
+                  label: 'Vitesse',
                   child: RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
@@ -869,7 +869,7 @@ class _VehicleCard extends ConsumerWidget {
                 Container(width: 1, color: AppColors.divider),
                 // Battery
                 _StatBox(
-                  label: 'Battery',
+                  label: 'Batterie',
                   child: pos?.battery != null
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -902,7 +902,7 @@ class _VehicleCard extends ConsumerWidget {
                 Container(width: 1, color: AppColors.divider),
                 // Status
                 _StatBox(
-                  label: 'Status',
+                  label: 'Statut',
                   child: Text(
                     vehicle.status.label,
                     textAlign: TextAlign.center,
@@ -928,7 +928,7 @@ class _VehicleCard extends ConsumerWidget {
                   onPressed: () {},
                   icon: const Icon(Icons.phone_rounded, size: 17),
                   label: const Text(
-                    'Call Driver',
+                    'Appeler',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -949,7 +949,7 @@ class _VehicleCard extends ConsumerWidget {
                   onPressed: onHistoryTap,
                   icon: const Icon(Icons.history_rounded, size: 17),
                   label: const Text(
-                    'History',
+                    'Historique',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -986,10 +986,10 @@ class _VehicleCard extends ConsumerWidget {
 
   String _timeAgo(DateTime time) {
     final diff = DateTime.now().difference(time);
-    if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
+    if (diff.inSeconds < 60) return 'il y a ${diff.inSeconds}s';
+    if (diff.inMinutes < 60) return 'il y a ${diff.inMinutes}min';
+    if (diff.inHours < 24) return 'il y a ${diff.inHours}h';
+    return 'il y a ${diff.inDays}j';
   }
 }
 

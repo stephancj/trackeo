@@ -55,7 +55,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Alert Settings'),
+        title: const Text('Paramètres d\'alertes'),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _saveSettings,
@@ -69,7 +69,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
                     ),
                   )
                 : const Text(
-                    'Save',
+                    'Enregistrer',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
@@ -83,15 +83,15 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader('MASTER CONTROL'),
+            _buildSectionHeader('CONTRÔLE GÉNÉRAL'),
             const SizedBox(height: 12),
             _buildMasterSwitch(),
             const SizedBox(height: 24),
-            _buildSectionHeader('ALERT TYPES'),
+            _buildSectionHeader('TYPES D\'ALERTES'),
             const SizedBox(height: 12),
             _buildAlertTypes(),
             const SizedBox(height: 24),
-            _buildSectionHeader('NOTIFICATION METHODS'),
+            _buildSectionHeader('CANAUX DE NOTIFICATION'),
             const SizedBox(height: 12),
             _buildNotificationMethods(hasPhone),
             const SizedBox(height: 32),
@@ -125,8 +125,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
         iconBg: _alertsEnabled
             ? AppColors.primary.withValues(alpha: 0.1)
             : AppColors.divider.withValues(alpha: 0.3),
-        title: 'Enable Alerts',
-        subtitle: 'Turn on/off all alert notifications',
+        title: 'Activer les alertes',
+        subtitle: 'Activer ou désactiver toutes les notifications',
         value: _alertsEnabled,
         onChanged: (v) {
           HapticFeedback.selectionClick();
@@ -149,8 +149,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
             icon: Icons.warning_rounded,
             iconColor: Colors.red,
             iconBg: Colors.red.withValues(alpha: 0.1),
-            title: 'SOS Alerts',
-            subtitle: 'Instant notification on emergency',
+            title: 'Alertes SOS',
+            subtitle: 'Notification immédiate en cas d\'urgence',
             value: _sosAlerts,
             onChanged: (v) {
               HapticFeedback.selectionClick();
@@ -163,8 +163,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
             icon: Icons.battery_alert_rounded,
             iconColor: Colors.amber,
             iconBg: Colors.amber.withValues(alpha: 0.1),
-            title: 'Low Battery',
-            subtitle: 'Below 20% battery level',
+            title: 'Batterie faible',
+            subtitle: 'En dessous de 20% de charge',
             value: _lowBattery,
             onChanged: (v) {
               HapticFeedback.selectionClick();
@@ -177,8 +177,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
             icon: Icons.speed_rounded,
             iconColor: Colors.purple,
             iconBg: Colors.purple.withValues(alpha: 0.1),
-            title: 'Speed Limit',
-            subtitle: 'Exceeding 120 km/h',
+            title: 'Excès de vitesse',
+            subtitle: 'Dépassement de 120 km/h',
             value: _speedLimit,
             onChanged: (v) {
               HapticFeedback.selectionClick();
@@ -203,8 +203,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
             icon: Icons.notifications_rounded,
             iconColor: AppColors.primary,
             iconBg: AppColors.primary.withValues(alpha: 0.1),
-            title: 'Push Notification',
-            subtitle: 'Receive alerts via browser push',
+            title: 'Notification push',
+            subtitle: 'Recevoir les alertes via le navigateur',
             value: _pushNotification,
             onChanged: (v) {
               HapticFeedback.selectionClick();
@@ -219,8 +219,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
             iconBg: Colors.green.withValues(alpha: 0.1),
             title: 'WhatsApp',
             subtitle: hasPhone
-                ? 'Receive alerts via WhatsApp'
-                : 'Add phone number in Profile settings',
+                ? 'Recevoir les alertes via WhatsApp'
+                : 'Ajoutez un numéro dans votre profil',
             value: _whatsAppNotification,
             onChanged: (v) {
               HapticFeedback.selectionClick();
@@ -335,7 +335,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Alert settings saved'),
+            content: Text('Paramètres d\'alertes enregistrés'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -345,7 +345,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('Erreur : ${e.toString()}'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),
