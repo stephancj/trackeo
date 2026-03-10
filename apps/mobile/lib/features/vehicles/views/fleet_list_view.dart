@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../models/vehicle_model.dart';
 import '../providers/vehicles_provider.dart';
 import 'widgets/vehicle_card.dart';
+import 'widgets/vehicle_card_skeleton.dart';
 import 'vehicle_details_view.dart';
 
 class FleetListView extends ConsumerWidget {
@@ -165,9 +166,7 @@ class FleetListView extends ConsumerWidget {
                     ),
                   );
                 },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
+                loading: () => const VehicleListSkeleton(),
                 error: (e, _) => _ErrorState(
                   onRetry: () => ref.invalidate(vehiclesProvider),
                 ),

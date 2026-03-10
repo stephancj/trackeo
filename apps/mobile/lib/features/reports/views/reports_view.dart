@@ -5,6 +5,7 @@ import '../../vehicles/providers/vehicles_provider.dart';
 import '../../vehicles/models/vehicle_model.dart';
 import '../models/report_models.dart';
 import '../providers/reports_provider.dart';
+import 'widgets/report_skeletons.dart';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -405,7 +406,7 @@ class _ActivityTab extends ConsumerWidget {
         ref.watch(activitySummaryProvider((vehicleId, period)));
 
     return summaryAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const ActivityTabSkeleton(),
       error: (e, _) => Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -514,7 +515,7 @@ class _TripLogTab extends ConsumerWidget {
     final tripsAsync = ref.watch(tripLogProvider(params));
 
     return tripsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const ReportListSkeleton(),
       error: (e, _) => Center(child: Text('Erreur: $e')),
       data: (trips) {
         if (trips.isEmpty) {
@@ -666,7 +667,7 @@ class _SpeedTab extends ConsumerWidget {
     final violationsAsync = ref.watch(speedViolationsProvider(params));
 
     return violationsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const ReportListSkeleton(),
       error: (e, _) => Center(child: Text('Erreur: $e')),
       data: (violations) {
         if (violations.isEmpty) {
@@ -775,7 +776,7 @@ class _IdleTab extends ConsumerWidget {
     final idleAsync = ref.watch(idleTimeProvider(params));
 
     return idleAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const ReportListSkeleton(),
       error: (e, _) => Center(child: Text('Erreur: $e')),
       data: (episodes) {
         if (episodes.isEmpty) {
@@ -905,7 +906,7 @@ class _GeofenceTab extends ConsumerWidget {
         ref.watch(geofenceActivityProvider((vehicleId, period)));
 
     return geofencesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const ReportListSkeleton(),
       error: (e, _) => Center(child: Text('Erreur: $e')),
       data: (geofences) {
         if (geofences.isEmpty) {

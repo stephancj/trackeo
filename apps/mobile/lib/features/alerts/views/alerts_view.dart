@@ -11,6 +11,7 @@ import '../providers/geofences_provider.dart';
 import '../models/geofence_model.dart';
 import '../models/alert_model.dart';
 import 'create_geofence_view.dart';
+import 'widgets/alert_skeletons.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
 import '../../../core/providers/geocoding_provider.dart';
 
@@ -74,12 +75,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                   ),
                 );
               },
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              ),
+              loading: () => const GeofenceCarouselSkeleton(),
               error: (e, st) => _buildErrorState('$e'),
             ),
             const SizedBox(height: 32),
@@ -92,12 +88,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
             const SizedBox(height: 12),
             alertsState.when(
               data: (alerts) => _buildRecentActivityList(alerts),
-              loading: () => const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              ),
+              loading: () => const AlertListSkeleton(),
               error: (e, st) => _buildErrorState('$e'),
             ),
             const SizedBox(height: 32),

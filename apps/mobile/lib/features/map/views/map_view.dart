@@ -1,3 +1,5 @@
+import 'dart:math' show cos, pow;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,29 +17,155 @@ class MapView extends ConsumerStatefulWidget {
   ConsumerState<MapView> createState() => _MapViewState();
 }
 
-class _MapViewState extends ConsumerState<MapView> {
+class _MapViewState extends ConsumerState<MapView>
+    with TickerProviderStateMixin {
   final _mapController = MapController();
 
   // Centre par défaut : Antananarivo
   static const _defaultCenter = LatLng(-18.9137, 47.5361);
 
+  // Approximate logical-pixel height of the bottom vehicle card.
+  // Used to offset the camera so the marker appears in the visible centre
+  // above the card rather than behind it.
+  static const _cardHeight = 290.0;
+
   // ── Fix gesture conflict ───────────────────────────────────────────────
-  // flutter_map appelle MapOptions.onTap même quand on tape sur un marqueur.
-  // Ce flag empêche l'onTap de la carte d'effacer la sélection juste après
-  // qu'un marqueur ait été tapé.
   bool _markerJustTapped = false;
+
+  // ── Smooth animation state ────────────────────────────────────────────
+  // One AnimationController per vehicle — interpolates from last animated
+  // position to the new GPS position over the polling interval (10 s).
+  final Map<int, AnimationController> _animControllers = {};
+  final Map<int, LatLng> _animatedPositions = {};
+  final Map<int, double> _animatedCourses = {};
+
+  // ── Tracking mode ("always-center" on selected vehicle) ───────────────
+  bool _trackingMode = false;
 
   @override
   void dispose() {
+    for (final ctrl in _animControllers.values) {
+      ctrl.dispose();
+    }
     _mapController.dispose();
     super.dispose();
   }
 
+  // ── Angle interpolation (shortest path) ──────────────────────────────
+  // ── Camera helpers ────────────────────────────────────────────────────
+
+  /// Moves the camera to [target] at [zoom].
+  ///
+  /// When [cardShowing] is true the camera is shifted south by half the
+  /// vehicle-card height so the marker appears centred in the visible area
+  /// above the card rather than at the mathematical centre of the full screen.
+  ///
+  /// Uses Mercator math: degreesLatPerPixel = 360·cos(φ) / (256·2^zoom)
+  void _moveToTarget(LatLng target, double zoom, {bool cardShowing = false}) {
+    if (!cardShowing) {
+      _mapController.move(target, zoom);
+      return;
+    }
+    final latRad = target.latitude * pi / 180;
+    final degreesPerPixel =
+        360.0 * cos(latRad) / (256.0 * pow(2.0, zoom));
+    // Shift south (smaller lat) so target rises into the visible centre.
+    final adjustedLat =
+        target.latitude - (_cardHeight / 2.0) * degreesPerPixel;
+    _mapController.move(LatLng(adjustedLat, target.longitude), zoom);
+  }
+
+  double _lerpAngle(double from, double to, double t) {
+    double diff = (to - from) % 360;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    return from + diff * t;
+  }
+
+  // ── Called on every poll result ───────────────────────────────────────
+  void _onVehiclesUpdated(List<Vehicle> vehicles) {
+    for (final v in vehicles) {
+      if (v.position == null) continue;
+      final newPos = LatLng(v.position!.lat, v.position!.lon);
+      final newCourse = v.position!.course.toDouble();
+
+      final oldPos = _animatedPositions[v.id];
+      if (oldPos == null) {
+        // First position — place directly with no animation.
+        _animatedPositions[v.id] = newPos;
+        _animatedCourses[v.id] = newCourse;
+        continue;
+      }
+
+      // Skip if position hasn't meaningfully changed (~1 cm threshold).
+      final dlat = (newPos.latitude - oldPos.latitude).abs();
+      final dlon = (newPos.longitude - oldPos.longitude).abs();
+      if (dlat < 1e-7 && dlon < 1e-7) continue;
+
+      // Cancel any in-progress animation and start a fresh one
+      // from the CURRENT animated position → new GPS position.
+      _animControllers[v.id]?.stop();
+      _animControllers[v.id]?.dispose();
+
+      final fromPos = oldPos;
+      final fromCourse = _animatedCourses[v.id] ?? newCourse;
+
+      final ctrl = AnimationController(
+        vsync: this,
+        duration: const Duration(seconds: 10),
+      );
+      _animControllers[v.id] = ctrl;
+
+      ctrl.addListener(() {
+        final t = Curves.easeInOut.transform(ctrl.value);
+        final animPos = LatLng(
+          fromPos.latitude + (newPos.latitude - fromPos.latitude) * t,
+          fromPos.longitude + (newPos.longitude - fromPos.longitude) * t,
+        );
+        final animCourse = _lerpAngle(fromCourse, newCourse, t);
+
+        setState(() {
+          _animatedPositions[v.id] = animPos;
+          _animatedCourses[v.id] = animCourse;
+        });
+
+        // Follow selected vehicle if tracking mode is on.
+        // Use cardShowing:true because the vehicle card is always visible
+        // when a vehicle is being tracked.
+        final selectedId = ref.read(selectedVehicleIdProvider);
+        if (_trackingMode && selectedId == v.id) {
+          _moveToTarget(
+            animPos,
+            _mapController.camera.zoom,
+            cardShowing: true,
+          );
+        }
+      });
+
+      ctrl.forward();
+    }
+
+    // Clean up state for vehicles no longer present in the list.
+    final currentIds = vehicles.map((v) => v.id).toSet();
+    final removed =
+        _animControllers.keys.where((id) => !currentIds.contains(id)).toList();
+    for (final id in removed) {
+      _animControllers[id]?.dispose();
+      _animControllers.remove(id);
+      _animatedPositions.remove(id);
+      _animatedCourses.remove(id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Trigger smooth animation whenever the poll delivers new data.
+    ref.listen(vehiclesProvider, (_, next) {
+      next.whenData(_onVehiclesUpdated);
+    });
+
     final vehiclesAsync = ref.watch(vehiclesProvider);
     final mapFilter = ref.watch(mapFilterProvider);
-    // Filtre local à la carte — indépendant du filtre de la Fleet List
     final allVehicles = vehiclesAsync.valueOrNull ?? [];
     final vehicles = switch (mapFilter) {
       VehicleFilter.moving =>
@@ -60,13 +188,19 @@ class _MapViewState extends ConsumerState<MapView> {
             options: MapOptions(
               initialCenter: _defaultCenter,
               initialZoom: 12,
-              onTap: (_, _) {
-                // Ne pas effacer la sélection si un marqueur vient d'être tapé
+              onTap: (tapPos, latLng) {
                 if (_markerJustTapped) {
                   _markerJustTapped = false;
                   return;
                 }
                 ref.read(selectedVehicleIdProvider.notifier).state = null;
+                if (_trackingMode) setState(() => _trackingMode = false);
+              },
+              // Disable tracking when the user manually pans / zooms the map.
+              onPositionChanged: (_, hasGesture) {
+                if (hasGesture && _trackingMode) {
+                  setState(() => _trackingMode = false);
+                }
               },
             ),
             children: [
@@ -74,7 +208,6 @@ class _MapViewState extends ConsumerState<MapView> {
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'mg.trackeo.app',
               ),
-              // Fix : valueOrNull → jamais de flash "liste vide" pendant le polling
               MarkerLayer(
                 markers: vehicles
                     .where((v) => v.position != null)
@@ -198,14 +331,17 @@ class _MapViewState extends ConsumerState<MapView> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                // Recenter (white circle)
+                // Recenter — glows primary when tracking is active
                 GestureDetector(
                   onTap: () => _recenter(selected),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: _trackingMode && selected != null
+                          ? AppColors.primary
+                          : Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -215,9 +351,11 @@ class _MapViewState extends ConsumerState<MapView> {
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.gps_fixed,
-                      color: AppColors.primary,
+                      color: _trackingMode && selected != null
+                          ? Colors.white
+                          : AppColors.primary,
                       size: 22,
                     ),
                   ),
@@ -234,8 +372,10 @@ class _MapViewState extends ConsumerState<MapView> {
               right: 0,
               child: _VehicleCard(
                 vehicle: selected,
-                onClose: () =>
-                    ref.read(selectedVehicleIdProvider.notifier).state = null,
+                onClose: () {
+                  ref.read(selectedVehicleIdProvider.notifier).state = null;
+                  setState(() => _trackingMode = false);
+                },
                 onHistoryTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -253,31 +393,36 @@ class _MapViewState extends ConsumerState<MapView> {
   }
 
   void _recenter(Vehicle? selected) {
-    // Priorité 1 : véhicule sélectionné
-    if (selected?.position != null) {
-      _mapController.move(
-        LatLng(selected!.position!.lat, selected.position!.lon),
-        15,
-      );
-      return;
+    if (selected != null) {
+      // Use the current animated position if available.
+      final pos = _animatedPositions[selected.id] ??
+          (selected.position != null
+              ? LatLng(selected.position!.lat, selected.position!.lon)
+              : null);
+      if (pos != null) {
+        // Card is open → offset camera so the marker sits in visible centre.
+        _moveToTarget(pos, 15, cardShowing: true);
+        setState(() => _trackingMode = true);
+        return;
+      }
     }
-    // Priorité 2 : centrer sur tous les véhicules
+    // No selection — center on the whole fleet (full-screen, no card).
+    setState(() => _trackingMode = false);
     final vehiclesAsync = ref.read(vehiclesProvider);
     vehiclesAsync.whenData((vehicles) {
       final withPos = vehicles.where((v) => v.position != null).toList();
       if (withPos.isEmpty) return;
       if (withPos.length == 1) {
-        _mapController.move(
-          LatLng(withPos.first.position!.lat, withPos.first.position!.lon),
-          14,
-        );
+        final p = _animatedPositions[withPos.first.id] ??
+            LatLng(withPos.first.position!.lat, withPos.first.position!.lon);
+        _mapController.move(p, 14);
       } else {
         final avgLat =
             withPos.map((v) => v.position!.lat).reduce((a, b) => a + b) /
-            withPos.length;
+                withPos.length;
         final avgLon =
             withPos.map((v) => v.position!.lon).reduce((a, b) => a + b) /
-            withPos.length;
+                withPos.length;
         _mapController.move(LatLng(avgLat, avgLon), 12);
       }
     });
@@ -285,23 +430,27 @@ class _MapViewState extends ConsumerState<MapView> {
 
   Marker _buildMarker(Vehicle vehicle, Vehicle? selected) {
     final pos = vehicle.position!;
+    // Use the smoothly animated position; fall back to raw GPS on first render.
+    final markerPos =
+        _animatedPositions[vehicle.id] ?? LatLng(pos.lat, pos.lon);
+    final course = _animatedCourses[vehicle.id] ?? pos.course.toDouble();
     final isSelected = selected?.id == vehicle.id;
     final size = isSelected ? 52.0 : 42.0;
 
     return Marker(
-      point: LatLng(pos.lat, pos.lon),
+      point: markerPos,
       width: size,
       height: size,
       child: GestureDetector(
         onTap: () {
-          // Positionner le flag AVANT la mise à jour de l'état pour que
-          // MapOptions.onTap (qui peut être appelé dans le même cycle) l'ignore.
           _markerJustTapped = true;
           ref.read(selectedVehicleIdProvider.notifier).state = vehicle.id;
-          _mapController.move(LatLng(pos.lat, pos.lon), 14);
+          // Auto-enable tracking; card will appear → apply south offset.
+          setState(() => _trackingMode = true);
+          _moveToTarget(markerPos, 14, cardShowing: true);
         },
         child: Transform.rotate(
-          angle: pos.course * (pi / 180),
+          angle: course * (pi / 180),
           child: Container(
             decoration: BoxDecoration(
               color: switch (vehicle.status) {
@@ -404,16 +553,12 @@ class _MapFilterRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(mapFilterProvider);
-    // Counts basés sur TOUS les véhicules (pas le sous-ensemble filtré)
-    final moving = allVehicles
-        .where((v) => v.status == VehicleStatus.online)
-        .length;
-    final idle = allVehicles
-        .where((v) => v.status == VehicleStatus.idle)
-        .length;
-    final offline = allVehicles
-        .where((v) => v.status == VehicleStatus.offline)
-        .length;
+    final moving =
+        allVehicles.where((v) => v.status == VehicleStatus.online).length;
+    final idle =
+        allVehicles.where((v) => v.status == VehicleStatus.idle).length;
+    final offline =
+        allVehicles.where((v) => v.status == VehicleStatus.offline).length;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -609,7 +754,7 @@ class _VehicleCard extends ConsumerWidget {
                                         color: AppColors.textSecondary,
                                       ),
                                     ),
-                                    error: (_, __) => const Text(
+                                    error: (err, _) => const Text(
                                       'Location unknown',
                                       style: TextStyle(
                                         fontSize: 12,
@@ -828,10 +973,10 @@ class _VehicleCard extends ConsumerWidget {
   }
 
   Color _statusColor(VehicleStatus status) => switch (status) {
-    VehicleStatus.online => AppColors.statusOnline,
-    VehicleStatus.idle => AppColors.statusIdle,
-    VehicleStatus.offline => AppColors.statusOffline,
-  };
+        VehicleStatus.online => AppColors.statusOnline,
+        VehicleStatus.idle => AppColors.statusIdle,
+        VehicleStatus.offline => AppColors.statusOffline,
+      };
 
   Color _batteryColor(int battery) {
     if (battery > 50) return AppColors.batteryGood;

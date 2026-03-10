@@ -787,6 +787,7 @@ En attendant le worker de segmentation Near-term, on peut reconstituer les traje
 - [x] `lib/features/reports/providers/reports_provider.dart` — 4 `FutureProvider.autoDispose.family` avec tuples Dart 3 (epoch ms pour from/to)
 - [x] `lib/features/reports/views/reports_view.dart` — vue complète avec `ConsumerStatefulWidget` + `TabController`
 - [x] `settings_view.dart` — tile "Rapports de conduite" (section RAPPORTS) → `Navigator.push(ReportsView)`
+- [x] **Animation fluide des marqueurs** — `map_view.dart` : `TickerProviderStateMixin` + `AnimationController` (10 s, `easeInOut`) par véhicule, interpolation lat/lon/course entre chaque poll. `onPositionChanged: (_, hasGesture)` détecte le pan utilisateur et désactive le suivi. Bouton GPS devient primaire quand le suivi est actif. Tap marqueur ou bouton GPS → suivi activé + recentrage.
 - [x] **Onglet Zones** — 5ème onglet dans `ReportsView` : activité geofence (entrées/sorties par zone), badge total événements, tri par activité décroissante
 - [x] **`GeofenceActivityEntry`** dans `report_models.dart` — geofenceId, geofenceName, isActive, enterCount, exitCount, totalEvents, lastEventAt, lastEventType
 - [x] **`getGeofenceActivity(vehicleId, period)`** dans `ReportsRepository` → `GET /vehicles/:id/reports/geofence-activity?period=`
