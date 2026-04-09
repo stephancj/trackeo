@@ -68,11 +68,9 @@ class _MapViewState extends ConsumerState<MapView>
       return;
     }
     final latRad = target.latitude * pi / 180;
-    final degreesPerPixel =
-        360.0 * cos(latRad) / (256.0 * pow(2.0, zoom));
+    final degreesPerPixel = 360.0 * cos(latRad) / (256.0 * pow(2.0, zoom));
     // Shift south (smaller lat) so target rises into the visible centre.
-    final adjustedLat =
-        target.latitude - (_cardHeight / 2.0) * degreesPerPixel;
+    final adjustedLat = target.latitude - (_cardHeight / 2.0) * degreesPerPixel;
     _mapController.move(LatLng(adjustedLat, target.longitude), zoom);
   }
 
@@ -307,7 +305,7 @@ class _MapViewState extends ConsumerState<MapView>
             child: vehiclesAsync.when(
               data: (v) => _MapFilterRow(vehicles: v, allVehicles: allVehicles),
               loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
+              error: (e, st) => const SizedBox.shrink(),
             ),
           ),
 

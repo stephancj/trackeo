@@ -18,8 +18,18 @@ String _fmtDuration(int minutes) {
 
 String _fmtDate(DateTime dt) {
   const months = [
-    'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jui',
-    'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc',
+    'Jan',
+    'Fév',
+    'Mar',
+    'Avr',
+    'Mai',
+    'Jui',
+    'Jul',
+    'Aoû',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Déc',
   ];
   final h = dt.hour.toString().padLeft(2, '0');
   final m = dt.minute.toString().padLeft(2, '0');
@@ -208,8 +218,7 @@ class _VehiclePicker extends StatelessWidget {
           items: vehicles
               .map((v) => DropdownMenuItem(
                     value: v.id,
-                    child: Text(v.name,
-                        style: const TextStyle(fontSize: 14)),
+                    child: Text(v.name, style: const TextStyle(fontSize: 14)),
                   ))
               .toList(),
           onChanged: (id) {
@@ -236,11 +245,23 @@ class _PeriodPicker extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Row(
         children: [
-          _Chip(label: "Aujourd'hui", value: 'today', selected: selected, onTap: onChanged),
+          _Chip(
+              label: "Aujourd'hui",
+              value: 'today',
+              selected: selected,
+              onTap: onChanged),
           const SizedBox(width: 8),
-          _Chip(label: '7 jours', value: '7d', selected: selected, onTap: onChanged),
+          _Chip(
+              label: '7 jours',
+              value: '7d',
+              selected: selected,
+              onTap: onChanged),
           const SizedBox(width: 8),
-          _Chip(label: '30 jours', value: '30d', selected: selected, onTap: onChanged),
+          _Chip(
+              label: '30 jours',
+              value: '30d',
+              selected: selected,
+              onTap: onChanged),
         ],
       ),
     );
@@ -297,7 +318,8 @@ class _EmptyVehicle extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.directions_car_outlined, size: 48, color: AppColors.textHint),
+          Icon(Icons.directions_car_outlined,
+              size: 48, color: AppColors.textHint),
           SizedBox(height: 12),
           Text(
             'Aucun véhicule assigné',
@@ -325,7 +347,8 @@ class _EmptyList extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             message,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style:
+                const TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
         ],
       ),
@@ -408,7 +431,9 @@ class _ActivityTab extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(providerKey);
-        try { await ref.read(providerKey.future); } catch (_) {}
+        try {
+          await ref.read(providerKey.future);
+        } catch (_) {}
       },
       color: AppColors.primary,
       child: summaryAsync.when(
@@ -427,81 +452,81 @@ class _ActivityTab extends ConsumerWidget {
         data: (summary) => SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.4,
-              children: [
-                _StatCard(
-                  icon: Icons.route,
-                  iconColor: AppColors.primary,
-                  label: 'Distance totale',
-                  value: _fmtDist(summary.distanceKm),
-                ),
-                _StatCard(
-                  icon: Icons.map_outlined,
-                  iconColor: const Color(0xFF5B8DEF),
-                  label: 'Trajets',
-                  value: '${summary.tripCount}',
-                ),
-                _StatCard(
-                  icon: Icons.drive_eta_outlined,
-                  iconColor: const Color(0xFF4ECB8D),
-                  label: 'Temps de conduite',
-                  value: _fmtDuration(summary.drivingMinutes),
-                ),
-                _StatCard(
-                  icon: Icons.pause_circle_outline,
-                  iconColor: const Color(0xFFF59E0B),
-                  label: 'Temps inactif',
-                  value: _fmtDuration(summary.idleMinutes),
-                ),
-                _StatCard(
-                  icon: Icons.speed,
-                  iconColor: const Color(0xFF8B5CF6),
-                  label: 'Vitesse max',
-                  value: '${summary.maxSpeedKmh.toInt()} km/h',
-                ),
-                _StatCard(
-                  icon: Icons.warning_amber_rounded,
-                  iconColor: AppColors.statusAlert,
-                  label: 'Excès de vitesse',
-                  value: '${summary.speedViolationCount}',
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: Row(
+          child: Column(
+            children: [
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.4,
                 children: [
-                  const Icon(Icons.location_on_outlined,
-                      size: 18, color: AppColors.textSecondary),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${summary.pointCount} points GPS enregistrés',
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.textSecondary),
+                  _StatCard(
+                    icon: Icons.route,
+                    iconColor: AppColors.primary,
+                    label: 'Distance totale',
+                    value: _fmtDist(summary.distanceKm),
+                  ),
+                  _StatCard(
+                    icon: Icons.map_outlined,
+                    iconColor: const Color(0xFF5B8DEF),
+                    label: 'Trajets',
+                    value: '${summary.tripCount}',
+                  ),
+                  _StatCard(
+                    icon: Icons.drive_eta_outlined,
+                    iconColor: const Color(0xFF4ECB8D),
+                    label: 'Temps de conduite',
+                    value: _fmtDuration(summary.drivingMinutes),
+                  ),
+                  _StatCard(
+                    icon: Icons.pause_circle_outline,
+                    iconColor: const Color(0xFFF59E0B),
+                    label: 'Temps inactif',
+                    value: _fmtDuration(summary.idleMinutes),
+                  ),
+                  _StatCard(
+                    icon: Icons.speed,
+                    iconColor: const Color(0xFF8B5CF6),
+                    label: 'Vitesse max',
+                    value: '${summary.maxSpeedKmh.toInt()} km/h',
+                  ),
+                  _StatCard(
+                    icon: Icons.warning_amber_rounded,
+                    iconColor: AppColors.statusAlert,
+                    label: 'Excès de vitesse',
+                    value: '${summary.speedViolationCount}',
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on_outlined,
+                        size: 18, color: AppColors.textSecondary),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${summary.pointCount} points GPS enregistrés',
+                      style: const TextStyle(
+                          fontSize: 13, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    ),   // end when()
-  );     // end RefreshIndicator
+      ), // end when()
+    ); // end RefreshIndicator
   }
 }
 
@@ -526,7 +551,9 @@ class _TripLogTab extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(providerKey);
-        try { await ref.read(providerKey.future); } catch (_) {}
+        try {
+          await ref.read(providerKey.future);
+        } catch (_) {}
       },
       color: AppColors.primary,
       child: tripsAsync.when(
@@ -548,7 +575,7 @@ class _TripLogTab extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             itemCount: trips.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            separatorBuilder: (context, index) => const SizedBox(height: 10),
             itemBuilder: (_, i) => _TripCard(trip: trips[i], index: i + 1),
           );
         },
@@ -578,8 +605,7 @@ class _TripCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -604,8 +630,7 @@ class _TripCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.trip_origin,
-                  size: 14, color: AppColors.primary),
+              const Icon(Icons.trip_origin, size: 14, color: AppColors.primary),
               const SizedBox(width: 6),
               Text(
                 'Départ  ${trip.startLat.toStringAsFixed(4)}, ${trip.startLon.toStringAsFixed(4)}',
@@ -664,8 +689,8 @@ class _TripStat extends StatelessWidget {
         Icon(icon, size: 14, color: AppColors.textSecondary),
         const SizedBox(width: 4),
         Text(label,
-            style: const TextStyle(
-                fontSize: 12, color: AppColors.textSecondary)),
+            style:
+                const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
       ],
     );
   }
@@ -692,7 +717,9 @@ class _SpeedTab extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(providerKey);
-        try { await ref.read(providerKey.future); } catch (_) {}
+        try {
+          await ref.read(providerKey.future);
+        } catch (_) {}
       },
       color: AppColors.primary,
       child: violationsAsync.when(
@@ -714,7 +741,7 @@ class _SpeedTab extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             itemCount: violations.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            separatorBuilder: (ctx, idx) => const SizedBox(height: 10),
             itemBuilder: (_, i) => _SpeedCard(violation: violations[i]),
           );
         },
@@ -736,8 +763,7 @@ class _SpeedCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: AppColors.statusAlert.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.statusAlert.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -815,7 +841,9 @@ class _IdleTab extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(providerKey);
-        try { await ref.read(providerKey.future); } catch (_) {}
+        try {
+          await ref.read(providerKey.future);
+        } catch (_) {}
       },
       color: AppColors.primary,
       child: idleAsync.when(
@@ -834,52 +862,51 @@ class _IdleTab extends ConsumerWidget {
             );
           }
 
-          final totalMin =
-              episodes.fold(0, (acc, e) => acc + e.durationMin);
+          final totalMin = episodes.fold(0, (acc, e) => acc + e.durationMin);
 
           return ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
-          itemCount: episodes.length + 1,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (_, i) {
-            if (i == 0) {
-              return Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.pause_circle_outline,
-                        color: Color(0xFFF59E0B)),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Total inactif : ${_fmtDuration(totalMin)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFF59E0B),
+            itemCount: episodes.length + 1,
+            separatorBuilder: (ctx, idx) => const SizedBox(height: 10),
+            itemBuilder: (_, i) {
+              if (i == 0) {
+                return Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.pause_circle_outline,
+                          color: Color(0xFFF59E0B)),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Total inactif : ${_fmtDuration(totalMin)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFF59E0B),
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${episodes.length} épisode${episodes.length > 1 ? 's' : ''}',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              );
-            }
-            return _IdleCard(episode: episodes[i - 1]);
-          },
-        );
+                      const Spacer(),
+                      Text(
+                        '${episodes.length} épisode${episodes.length > 1 ? 's' : ''}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return _IdleCard(episode: episodes[i - 1]);
+            },
+          );
         },
-      ),    // end idleAsync.when()
-    );      // end RefreshIndicator
+      ), // end idleAsync.when()
+    ); // end RefreshIndicator
   }
 }
 
@@ -958,7 +985,9 @@ class _GeofenceTab extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(providerKey);
-        try { await ref.read(providerKey.future); } catch (_) {}
+        try {
+          await ref.read(providerKey.future);
+        } catch (_) {}
       },
       color: AppColors.primary,
       child: geofencesAsync.when(
@@ -978,8 +1007,7 @@ class _GeofenceTab extends ConsumerWidget {
           }
 
           // Sort: most active first, then alphabetical
-          final sorted = [...geofences]
-            ..sort((a, b) {
+          final sorted = [...geofences]..sort((a, b) {
               final cmp = b.totalEvents.compareTo(a.totalEvents);
               return cmp != 0 ? cmp : a.geofenceName.compareTo(b.geofenceName);
             });
@@ -990,7 +1018,7 @@ class _GeofenceTab extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             itemCount: sorted.length + 1,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            separatorBuilder: (ctx, idx) => const SizedBox(height: 10),
             itemBuilder: (_, i) {
               if (i == 0) {
                 return Container(
@@ -1098,12 +1126,14 @@ class _GeofenceCard extends StatelessWidget {
                   Row(
                     children: [
                       _EventBadge(
-                        label: '${entry.enterCount} entrée${entry.enterCount > 1 ? 's' : ''}',
+                        label:
+                            '${entry.enterCount} entrée${entry.enterCount > 1 ? 's' : ''}',
                         color: AppColors.statusOnline,
                       ),
                       const SizedBox(width: 8),
                       _EventBadge(
-                        label: '${entry.exitCount} sortie${entry.exitCount > 1 ? 's' : ''}',
+                        label:
+                            '${entry.exitCount} sortie${entry.exitCount > 1 ? 's' : ''}',
                         color: AppColors.statusAlert,
                       ),
                     ],
@@ -1119,16 +1149,15 @@ class _GeofenceCard extends StatelessWidget {
                 ] else
                   const Text(
                     'Aucune activité sur cette période',
-                    style: TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary),
+                    style:
+                        TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
               ],
             ),
           ),
           if (hasActivity)
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),

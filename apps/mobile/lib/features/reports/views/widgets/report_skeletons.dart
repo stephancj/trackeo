@@ -71,7 +71,7 @@ class ReportListSkeleton extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         physics: const NeverScrollableScrollPhysics(),
         itemCount: count,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        separatorBuilder: (ctx, idx) => const SizedBox(height: 10),
         itemBuilder: (_, __) => const _ReportItemSkeleton(),
       ),
     );

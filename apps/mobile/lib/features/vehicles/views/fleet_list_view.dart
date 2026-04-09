@@ -58,7 +58,7 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
                         ],
                       ),
                       loading: () => const SizedBox(height: 44),
-                      error: (_, _) => const SizedBox(height: 44),
+                      error: (e, st) => const SizedBox(height: 44),
                     ),
                   ),
                   IconButton(
@@ -94,42 +94,42 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
                     _FilterTab(
                       label: 'Tous (${v.length})',
                       isSelected: filter == VehicleFilter.all,
-                      onTap: () =>
-                          ref.read(vehicleFilterProvider.notifier).state =
-                              VehicleFilter.all,
+                      onTap: () => ref
+                          .read(vehicleFilterProvider.notifier)
+                          .state = VehicleFilter.all,
                     ),
                     const SizedBox(width: 8),
                     _FilterTab(
                       label:
                           'En route (${v.where((x) => x.status == VehicleStatus.online).length})',
                       isSelected: filter == VehicleFilter.moving,
-                      onTap: () =>
-                          ref.read(vehicleFilterProvider.notifier).state =
-                              VehicleFilter.moving,
+                      onTap: () => ref
+                          .read(vehicleFilterProvider.notifier)
+                          .state = VehicleFilter.moving,
                     ),
                     const SizedBox(width: 8),
                     _FilterTab(
                       label:
                           'Arrêté (${v.where((x) => x.status == VehicleStatus.idle).length})',
                       isSelected: filter == VehicleFilter.idle,
-                      onTap: () =>
-                          ref.read(vehicleFilterProvider.notifier).state =
-                              VehicleFilter.idle,
+                      onTap: () => ref
+                          .read(vehicleFilterProvider.notifier)
+                          .state = VehicleFilter.idle,
                     ),
                     const SizedBox(width: 8),
                     _FilterTab(
                       label:
                           'Hors ligne (${v.where((x) => x.status == VehicleStatus.offline).length})',
                       isSelected: filter == VehicleFilter.offline,
-                      onTap: () =>
-                          ref.read(vehicleFilterProvider.notifier).state =
-                              VehicleFilter.offline,
+                      onTap: () => ref
+                          .read(vehicleFilterProvider.notifier)
+                          .state = VehicleFilter.offline,
                     ),
                   ],
                 ),
               ),
               loading: () => const SizedBox(height: 36),
-              error: (_, _) => const SizedBox(height: 36),
+              error: (e, st) => const SizedBox(height: 36),
             ),
 
             const SizedBox(height: 8),
@@ -140,8 +140,7 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
                 data: (vehicles) {
                   if (vehicles.isEmpty) {
                     return _EmptyState(
-                      hasFilter:
-                          filter != VehicleFilter.all ||
+                      hasFilter: filter != VehicleFilter.all ||
                           ref.watch(vehicleSearchProvider).isNotEmpty,
                       onClear: () {
                         ref.read(vehicleFilterProvider.notifier).state =
