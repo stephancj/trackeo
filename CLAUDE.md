@@ -360,6 +360,8 @@ TOTAL_POINTS=30
 
 ## Ports exposés
 
+### Développement local
+
 | Service | Port | Usage |
 |---|---|---|
 | PostgreSQL | 5432 | Connexion directe DB |
@@ -369,6 +371,19 @@ TOTAL_POINTS=30
 | Traccar | 5027 | Teltonika FMB |
 | API NestJS | 3000 | REST API `/api/*` |
 | Flutter Web | 8080 | PWA dev (`flutter run -d chrome`) |
+
+### Production (VPS zenkai.mg)
+
+| Service | URL | Port interne |
+|---|---|---|
+| Web App (Flutter PWA) | https://trackeo.zenkai.mg | 80/443 (Nginx) |
+| API NestJS | https://api.trackeo.zenkai.mg/api | 3000 |
+| Traccar UI | https://traccar.trackeo.zenkai.mg | 8082 |
+| PostgreSQL | - | 5432 (non exposé) |
+| Traccar (OsmAnd) | - | 15055 (simulation) |
+| Traccar (autres protocoles) | - | 5001-5150 |
+
+> **Note VPS:** Port 5055 → 15055 pour éviter les conflits avec d'autres services.
 
 ---
 

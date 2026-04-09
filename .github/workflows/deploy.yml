@@ -1,0 +1,27 @@
+name: Deploy All (Full Deploy)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@latest
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
+            cd /opt/trackeo &&
+            git pull origin main &&
+            docker-compose build api &&
+            docker-compose up -d --force-recreate api &&
+            docker image prune -f
+          "
