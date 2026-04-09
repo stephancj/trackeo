@@ -1,0 +1,67 @@
+fastlane_version "2.215.0"
+
+default_platform :ios
+
+platform :ios do
+  desc "Build iOS app for simulator"
+  lane :build_simulator do
+    # Build Flutter for iOS simulator
+    sh("flutter", "build", "ios", "--simulator", "--no-codesign")
+  end
+
+  desc "Build iOS app for TestFlight"
+  lane :build_testflight do
+    # Build Flutter for iOS release
+    sh("flutter", "build", "ios", "--release")
+
+    # Get version and build number from flutter
+    version = get_version_code
+    build = get_build_number
+
+    # Build the ipa using xcodebuild
+    build_app(
+      scheme: "mobile",
+      workspace: "ios/Runner.xcworkspace",
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.trackeo.mobile" => "match AppStore com.trackeo.mobile"
+        }
+      }
+    )
+  end
+
+  desc "Upload to TestFlight"
+  lane :upload_testflight do
+    # Upload to TestFlight
+    upload_to_testflight(
+      username: ENV["APPLE_ID"],
+      app_identifier: "com.trackeo.mobile",
+      ipa: "build/ios/iphoneos/*.ipa",
+      skip_waiting_for_build_processing: true,
+      notify_external_testers: true
+    )
+  end
+
+  desc "Build and upload to TestFlight"
+  lane :release do
+    build_testflight
+    upload_testflight
+  end
+end
+
+platform :android do
+  desc "Build Android APK"
+  lane :build_apk do
+    sh("flutter", "build", "apk", "--release")
+  end
+
+  desc "Upload to Google Play (Internal)"
+  lane :upload_play_store do
+    supply(
+      track: "internal",
+      apk: "build/app/outputs/flutter-apk/app-release.apk"
+    )
+  end
+end
