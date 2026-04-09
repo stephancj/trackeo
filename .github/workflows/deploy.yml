@@ -22,6 +22,5 @@ jobs:
             cd /opt/trackeo &&
             git pull origin main &&
             docker-compose build api &&
-            docker-compose up -d --force-recreate api &&
-            docker image prune -f
+            docker-compose up -d api
           "
