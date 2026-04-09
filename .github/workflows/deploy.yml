@@ -23,14 +23,39 @@ on:
 
 jobs:
   # ===========================================
+  # CHECK CHANGES
+  # ===========================================
+  check-changes:
+    name: Check changes
+    runs-on: ubuntu-latest
+    outputs:
+      api_changed: ${{ steps.changes.outputs.api }}
+      web_changed: ${{ steps.changes.outputs.web }}
+      infra_changed: ${{ steps.changes.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for API changes
+        id: changes
+        run: |
+          API_CHANGES=$(git diff --name-only HEAD~1 HEAD | grep -E 'apps/api/' || true)
+          WEB_CHANGES=$(git diff --name-only HEAD~1 HEAD | grep -E 'apps/mobile/' || true)
+          INFRA_CHANGES=$(git diff --name-only HEAD~1 HEAD | grep -E '(infra/|docker-compose.yml)' || true)
+          
+          if [ -n "$API_CHANGES" ]; then echo "api=true" >> $GITHUB_OUTPUT; else echo "api=false" >> $GITHUB_OUTPUT; fi
+          if [ -n "$WEB_CHANGES" ]; then echo "web=true" >> $GITHUB_OUTPUT; else echo "web=false" >> $GITHUB_OUTPUT; fi
+          if [ -n "$INFRA_CHANGES" ]; then echo "infra=true" >> $GITHUB_OUTPUT; else echo "infra=false" >> $GITHUB_OUTPUT; fi
+
+  # ===========================================
   # BUILD API
   # ===========================================
   build-api:
     name: Build API
+    needs: check-changes
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && contains(github.changed_files, 'apps/api/'))
+    if: needs.check-changes.outputs.api_changed == 'true' || github.event_name == 'workflow_dispatch'
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
     steps:
@@ -69,10 +94,9 @@ jobs:
   # ===========================================
   build-web:
     name: Build Web
+    needs: check-changes
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && contains(github.changed_files, 'apps/mobile/'))
+    if: needs.check-changes.outputs.web_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -101,11 +125,9 @@ jobs:
   # ===========================================
   deploy-api:
     name: Deploy API
-    needs: build-api
+    needs: [check-changes, build-api]
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && contains(github.changed_files, 'apps/api/'))
+    if: needs.check-changes.outputs.api_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -129,11 +151,9 @@ jobs:
   # ===========================================
   deploy-web:
     name: Deploy Web
-    needs: build-web
+    needs: [check-changes, build-web]
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && contains(github.changed_files, 'apps/mobile/'))
+    if: needs.check-changes.outputs.web_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -158,12 +178,9 @@ jobs:
   # ===========================================
   deploy-infra:
     name: Deploy Infrastructure
+    needs: check-changes
     runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && 
-       (contains(github.changed_files, 'docker-compose.yml') || 
-        contains(github.changed_files, 'infra/')))
+    if: needs.check-changes.outputs.infra_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -187,17 +204,21 @@ jobs:
   # ===========================================
   notify:
     name: Notify
-    needs: [deploy-api, deploy-web, deploy-infra]
+    needs: [check-changes, deploy-api, deploy-web, deploy-infra]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Send success notification
-        if: needs.deploy-api.result == 'success' || needs.deploy-web.result == 'success'
+      - name: Summary
         run: |
-          echo "Deployment successful!"
-
-      - name: Send failure notification
-        if: needs.deploy-api.result == 'failure' || needs.deploy-web.result == 'failure'
-        run: |
-          echo "Deployment failed!"
-          exit 1
+          echo "## Deploy Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Changes detected:" >> $GITHUB_STEP_SUMMARY
+          echo "- API: ${{ needs.check-changes.outputs.api_changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Web: ${{ needs.check-changes.outputs.web_changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Infra: ${{ needs.check-changes.outputs.infra_changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build API | ${{ needs.deploy-api.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Web | ${{ needs.deploy-web.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Infra | ${{ needs.deploy-infra.result }} |" >> $GITHUB_STEP_SUMMARY
