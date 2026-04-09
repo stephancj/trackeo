@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'apps/api/**'
+      - 'apps/mobile/**'
       - 'infra/**'
       - 'docker-compose.yml'
   workflow_dispatch:
@@ -30,6 +31,7 @@ jobs:
     outputs:
       api_changed: ${{ steps.changes.outputs.api }}
       web_changed: ${{ steps.changes.outputs.web }}
+      ios_changed: ${{ steps.changes.outputs.ios }}
       infra_changed: ${{ steps.changes.outputs.infra }}
     steps:
       - uses: actions/checkout@v4
@@ -39,13 +41,11 @@ jobs:
       - name: Check for API changes
         id: changes
         run: |
-          API_CHANGES=$(git diff --name-only HEAD~1 HEAD | grep -E 'apps/api/' || true)
-          WEB_CHANGES=$(git diff --name-only HEAD~1 HEAD | grep -E 'apps/mobile/' || true)
-          INFRA_CHANGES=$(git diff --name-only HEAD~1 HEAD | grep -E '(infra/|docker-compose.yml)' || true)
-          
-          if [ -n "$API_CHANGES" ]; then echo "api=true" >> $GITHUB_OUTPUT; else echo "api=false" >> $GITHUB_OUTPUT; fi
-          if [ -n "$WEB_CHANGES" ]; then echo "web=true" >> $GITHUB_OUTPUT; else echo "web=false" >> $GITHUB_OUTPUT; fi
-          if [ -n "$INFRA_CHANGES" ]; then echo "infra=true" >> $GITHUB_OUTPUT; else echo "infra=false" >> $GITHUB_OUTPUT; fi
+          # For testing: always run all jobs
+          echo "api=true" >> $GITHUB_OUTPUT
+          echo "web=true" >> $GITHUB_OUTPUT
+          echo "ios=true" >> $GITHUB_OUTPUT
+          echo "infra=true" >> $GITHUB_OUTPUT
 
   # ===========================================
   # BUILD API (on VPS, no Docker Hub push needed)
