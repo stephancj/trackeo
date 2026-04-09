@@ -1,0 +1,206 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [develop]
+
+jobs:
+  # ===========================================
+  # LINT API
+  # ===========================================
+  lint-api:
+    name: Lint API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Install dependencies
+        run: cd apps/api && npm ci
+
+      - name: Lint
+        run: cd apps/api && npm run lint
+
+  # ===========================================
+  # TEST API
+  # ===========================================
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg14
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Install dependencies
+        run: cd apps/api && npm ci
+
+      - name: Setup Database
+        run: |
+          cd apps/api
+          npx typeorm migration:run -d dist/config/database.config.js || true
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: test
+          DB_PASS: test
+          DB_NAME: test
+
+      - name: Test
+        run: cd apps/api && npm run test
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: test
+          DB_PASS: test
+          DB_NAME: test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./apps/api/coverage/lcov.info
+          flags: api
+
+  # ===========================================
+  # BUILD API (verify compilation)
+  # ===========================================
+  build-api:
+    name: Build API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Install dependencies
+        run: cd apps/api && npm ci
+
+      - name: Build
+        run: cd apps/api && npm run build
+
+  # ===========================================
+  # LINT FLUTTER
+  # ===========================================
+  lint-flutter:
+    name: Lint Flutter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24'
+          cache: true
+          cache-dependency-path: apps/mobile/pubspec.lock
+
+      - name: Install dependencies
+        run: cd apps/mobile && flutter pub get
+
+      - name: Analyze
+        run: cd apps/mobile && flutter analyze
+
+  # ===========================================
+  # TEST FLUTTER
+  # ===========================================
+  test-flutter:
+    name: Test Flutter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24'
+          cache: true
+
+      - name: Install dependencies
+        run: cd apps/mobile && flutter pub get
+
+      - name: Test
+        run: cd apps/mobile && flutter test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./apps/mobile/coverage/lcov.info
+          flags: flutter
+
+  # ===========================================
+  # BUILD FLUTTER (verify compilation)
+  # ===========================================
+  build-flutter:
+    name: Build Flutter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24'
+          cache: true
+
+      - name: Install dependencies
+        run: cd apps/mobile && flutter pub get
+
+      - name: Build Web
+        run: cd apps/mobile && flutter build web --release
+
+  # ===========================================
+  # NOTIFY
+  # ===========================================
+  notify:
+    name: Notify
+    needs: [lint-api, test-api, build-api, lint-flutter, test-flutter, build-flutter]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Success
+        if: needs.lint-api.result == 'success' && needs.test-api.result == 'success' && needs.build-api.result == 'success' && needs.lint-flutter.result == 'success' && needs.test-flutter.result == 'success' && needs.build-flutter.result == 'success'
+        run: echo "All tests passed!"
+
+      - name: Failure summary
+        if: failure()
+        run: |
+          echo "Failed jobs:"
+          ${{ toJson(needs.*.result) }}
