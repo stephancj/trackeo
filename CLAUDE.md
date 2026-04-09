@@ -1,4 +1,4 @@
-# CLAUDE.md — Trackeo GPS Tracking Monorepo
+# CLAUDE.md — Trackeo GPS Tracking Monorepo (Production: zenkai.mg)
 
 ## Vue d'ensemble du projet
 
