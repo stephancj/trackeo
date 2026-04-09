@@ -125,9 +125,16 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
-            git pull origin main &&
-            docker-compose pull api &&
-            docker-compose up -d api
+            docker-compose stop api && docker-compose rm -f api && docker-compose up -d --no-recreate api
+          "
+
+      - name: Wait for API
+        run: sleep 10
+
+      - name: Test API
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
+            curl -sf https://api.trackeo.zenkai.mg/api/ || exit 1
           "
 
   # ===========================================
