@@ -16,6 +16,7 @@ import 'widgets/alert_skeletons.dart';
 import 'widgets/alert_detail_sheet.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
 import '../../../core/providers/geocoding_provider.dart';
+import '../../settings/views/alert_settings_view.dart';
 
 // Local _reverseGeocodeProvider removed in favor of global reverseGeocodeProvider
 
@@ -37,8 +38,12 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         title: const Text('Alertes & Zones'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppColors.primary),
-            onPressed: () {},
+            icon: const Icon(Icons.notifications_active_outlined, color: AppColors.primary),
+            tooltip: 'Paramètres d\'alertes',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AlertSettingsView()),
+            ),
           ),
         ],
       ),
@@ -114,14 +119,19 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
           ),
         ),
         if (action != null)
-          GestureDetector(
+          InkWell(
             onTap: onActionTap,
-            child: Text(
-              action,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+            borderRadius: BorderRadius.circular(6),
+            hoverColor: AppColors.primary.withValues(alpha: 0.04),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Text(
+                action,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
               ),
             ),
           ),
@@ -234,10 +244,6 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
           builder: (_) => CreateGeofenceView(geofence: geofence),
         ),
       ),
-      onLongPress: () {
-        HapticFeedback.mediumImpact();
-        _showQuickActionsSheet(geofence);
-      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -494,6 +500,24 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                           .toggleGeofence(geofence, v);
                     },
                   ),
+                  // Bouton actions — remplace le longPress (non fiable sur PWA)
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => _showQuickActionsSheet(geofence),
+                        child: const Icon(
+                          Icons.more_vert_rounded,
+                          size: 18,
+                          color: AppColors.textHint,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -549,11 +573,13 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         ),
         if (hasMore) ...[
           const SizedBox(height: 10),
-          GestureDetector(
+          InkWell(
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AllAlertsView()),
             ),
+            borderRadius: BorderRadius.circular(16),
+            hoverColor: AppColors.primary.withValues(alpha: 0.04),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 13),
               decoration: BoxDecoration(
@@ -608,11 +634,13 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
   }
 
   Widget _buildGeofencesEmptyState() {
-    return GestureDetector(
+    return InkWell(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const CreateGeofenceView()),
       ),
+      borderRadius: BorderRadius.circular(20),
+      hoverColor: AppColors.primary.withValues(alpha: 0.04),
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(

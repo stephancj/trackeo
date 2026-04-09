@@ -71,11 +71,18 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
+      // M3 — Message générique : ne pas exposer les détails techniques à l'utilisateur.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur : ${e.toString()}'),
+            content: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 18),
+                SizedBox(width: 10),
+                Text('Impossible de sauvegarder. Réessayez.'),
+              ],
+            ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: AppColors.statusAlert,
             shape:

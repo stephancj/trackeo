@@ -3,11 +3,22 @@ import 'package:equatable/equatable.dart';
 enum VehicleStatus { online, idle, offline }
 
 extension VehicleStatusX on VehicleStatus {
+  // L3 fix : labels en français (utilisés par StatusBadge)
   String get label => switch (this) {
-    VehicleStatus.online => 'Moving',
-    VehicleStatus.idle => 'Idle',
-    VehicleStatus.offline => 'Offline',
+    VehicleStatus.online => 'En route',
+    VehicleStatus.idle => 'Arrêté',
+    VehicleStatus.offline => 'Hors ligne',
   };
+}
+
+/// H2 — Parse une date ISO 8601 sans crash si le format est invalide.
+DateTime _parseDateTimeSafe(String s) {
+  try {
+    return DateTime.parse(s);
+  } catch (_) {
+    // Valeur sentinelle epoch 0 — la UI affiche "Inconnu" pour lastUpdate null
+    return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  }
 }
 
 class VehiclePosition extends Equatable {
@@ -43,7 +54,7 @@ class VehiclePosition extends Equatable {
         battery: json['battery'] as int?,
         ignition: json['ignition'] as bool?,
         rssi: json['rssi'] as int?,
-        deviceTime: DateTime.parse(json['deviceTime'] as String),
+        deviceTime: _parseDateTimeSafe(json['deviceTime'] as String),
       );
 
   @override
@@ -86,7 +97,7 @@ class Vehicle extends Equatable {
       imageUrl: json['imageUrl'] as String?,
       status: status,
       lastUpdate: json['lastUpdate'] != null
-          ? DateTime.parse(json['lastUpdate'] as String)
+          ? _parseDateTimeSafe(json['lastUpdate'] as String)
           : null,
       position: json['position'] != null
           ? VehiclePosition.fromJson(json['position'] as Map<String, dynamic>)

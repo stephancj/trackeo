@@ -17,7 +17,7 @@ import '../storage/token_storage.dart';
 // }
 // final String kBaseUrl = _deriveBaseUrl();
 
-const String kBaseUrl = 'http://192.168.88.69:3000/api';
+const String kBaseUrl = 'http://192.168.88.23:3000/api';
 
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(

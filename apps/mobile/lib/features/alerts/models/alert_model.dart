@@ -1,5 +1,14 @@
 import 'package:equatable/equatable.dart';
 
+/// H2 — Parse une date ISO 8601 sans crash si le format est invalide.
+DateTime _parseDateTimeSafe(String s) {
+  try {
+    return DateTime.parse(s);
+  } catch (_) {
+    return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  }
+}
+
 class AlertModel extends Equatable {
   final String id;
   final int deviceId;
@@ -26,7 +35,7 @@ class AlertModel extends Equatable {
     type: json['type'] as String,
     message: json['message'] as String?,
     status: json['status'] as String,
-    createdAt: DateTime.parse(json['createdAt'] as String),
+    createdAt: _parseDateTimeSafe(json['createdAt'] as String),
   );
 
   AlertModel copyWith({

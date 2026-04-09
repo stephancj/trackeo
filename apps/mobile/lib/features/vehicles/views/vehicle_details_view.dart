@@ -79,8 +79,9 @@ class VehicleDetailsView extends ConsumerWidget {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Modifier le véhicule',
+            onPressed: () => _showEditDialog(context, ref, vehicle),
           ),
         ],
       ),

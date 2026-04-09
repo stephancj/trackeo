@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../history/views/history_view.dart';
 import '../../vehicles/models/vehicle_model.dart';
+import '../../vehicles/views/vehicle_details_view.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
 import '../../../core/providers/geocoding_provider.dart';
 
@@ -159,9 +160,16 @@ class _MapViewState extends ConsumerState<MapView>
 
   @override
   Widget build(BuildContext context) {
-    // Trigger smooth animation whenever the poll delivers new data.
+    // H4 — Écoute les données ET les erreurs (erreurs gérées dans VehiclesNotifier).
     ref.listen(vehiclesProvider, (_, next) {
-      next.whenData(_onVehiclesUpdated);
+      next.when(
+        data: _onVehiclesUpdated,
+        error: (_, __) {
+          // VehiclesNotifier conserve les données précédentes en cas d'erreur réseau.
+          // Aucune action supplémentaire requise.
+        },
+        loading: () {},
+      );
     });
 
     final vehiclesAsync = ref.watch(vehiclesProvider);
@@ -922,13 +930,18 @@ class _VehicleCard extends ConsumerWidget {
           // ── Boutons ─────────────────────────────────────────────────
           Row(
             children: [
-              // Call Driver — vert rempli
+              // Détails — vert rempli
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.phone_rounded, size: 17),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => VehicleDetailsView(vehicle: vehicle),
+                    ),
+                  ),
+                  icon: const Icon(Icons.info_outline_rounded, size: 17),
                   label: const Text(
-                    'Appeler',
+                    'Détails',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                   style: ElevatedButton.styleFrom(

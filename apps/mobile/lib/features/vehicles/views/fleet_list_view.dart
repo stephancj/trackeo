@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
@@ -7,11 +9,16 @@ import 'widgets/vehicle_card.dart';
 import 'widgets/vehicle_card_skeleton.dart';
 import 'vehicle_details_view.dart';
 
-class FleetListView extends ConsumerWidget {
+class FleetListView extends ConsumerStatefulWidget {
   const FleetListView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FleetListView> createState() => _FleetListViewState();
+}
+
+class _FleetListViewState extends ConsumerState<FleetListView> {
+  @override
+  Widget build(BuildContext context) {
     final vehiclesAsync = ref.watch(vehiclesProvider);
     final filteredAsync = ref.watch(filteredVehiclesProvider);
     final filter = ref.watch(vehicleFilterProvider);
@@ -181,9 +188,30 @@ class FleetListView extends ConsumerWidget {
 
 // ── Widgets internes ────────────────────────────────────────────────────────
 
-class _SearchBar extends ConsumerWidget {
+// L4 — Barre de recherche avec debounce 300 ms pour éviter les rebuilds à chaque frappe.
+class _SearchBar extends ConsumerStatefulWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends ConsumerState<_SearchBar> {
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      ref.read(vehicleSearchProvider.notifier).state = value;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -191,7 +219,7 @@ class _SearchBar extends ConsumerWidget {
         border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
       ),
       child: TextField(
-        onChanged: (v) => ref.read(vehicleSearchProvider.notifier).state = v,
+        onChanged: _onChanged,
         decoration: const InputDecoration(
           hintText: 'Rechercher par nom ou plaque...',
           prefixIcon: Icon(Icons.search, color: AppColors.textHint, size: 20),

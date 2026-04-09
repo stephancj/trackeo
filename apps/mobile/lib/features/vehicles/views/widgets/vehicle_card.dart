@@ -154,11 +154,11 @@ class VehicleCard extends ConsumerWidget {
                                   ? 'km/h'
                                   : vehicle.status == VehicleStatus.idle
                                   ? vehicle.lastUpdate != null
-                                        ? '${timeago.format(vehicle.lastUpdate!).replaceAll(' ago', '')} stopped'
-                                        : 'Stopped'
+                                        ? 'Arrêté ${timeago.format(vehicle.lastUpdate!, locale: 'fr')}'
+                                        : 'Arrêté'
                                   : vehicle.lastUpdate != null
-                                  ? 'Seen ${timeago.format(vehicle.lastUpdate!)}'
-                                  : 'Offline',
+                                  ? 'Inactif ${timeago.format(vehicle.lastUpdate!, locale: 'fr')}'
+                                  : 'Hors ligne',
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: AppColors.textSecondary,
@@ -190,7 +190,7 @@ class VehicleCard extends ConsumerWidget {
                             data: (address) => Text(
                               address ??
                                   vehicle.position?.address ??
-                                  'Location unknown',
+                                  'Position inconnue',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textHint,
@@ -199,14 +199,14 @@ class VehicleCard extends ConsumerWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             loading: () => const Text(
-                              'Resolving location...',
+                              'Localisation...',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textHint,
                               ),
                             ),
                             error: (_, __) => const Text(
-                              'Location unknown',
+                              'Position inconnue',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textHint,

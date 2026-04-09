@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
@@ -35,10 +37,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   final AuthRepository _repo;
 
-  /// Restaure la session depuis le localStorage (web) / SharedPreferences
+  /// Restaure la session depuis le localStorage (web) / SharedPreferences.
+  /// Vérifie l'expiration du JWT avant de restaurer la session.
   Future<void> _tryRestoreSession() async {
     final session = await TokenStorage.getSession();
     if (session.token != null && session.email != null) {
+      // Vérifier si le token est expiré avant de restaurer la session
+      if (_isTokenExpired(session.token!)) {
+        await TokenStorage.clear();
+        state = const AuthState.unauthenticated();
+        return;
+      }
       final user = AuthUser(
         id: session.userId ?? 0,
         email: session.email!,
@@ -51,6 +60,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (user.id != 0) _linkOneSignal(user.id);
     } else {
       state = const AuthState.unauthenticated();
+    }
+  }
+
+  /// Décode le payload JWT et vérifie si le token est expiré.
+  /// Retourne true si expiré ou invalide (fail-safe : on exige un nouveau login).
+  static bool _isTokenExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return true;
+      // Base64url → base64 standard
+      var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      final mod = payload.length % 4;
+      if (mod != 0) payload = payload.padRight(payload.length + (4 - mod), '=');
+      final decoded = utf8.decode(base64Decode(payload));
+      final data = jsonDecode(decoded) as Map<String, dynamic>;
+      final exp = data['exp'];
+      if (exp == null) return false; // Pas de champ exp → on fait confiance
+      // Comparer en secondes UTC
+      return DateTime.now().millisecondsSinceEpoch ~/ 1000 >= (exp as int);
+    } catch (_) {
+      return true; // En cas de doute, forcer un nouveau login
     }
   }
 

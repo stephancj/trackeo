@@ -17,6 +17,8 @@ import '../repositories/vehicle_repository.dart';
 /// Notifier qui gère la liste des véhicules avec polling silencieux.
 class VehiclesNotifier extends AutoDisposeAsyncNotifier<List<Vehicle>> {
   Timer? _timer;
+  // H5 — Évite les requêtes concurrentes si un refresh prend > 10 s.
+  bool _isFetching = false;
 
   @override
   Future<List<Vehicle>> build() async {
@@ -33,7 +35,10 @@ class VehiclesNotifier extends AutoDisposeAsyncNotifier<List<Vehicle>> {
 
   /// Rafraîchit les données sans modifier l'état vers loading.
   /// Les marqueurs restent visibles pendant toute la durée du fetch.
+  /// Guard _isFetching : ignore l'appel si une requête est déjà en cours.
   Future<void> _refresh() async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
       final vehicles = await ref.read(vehicleRepositoryProvider).getVehicles();
       // Mise à jour directe → pas de flash loading
@@ -46,6 +51,8 @@ class VehiclesNotifier extends AutoDisposeAsyncNotifier<List<Vehicle>> {
       } else {
         state = AsyncValue.error(e, st);
       }
+    } finally {
+      _isFetching = false;
     }
   }
 

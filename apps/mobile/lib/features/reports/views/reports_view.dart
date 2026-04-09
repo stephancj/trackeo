@@ -402,24 +402,31 @@ class _ActivityTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final summaryAsync =
-        ref.watch(activitySummaryProvider((vehicleId, period)));
+    final providerKey = activitySummaryProvider((vehicleId, period));
+    final summaryAsync = ref.watch(providerKey);
 
-    return summaryAsync.when(
-      loading: () => const ActivityTabSkeleton(),
-      error: (e, _) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: AppColors.statusAlert),
-            const SizedBox(height: 8),
-            Text('Erreur: $e',
-                style: const TextStyle(color: AppColors.textSecondary)),
-          ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(providerKey);
+        try { await ref.read(providerKey.future); } catch (_) {}
+      },
+      color: AppColors.primary,
+      child: summaryAsync.when(
+        loading: () => const ActivityTabSkeleton(),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: AppColors.statusAlert),
+              const SizedBox(height: 8),
+              Text('Erreur: $e',
+                  style: const TextStyle(color: AppColors.textSecondary)),
+            ],
+          ),
         ),
-      ),
-      data: (summary) => SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        data: (summary) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             GridView.count(
@@ -493,7 +500,8 @@ class _ActivityTab extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ),   // end when()
+  );     // end RefreshIndicator
   }
 }
 
@@ -512,25 +520,39 @@ class _TripLogTab extends ConsumerWidget {
       dateRange.from.millisecondsSinceEpoch,
       dateRange.to.millisecondsSinceEpoch,
     );
-    final tripsAsync = ref.watch(tripLogProvider(params));
+    final providerKey = tripLogProvider(params);
+    final tripsAsync = ref.watch(providerKey);
 
-    return tripsAsync.when(
-      loading: () => const ReportListSkeleton(),
-      error: (e, _) => Center(child: Text('Erreur: $e')),
-      data: (trips) {
-        if (trips.isEmpty) {
-          return const _EmptyList(
-            icon: Icons.route,
-            message: 'Aucun trajet sur cette période',
-          );
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: trips.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (_, i) => _TripCard(trip: trips[i], index: i + 1),
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(providerKey);
+        try { await ref.read(providerKey.future); } catch (_) {}
       },
+      color: AppColors.primary,
+      child: tripsAsync.when(
+        loading: () => const ReportListSkeleton(),
+        error: (e, _) => Center(child: Text('Erreur: $e')),
+        data: (trips) {
+          if (trips.isEmpty) {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                _EmptyList(
+                  icon: Icons.route,
+                  message: 'Aucun trajet sur cette période',
+                ),
+              ],
+            );
+          }
+          return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            itemCount: trips.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (_, i) => _TripCard(trip: trips[i], index: i + 1),
+          );
+        },
+      ),
     );
   }
 }
@@ -664,25 +686,39 @@ class _SpeedTab extends ConsumerWidget {
       dateRange.from.millisecondsSinceEpoch,
       dateRange.to.millisecondsSinceEpoch,
     );
-    final violationsAsync = ref.watch(speedViolationsProvider(params));
+    final providerKey = speedViolationsProvider(params);
+    final violationsAsync = ref.watch(providerKey);
 
-    return violationsAsync.when(
-      loading: () => const ReportListSkeleton(),
-      error: (e, _) => Center(child: Text('Erreur: $e')),
-      data: (violations) {
-        if (violations.isEmpty) {
-          return const _EmptyList(
-            icon: Icons.speed,
-            message: 'Aucun excès de vitesse sur cette période',
-          );
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: violations.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (_, i) => _SpeedCard(violation: violations[i]),
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(providerKey);
+        try { await ref.read(providerKey.future); } catch (_) {}
       },
+      color: AppColors.primary,
+      child: violationsAsync.when(
+        loading: () => const ReportListSkeleton(),
+        error: (e, _) => Center(child: Text('Erreur: $e')),
+        data: (violations) {
+          if (violations.isEmpty) {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                _EmptyList(
+                  icon: Icons.speed,
+                  message: 'Aucun excès de vitesse sur cette période',
+                ),
+              ],
+            );
+          }
+          return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            itemCount: violations.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (_, i) => _SpeedCard(violation: violations[i]),
+          );
+        },
+      ),
     );
   }
 }
@@ -773,24 +809,37 @@ class _IdleTab extends ConsumerWidget {
       dateRange.from.millisecondsSinceEpoch,
       dateRange.to.millisecondsSinceEpoch,
     );
-    final idleAsync = ref.watch(idleTimeProvider(params));
+    final providerKey = idleTimeProvider(params);
+    final idleAsync = ref.watch(providerKey);
 
-    return idleAsync.when(
-      loading: () => const ReportListSkeleton(),
-      error: (e, _) => Center(child: Text('Erreur: $e')),
-      data: (episodes) {
-        if (episodes.isEmpty) {
-          return const _EmptyList(
-            icon: Icons.pause_circle_outline,
-            message: 'Aucune période d\'inactivité sur cette période',
-          );
-        }
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(providerKey);
+        try { await ref.read(providerKey.future); } catch (_) {}
+      },
+      color: AppColors.primary,
+      child: idleAsync.when(
+        loading: () => const ReportListSkeleton(),
+        error: (e, _) => Center(child: Text('Erreur: $e')),
+        data: (episodes) {
+          if (episodes.isEmpty) {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                _EmptyList(
+                  icon: Icons.pause_circle_outline,
+                  message: 'Aucune période d\'inactivité sur cette période',
+                ),
+              ],
+            );
+          }
 
-        final totalMin =
-            episodes.fold(0, (acc, e) => acc + e.durationMin);
+          final totalMin =
+              episodes.fold(0, (acc, e) => acc + e.durationMin);
 
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
+          return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
           itemCount: episodes.length + 1,
           separatorBuilder: (_, _) => const SizedBox(height: 10),
           itemBuilder: (_, i) {
@@ -828,8 +877,9 @@ class _IdleTab extends ConsumerWidget {
             return _IdleCard(episode: episodes[i - 1]);
           },
         );
-      },
-    );
+        },
+      ),    // end idleAsync.when()
+    );      // end RefreshIndicator
   }
 }
 
@@ -902,69 +952,82 @@ class _GeofenceTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final geofencesAsync =
-        ref.watch(geofenceActivityProvider((vehicleId, period)));
+    final providerKey = geofenceActivityProvider((vehicleId, period));
+    final geofencesAsync = ref.watch(providerKey);
 
-    return geofencesAsync.when(
-      loading: () => const ReportListSkeleton(),
-      error: (e, _) => Center(child: Text('Erreur: $e')),
-      data: (geofences) {
-        if (geofences.isEmpty) {
-          return const _EmptyList(
-            icon: Icons.location_on_outlined,
-            message: 'Aucune zone géographique configurée',
-          );
-        }
-
-        // Sort: most active first, then alphabetical
-        final sorted = [...geofences]
-          ..sort((a, b) {
-            final cmp = b.totalEvents.compareTo(a.totalEvents);
-            return cmp != 0 ? cmp : a.geofenceName.compareTo(b.geofenceName);
-          });
-
-        final totalEvents = geofences.fold(0, (s, g) => s + g.totalEvents);
-
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: sorted.length + 1,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (_, i) {
-            if (i == 0) {
-              return Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.location_on_outlined,
-                        color: AppColors.primary),
-                    const SizedBox(width: 10),
-                    Text(
-                      '$totalEvents événement${totalEvents > 1 ? 's' : ''} au total',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${geofences.length} zone${geofences.length > 1 ? 's' : ''}',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              );
-            }
-            return _GeofenceCard(entry: sorted[i - 1]);
-          },
-        );
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(providerKey);
+        try { await ref.read(providerKey.future); } catch (_) {}
       },
+      color: AppColors.primary,
+      child: geofencesAsync.when(
+        loading: () => const ReportListSkeleton(),
+        error: (e, _) => Center(child: Text('Erreur: $e')),
+        data: (geofences) {
+          if (geofences.isEmpty) {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                _EmptyList(
+                  icon: Icons.location_on_outlined,
+                  message: 'Aucune zone géographique configurée',
+                ),
+              ],
+            );
+          }
+
+          // Sort: most active first, then alphabetical
+          final sorted = [...geofences]
+            ..sort((a, b) {
+              final cmp = b.totalEvents.compareTo(a.totalEvents);
+              return cmp != 0 ? cmp : a.geofenceName.compareTo(b.geofenceName);
+            });
+
+          final totalEvents = geofences.fold(0, (s, g) => s + g.totalEvents);
+
+          return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            itemCount: sorted.length + 1,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (_, i) {
+              if (i == 0) {
+                return Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined,
+                          color: AppColors.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        '$totalEvents événement${totalEvents > 1 ? 's' : ''} au total',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${geofences.length} zone${geofences.length > 1 ? 's' : ''}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return _GeofenceCard(entry: sorted[i - 1]);
+            },
+          );
+        },
+      ),
     );
   }
 }

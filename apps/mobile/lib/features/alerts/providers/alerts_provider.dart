@@ -25,10 +25,19 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<AlertModel>>> {
     }
   }
 
-  /// Marque toutes les alertes comme lues puis rafraîchit la liste.
+  /// Marque toutes les alertes comme lues (mise à jour optimiste, sans flash loading).
   Future<void> markAllRead() async {
-    await _repository.markAllRead();
-    await refresh();
+    final current = state.valueOrNull;
+    if (current != null) {
+      state = AsyncValue.data(
+        current.map((a) => a.copyWith(status: 'acked')).toList(),
+      );
+    }
+    try {
+      await _repository.markAllRead();
+    } catch (_) {
+      await refresh();
+    }
   }
 
   /// Acquitte une alerte avec mise à jour optimiste immédiate.
