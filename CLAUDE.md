@@ -846,3 +846,4 @@ Maintenant que le MVP (S1-S10) est opérationnel, l'objectif est de le mettre en
    - [ ] Créer l'identifiant du tracker (IMEI) dans l'interface de Trackeo.
    - [ ] Mettre le tracker dans une voiture réelle à Antananarivo et s'assurer que sa route s'affiche sans accroc.
 # Test CI
+// trigger
