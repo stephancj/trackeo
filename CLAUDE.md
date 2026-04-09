@@ -845,3 +845,4 @@ Maintenant que le MVP (S1-S10) est opérationnel, l'objectif est de le mettre en
    - [ ] Configurer le traceur (par SMS) pour lui donner l'IP publique du VPS, le bon port de Traccar correspondant au protocole, et l'APN de la carte SIM malgache.
    - [ ] Créer l'identifiant du tracker (IMEI) dans l'interface de Trackeo.
    - [ ] Mettre le tracker dans une voiture réelle à Antananarivo et s'assurer que sa route s'affiche sans accroc.
+# Test CI
