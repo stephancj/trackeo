@@ -3,11 +3,6 @@ name: Deploy to Production
 on:
   push:
     branches: [main]
-    paths:
-      - 'apps/api/**'
-      - 'apps/mobile/**'
-      - 'infra/**'
-      - 'docker-compose.yml'
   workflow_dispatch:
     inputs:
       deploy_target:
