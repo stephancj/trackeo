@@ -156,6 +156,7 @@ jobs:
       - name: Deploy Web
         run: |
           scp -o StrictHostKeyChecking=no -r web/* ${{ secrets.VPS_HOST }}:/opt/trackeo/web/
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "chmod -R 755 /opt/trackeo/web && chown -R www-data:www-data /opt/trackeo/web"
 
   # ===========================================
   # DEPLOY INFRA
