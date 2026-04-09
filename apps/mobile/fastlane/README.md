@@ -1,48 +1,85 @@
-# Fastlane Setup
+fastlane documentation
+----
 
-## Installation
+# Installation
 
-```bash
-cd apps/mobile
-sudo gem install fastlane
-cp fastlane/.env.example fastlane/.env
+Make sure you have the latest version of the Xcode command line tools installed:
+
+```sh
+xcode-select --install
 ```
 
-## Configuration
+For _fastlane_ installation instructions, see [Installing _fastlane_](https://docs.fastlane.tools/#installing-fastlane)
 
-Edit `fastlane/.env` with your Apple credentials:
-- `APPLE_ID`: Your Apple Developer email
-- `APPLE_TEAM_ID`: Your Team ID (from App Store Connect)
+# Available Actions
 
-## Usage
+## iOS
 
-### Build for Simulator
-```bash
-fastlane build_simulator
+### ios build_simulator
+
+```sh
+[bundle exec] fastlane ios build_simulator
 ```
 
-### Build and Upload to TestFlight
-```bash
-fastlane release
+Build iOS app for simulator
+
+### ios build_testflight
+
+```sh
+[bundle exec] fastlane ios build_testflight
 ```
 
-### Android
-```bash
-fastlane build_apk
-fastlane upload_play_store
+Build iOS app for TestFlight using Match
+
+### ios upload_testflight
+
+```sh
+[bundle exec] fastlane ios upload_testflight
 ```
 
-## Required Setup
+Upload to TestFlight
 
-1. **Apple Developer Account** - App Store Connect access
-2. **Certificates** - Use `fastlane match` to manage:
-   ```bash
-   fastlane match appstore
-   ```
-3. **Google Play** - Service account JSON for Play Store upload
+### ios release
 
-## CI/CD
+```sh
+[bundle exec] fastlane ios release
+```
 
-To use with GitHub Actions, you'll need:
-- MacStadium or MacinCloud for CI (Linux runners can't build iOS)
-- Or run locally and commit built artifacts
+Build and upload to TestFlight
+
+### ios init_match
+
+```sh
+[bundle exec] fastlane ios init_match
+```
+
+Initialize Match (run once locally)
+
+----
+
+
+## Android
+
+### android build_apk
+
+```sh
+[bundle exec] fastlane android build_apk
+```
+
+Build Android APK
+
+### android upload_play_store
+
+```sh
+[bundle exec] fastlane android upload_play_store
+```
+
+Upload to Google Play (Internal)
+
+----
+
+This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
+
+More information about _fastlane_ can be found on [fastlane.tools](https://fastlane.tools).
+
+The documentation of _fastlane_ can be found on [docs.fastlane.tools](https://docs.fastlane.tools).

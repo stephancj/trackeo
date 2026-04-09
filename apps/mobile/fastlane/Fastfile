@@ -9,8 +9,15 @@ platform :ios do
     sh("flutter", "build", "ios", "--simulator", "--no-codesign")
   end
 
-  desc "Build iOS app for TestFlight"
+  desc "Build iOS app for TestFlight using Match"
   lane :build_testflight do
+    # Setup Match (read password from environment)
+    match(
+      type: "appstore",
+      app_identifier: "com.trackeo.client.app",
+      readonly: true
+    )
+
     # Build Flutter for iOS release
     sh("flutter", "build", "ios", "--release")
 
@@ -18,15 +25,15 @@ platform :ios do
     version = get_version_code
     build = get_build_number
 
-    # Build the ipa using xcodebuild
+    # Build the ipa using xcodebuild with Match provisioning
     build_app(
-      scheme: "mobile",
+      scheme: "Runner",
       workspace: "ios/Runner.xcworkspace",
       configuration: "Release",
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
-          "com.trackeo.mobile" => "match AppStore com.trackeo.mobile"
+          "com.trackeo.client.app" => "match AppStore com.trackeo.client.app"
         }
       }
     )
@@ -37,7 +44,7 @@ platform :ios do
     # Upload to TestFlight
     upload_to_testflight(
       username: ENV["APPLE_ID"],
-      app_identifier: "com.trackeo.mobile",
+      app_identifier: "com.trackeo.client.app",
       ipa: "build/ios/iphoneos/*.ipa",
       skip_waiting_for_build_processing: true,
       notify_external_testers: true
@@ -48,6 +55,16 @@ platform :ios do
   lane :release do
     build_testflight
     upload_testflight
+  end
+
+  desc "Initialize Match (run once locally)"
+  lane :init_match do
+    match(
+      type: "appstore",
+      app_identifier: "com.trackeo.client.app",
+      git_url: ENV["MATCH_GIT_URL"],
+      force_for_new_devices: true
+    )
   end
 end
 
