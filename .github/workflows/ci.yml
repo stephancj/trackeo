@@ -3,8 +3,14 @@ name: CI
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'apps/mobile/**'
   push:
     branches: [develop]
+    paths:
+      - 'apps/api/**'
+      - 'apps/mobile/**'
 
 # ===========================================
 # JOBS
