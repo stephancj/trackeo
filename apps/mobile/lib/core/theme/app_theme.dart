@@ -31,6 +31,92 @@ class AppColors {
   static const Color batteryGood = Color(0xFF4ECB8D);    // > 50 %
   static const Color batteryMedium = Color(0xFFF59E0B);  // 20–50 %
   static const Color batteryLow = Color(0xFFEF4444);     // < 20 %
+
+  // ── Pastels (fonds d'icônes) ──────────────────────────────────────────────
+  static const Color pastelGreen  = Color(0xFFE8F8F2);   // primary à 12 %
+  static const Color pastelBlue   = Color(0xFFEBF2FD);   // statusIdle à 15 %
+  static const Color pastelPurple = Color(0xFFF3EEFF);   // #8B5CF6 à 12 %
+  static const Color pastelRed    = Color(0xFFFEECEC);   // statusAlert à 10 %
+  static const Color pastelOrange = Color(0xFFFFF3E8);   // #F97316 à 12 %
+}
+
+/// Échelle typographique — utiliser ces styles plutôt que des TextStyle inline.
+class AppTextStyles {
+  AppTextStyles._();
+
+  // Titres de pages
+  static const TextStyle pageTitle = TextStyle(
+    fontSize: 22,
+    fontWeight: FontWeight.w700,
+    color: AppColors.primaryDark,
+  );
+  static const TextStyle pageTitleLarge = TextStyle(
+    fontSize: 26,
+    fontWeight: FontWeight.w700,
+    color: AppColors.primaryDark,
+  );
+
+  // Titres de sections / cards
+  static const TextStyle sectionTitle = TextStyle(
+    fontSize: 17,
+    fontWeight: FontWeight.w700,
+    color: AppColors.primaryDark,
+  );
+  static const TextStyle cardTitle = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
+
+  // Corps de texte
+  static const TextStyle body = TextStyle(
+    fontSize: 14,
+    color: AppColors.textPrimary,
+  );
+  static const TextStyle bodySecondary = TextStyle(
+    fontSize: 13,
+    color: AppColors.textSecondary,
+  );
+
+  // Labels / métadonnées
+  static const TextStyle label = TextStyle(
+    fontSize: 12,
+    color: AppColors.textSecondary,
+  );
+  static const TextStyle labelSmall = TextStyle(
+    fontSize: 11,
+    color: AppColors.textHint,
+  );
+
+  // Caps (section labels)
+  static const TextStyle caps = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textHint,
+    letterSpacing: 1.1,
+  );
+}
+
+/// Constantes d'espacement — utiliser ces valeurs plutôt que des literaux inline.
+class AppSpacing {
+  AppSpacing._();
+
+  static const double xs  = 4.0;
+  static const double sm  = 8.0;
+  static const double md  = 12.0;
+  static const double lg  = 16.0;   // padding standard
+  static const double xl  = 24.0;
+  static const double xxl = 32.0;
+}
+
+/// Constantes de border radius.
+class AppRadius {
+  AppRadius._();
+
+  static const double sm   = 8.0;
+  static const double md   = 12.0;  // cards standard
+  static const double lg   = 16.0;  // sections, modals
+  static const double pill = 24.0;  // chips, pills
 }
 
 class AppTheme {
@@ -72,15 +158,15 @@ class AppTheme {
           filled: true,
           fillColor: AppColors.surface,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: const BorderSide(color: AppColors.divider),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: const BorderSide(color: AppColors.divider),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
           ),
           contentPadding:
@@ -105,7 +191,7 @@ class AppTheme {
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(0, 44),
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(AppRadius.md)),
             textStyle: const TextStyle(fontWeight: FontWeight.w500),
           ),
         ),

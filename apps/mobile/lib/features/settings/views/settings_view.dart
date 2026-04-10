@@ -164,7 +164,8 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 children: [
                   _MenuTile(
                     icon: Icons.bar_chart_rounded,
-                    iconBg: const Color(0xFF5B8DEF),
+                    iconBg: AppColors.pastelBlue,
+                    iconColor: AppColors.statusIdle,
                     title: 'Rapports de conduite',
                     subtitle: 'Trajets, vitesse, inactivité',
                     onTap: () => Navigator.push(
@@ -175,7 +176,8 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                   ),
                   _MenuTile(
                     icon: Icons.notifications_active_rounded,
-                    iconBg: AppColors.primary,
+                    iconBg: AppColors.pastelGreen,
+                    iconColor: AppColors.primary,
                     title: 'Alertes',
                     subtitle: 'Push, WhatsApp, seuils',
                     onTap: () => Navigator.push(
@@ -195,7 +197,8 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 children: [
                   _InfoTile(
                     icon: Icons.shield_outlined,
-                    iconBg: const Color(0xFF8B5CF6),
+                    iconBg: AppColors.pastelPurple,
+                    iconColor: const Color(0xFF8B5CF6),
                     label: 'Rôle',
                     value: user?.role ?? '-',
                   ),
@@ -508,6 +511,7 @@ class _MenuSection extends StatelessWidget {
 class _MenuTile extends StatelessWidget {
   final IconData icon;
   final Color iconBg;
+  final Color iconColor;
   final String title;
   final String? subtitle;
   final VoidCallback onTap;
@@ -515,6 +519,7 @@ class _MenuTile extends StatelessWidget {
   const _MenuTile({
     required this.icon,
     required this.iconBg,
+    required this.iconColor,
     required this.title,
     this.subtitle,
     required this.onTap,
@@ -535,7 +540,7 @@ class _MenuTile extends StatelessWidget {
                 color: iconBg,
                 borderRadius: BorderRadius.circular(9),
               ),
-              child: Icon(icon, color: Colors.white, size: 19),
+              child: Icon(icon, color: iconColor, size: 19),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -578,12 +583,14 @@ class _MenuTile extends StatelessWidget {
 class _InfoTile extends StatelessWidget {
   final IconData icon;
   final Color iconBg;
+  final Color iconColor;
   final String label;
   final String value;
 
   const _InfoTile({
     required this.icon,
     required this.iconBg,
+    required this.iconColor,
     required this.label,
     required this.value,
   });
@@ -601,7 +608,7 @@ class _InfoTile extends StatelessWidget {
               color: iconBg,
               borderRadius: BorderRadius.circular(9),
             ),
-            child: Icon(icon, color: Colors.white, size: 19),
+            child: Icon(icon, color: iconColor, size: 19),
           ),
           const SizedBox(width: 14),
           Expanded(

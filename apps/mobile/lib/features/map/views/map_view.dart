@@ -223,6 +223,29 @@ class _MapViewState extends ConsumerState<MapView>
             ],
           ),
 
+          // ── Gradient de lisibilité — header + barre de recherche + chips ─
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: topPad + 160,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.72),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
           // ── Indicateur de chargement ───────────────────────────────────
           if (vehiclesAsync.isLoading)
             const Positioned(
@@ -499,7 +522,7 @@ class _MapSearchBar extends ConsumerWidget {
       height: 50,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),

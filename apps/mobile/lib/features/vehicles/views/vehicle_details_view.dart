@@ -38,11 +38,11 @@ class VehicleDetailsView extends ConsumerWidget {
 
   Color _iconColor(String name) {
     final n = name.toLowerCase();
-    if (n.contains('toyota')) return const Color(0xFF4285F4);
+    if (n.contains('toyota')) return AppColors.statusIdle;        // bleu canonique
     if (n.contains('transit')) return const Color(0xFFE65100);
     if (n.contains('bus')) return const Color(0xFF9C27B0);
-    if (n.contains('tesla')) return const Color(0xFFD32F2F);
-    return const Color(0xFF9CA3AF);
+    if (n.contains('tesla')) return AppColors.statusAlert;
+    return AppColors.textHint;
   }
 
   Widget _buildPlaceholder(Vehicle vehicle) {
@@ -313,13 +313,13 @@ class VehicleDetailsView extends ConsumerWidget {
                                     width: 40,
                                     height: 40,
                                     child: Container(
-                                      decoration: const BoxDecoration(
-                                        color: Colors.red,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary,
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black26,
-                                            blurRadius: 4,
+                                            color: AppColors.primary.withValues(alpha: 0.4),
+                                            blurRadius: 6,
                                           ),
                                         ],
                                       ),
@@ -390,7 +390,7 @@ class VehicleDetailsView extends ConsumerWidget {
                                         style: TextStyle(fontSize: 13),
                                       ),
                                   Text(
-                                    'Updated ${vehicle.lastUpdate != null ? timeago.format(vehicle.lastUpdate!) : 'just now'}',
+                                    'Mis à jour ${vehicle.lastUpdate != null ? timeago.format(vehicle.lastUpdate!, locale: 'fr') : 'à l\'instant'}',
                                     style: const TextStyle(
                                       color: AppColors.textHint,
                                       fontSize: 11,
@@ -401,7 +401,7 @@ class VehicleDetailsView extends ConsumerWidget {
                             ),
                             const Icon(
                               Icons.chevron_right,
-                              color: AppColors.statusAlert,
+                              color: AppColors.textHint,
                             ),
                           ],
                         ),
@@ -458,9 +458,12 @@ class VehicleDetailsView extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const Switch(
-                      value: false,
-                      onChanged: null, // Disabled in mockup
+                    Tooltip(
+                      message: 'Disponible avec un plan Premium',
+                      child: const Switch(
+                        value: false,
+                        onChanged: null,
+                      ),
                     ),
                   ],
                 ),
