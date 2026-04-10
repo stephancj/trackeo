@@ -17,7 +17,8 @@ import '../storage/token_storage.dart';
 // }
 // final String kBaseUrl = _deriveBaseUrl();
 
-const String kBaseUrl = 'http://192.168.88.23:3000/api';
+// Production API
+const String kBaseUrl = 'https://api.trackeo.zenkai.mg/api';
 
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
