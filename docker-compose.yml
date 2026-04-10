@@ -85,7 +85,7 @@ services:
       context: ./apps/admin
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=https://api.trackeo.zenkai.mg/api
+        - NEXT_PUBLIC_API_URL=https://api.trackeo.zenkai.mg
     container_name: trackeo-admin
     restart: unless-stopped
     depends_on:

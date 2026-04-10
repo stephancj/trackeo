@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "https://api.trackeo.zenkai.mg/api/:path*",
+        destination: "https://api.trackeo.zenkai.mg/:path*",
       },
     ];
   },

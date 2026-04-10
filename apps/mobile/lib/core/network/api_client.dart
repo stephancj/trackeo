@@ -18,7 +18,7 @@ import '../storage/token_storage.dart';
 // final String kBaseUrl = _deriveBaseUrl();
 
 // Production API
-const String kBaseUrl = 'https://api.trackeo.zenkai.mg/api';
+const String kBaseUrl = 'https://api.trackeo.zenkai.mg';
 
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(

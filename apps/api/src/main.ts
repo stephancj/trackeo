@@ -6,7 +6,6 @@ process.env.TZ = 'UTC';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api');
   app.enableCors();
 
   // Validation globale des DTOs (class-validator)
