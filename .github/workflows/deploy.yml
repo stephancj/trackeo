@@ -132,11 +132,15 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
-            docker-compose stop api && docker-compose rm -f api && docker-compose up -d --no-recreate api
+            docker-compose stop api && docker-compose rm -f api && docker-compose up -d --no-recreate api || (
+              docker rm -f trackeo-api 2>/dev/null || true &&
+              docker build -t trackeo_api apps/api &&
+              docker run -d --name trackeo-api --network trackeo_trackeo-net -p 3000:3000 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USER=trackeo -e DB_PASS=Password_1234 -e DB_NAME=traccar_db -e PORT=3000 trackeo_api
+            )
           "
 
       - name: Wait for API
-        run: sleep 10
+        run: sleep 15
 
       - name: Test API
         run: |
@@ -318,7 +322,10 @@ jobs:
             cd /opt/trackeo &&
             docker-compose pull &&
             docker rm -f trackeo-api trackeo-admin 2>/dev/null || true &&
-            docker-compose up -d
+            docker-compose up -d --no-recreate 2>/dev/null || (
+              docker rm -f trackeo-api 2>/dev/null || true &&
+              docker run -d --name trackeo-api --network trackeo_trackeo-net -p 3000:3000 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USER=trackeo -e DB_PASS=Password_1234 -e DB_NAME=traccar_db -e PORT=3000 trackeo_api
+            )
           "
 
   # ===========================================
