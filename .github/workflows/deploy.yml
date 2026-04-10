@@ -167,7 +167,7 @@ jobs:
     name: Deploy Web
     needs: [check-changes, build-web]
     runs-on: ubuntu-latest
-    if: needs.check-changes.outputs.web_changed == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.build-web.result == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -227,7 +227,7 @@ jobs:
     name: Deploy Admin
     needs: [check-changes, build-admin]
     runs-on: ubuntu-latest
-    if: needs.check-changes.outputs.admin_changed == 'true' || needs.check-changes.outputs.infra_changed == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.build-admin.result == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -290,7 +290,7 @@ jobs:
     name: Deploy Landing
     needs: [check-changes, build-landing]
     runs-on: ubuntu-latest
-    if: needs.check-changes.outputs.landing_changed == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.build-landing.result == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
