@@ -2,319 +2,1924 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Trackeo - Suivi GPS en temps réel">
-  <!-- Hero Section -->
-  <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
-    <!-- Background Effects -->
-    <div class="absolute inset-0 grid-pattern"></div>
-    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-[#4ECB8D] rounded-full blur-[150px] opacity-20 animate-pulse"></div>
-    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#5B8DEF] rounded-full blur-[150px] opacity-15 animate-pulse" style="animation-delay: 2s;"></div>
-    
-    <!-- Floating Particles -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="particle animate-float" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
-      <div class="particle animate-float" style="top: 60%; left: 20%; animation-delay: 1s;"></div>
-      <div class="particle animate-float" style="top: 30%; left: 80%; animation-delay: 2s;"></div>
-      <div class="particle animate-float" style="top: 70%; left: 70%; animation-delay: 3s;"></div>
-      <div class="particle animate-float" style="top: 40%; left: 50%; animation-delay: 4s;"></div>
+<Layout title="Trackeo — Suivi GPS en temps réel">
+
+<!-- ═══════════════════════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════════════════════ -->
+<header class="nav-header">
+  <nav class="nav-inner">
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      <div class="logo-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="2.5" fill="#030508"/>
+          <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 14.5A5.5 5.5 0 1 1 12 6.5a5.5 5.5 0 0 1 0 11z" fill="#030508"/>
+          <path d="M12 1v3M12 20v3M1 12h3M20 12h3" stroke="#030508" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="logo-text">TRACKEO</span>
+    </a>
+
+    <!-- Links -->
+    <div class="nav-links">
+      <a href="#features" class="nav-link">Fonctionnalités</a>
+      <a href="#how" class="nav-link">Comment ça marche</a>
+      <a href="#pricing" class="nav-link">Tarifs</a>
     </div>
 
-    <div class="relative z-10 max-w-7xl mx-auto px-6 py-20">
-      <div class="text-center">
-        <!-- Badge -->
-        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 animate-fade-up">
-          <span class="w-2 h-2 bg-[#4ECB8D] rounded-full animate-pulse"></span>
-          <span class="text-sm text-[#9CA3AF]">Solution de tracking #1 à Madagascar</span>
+    <!-- CTA -->
+    <div class="nav-right">
+      <span class="nav-status">
+        <span class="status-dot"><span class="ping-anim"></span><span></span></span>
+        <span class="mono" style="font-size:11px;color:var(--green);">LIVE</span>
+      </span>
+      <a href="https://trackeo.zenkai.mg" class="nav-cta">Accéder →</a>
+    </div>
+  </nav>
+</header>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════════ -->
+<section class="hero-section">
+
+  <!-- Background grid -->
+  <div class="hero-bg grid-bg"></div>
+
+  <!-- Radar glow orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Radar sweep circle (decorative, behind content) -->
+  <div class="radar-container">
+    <div class="radar-circle radar-c1"></div>
+    <div class="radar-circle radar-c2"></div>
+    <div class="radar-circle radar-c3"></div>
+    <div class="radar-sweep"></div>
+    <!-- Blips -->
+    <div class="radar-blip" style="top:30%;left:58%;"></div>
+    <div class="radar-blip" style="top:62%;left:38%;animation-delay:0.8s;"></div>
+    <div class="radar-blip" style="top:45%;left:65%;animation-delay:1.6s;"></div>
+  </div>
+
+  <div class="hero-container">
+    <div class="hero-layout">
+
+      <!-- LEFT: Text -->
+      <div class="hero-left">
+
+        <!-- Signal badge -->
+        <div class="signal-badge">
+          <span class="status-dot inline"><span class="ping-anim"></span><span></span></span>
+          <span class="mono" style="font-size:11px;letter-spacing:0.08em;color:var(--green);">SIGNAL ACQUIS — TRACKING EN COURS</span>
         </div>
 
-        <!-- Main Title -->
-        <h1 class="text-5xl md:text-7xl font-bold mb-6 animate-fade-up delay-100">
-          <span class="text-white">Gardez un </span>
-          <span class="gradient-text">œil</span>
-          <span class="text-white"> sur vos véhicules</span>
+        <!-- Headline -->
+        <h1 class="hero-headline">
+          <span class="hl-outline">Vos</span>
+          <span class="hl-solid">véhicules</span>
+          <span class="hl-green">toujours</span>
+          <span class="hl-solid">en vue.</span>
         </h1>
-        
-        <p class="text-xl md:text-2xl text-[#9CA3AF] max-w-3xl mx-auto mb-12 animate-fade-up delay-200">
-          Suivi GPS en temps réel, alertes geofencing, rapports de conduite. 
-          Tout ce dont vous avez besoin pour gérer votre flotte.
+
+        <p class="hero-sub">
+          Tracking GPS temps réel pour votre flotte à Madagascar.
+          Alertes WhatsApp instantanées, geofencing, rapports complets.
+          <strong>Opérationnel en 5 minutes.</strong>
         </p>
 
-        <!-- CTA Buttons -->
-        <div class="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up delay-300">
-          <a href="https://trackeo.zenkai.mg" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#4ECB8D] text-white font-semibold rounded-xl hover:bg-[#3DB87A] transition-all glow">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+        <!-- CTAs -->
+        <div class="hero-ctas">
+          <a href="https://trackeo.zenkai.mg" class="cta-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
             Essayer gratuitement
           </a>
-          <a href="#features" class="inline-flex items-center justify-center gap-2 px-8 py-4 glass text-white font-semibold rounded-xl hover:bg-white/10 transition-all">
-            Découvrir les fonctionnalités
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          <a href="#features" class="cta-ghost">
+            Voir les fonctionnalités
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
           </a>
         </div>
 
-        <!-- App Preview Mockup -->
-        <div class="mt-20 relative animate-fade-up delay-400">
-          <div class="relative mx-auto max-w-4xl">
-            <!-- Phone Frame -->
-            <div class="relative mx-auto w-72 md:w-80 lg:w-96 aspect-[9/19] rounded-[3rem] overflow-hidden border-4 border-[#333549] shadow-2xl glow">
-              <div class="absolute inset-0 bg-[#1A1A25]">
-                <!-- App UI Mockup -->
-                <div class="h-full flex flex-col">
-                  <!-- Status Bar -->
-                  <div class="h-14 bg-[#12121A] flex items-center justify-between px-6">
-                    <div class="w-16 h-2 bg-[#333549] rounded-full"></div>
-                    <div class="flex gap-1">
-                      <div class="w-4 h-2 bg-[#333549] rounded-full"></div>
-                      <div class="w-4 h-2 bg-[#333549] rounded-full"></div>
-                      <div class="w-6 h-2 bg-[#4ECB8D] rounded-full"></div>
-                    </div>
-                  </div>
-                  <!-- Map Area -->
-                  <div class="flex-1 relative overflow-hidden">
-                    <div class="absolute inset-0 bg-[#1A1A25] grid-pattern opacity-50"></div>
-                    <!-- Map Route Line -->
-                    <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                      <path d="M 20 80 Q 40 40 50 60 T 80 30" fill="none" stroke="#4ECB8D" stroke-width="0.5" opacity="0.6"/>
-                    </svg>
-                    <!-- Moving Car -->
-                    <div class="absolute top-[30%] left-[80%] transform -translate-x-1/2 -translate-y-1/2">
-                      <div class="relative">
-                        <div class="w-8 h-8 bg-[#4ECB8D] rounded-full flex items-center justify-center animate-map-pulse">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
-                        </div>
-                        <div class="absolute inset-0 w-8 h-8 bg-[#4ECB8D] rounded-full animate-pulse-ring"></div>
-                      </div>
-                    </div>
-                    <!-- Geofence Circle -->
-                    <div class="absolute top-[60%] left-[40%] w-16 h-16 border-2 border-[#5B8DEF] rounded-full opacity-50"></div>
-                  </div>
-                  <!-- Bottom Nav -->
-                  <div class="h-20 bg-[#12121A] flex items-center justify-around px-4">
-                    <div class="flex flex-col items-center gap-1">
-                      <div class="w-6 h-6 text-[#4ECB8D]" fill="currentColor"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg></div>
-                      <div class="w-8 h-1 bg-[#4ECB8D] rounded-full"></div>
-                    </div>
-                    <div class="flex flex-col items-center gap-1 opacity-50">
-                      <div class="w-6 h-6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M9 3v18"/><path d="M3 9h18"/></svg></div>
-                    </div>
-                    <div class="flex flex-col items-center gap-1 opacity-50">
-                      <div class="w-6 h-6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11.8A8 8 0 0 0 12 2a8 8 0 0 0-8 8.2c0 7.3 8 11.8 8 11.8z"/><circle cx="12" cy="10" r="3"/></svg></div>
-                    </div>
-                    <div class="flex flex-col items-center gap-1 opacity-50">
-                      <div class="w-6 h-6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
-                    </div>
-                  </div>
-                </div>
+        <!-- Metrics strip -->
+        <div class="hero-metrics">
+          <div class="metric">
+            <span class="metric-val mono">10s</span>
+            <span class="metric-lbl">Fréquence GPS</span>
+          </div>
+          <div class="metric-sep"></div>
+          <div class="metric">
+            <span class="metric-val mono">99.9%</span>
+            <span class="metric-lbl">Uptime</span>
+          </div>
+          <div class="metric-sep"></div>
+          <div class="metric">
+            <span class="metric-val mono">900+</span>
+            <span class="metric-lbl">Protocoles GPS</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Dashboard mockup -->
+      <div class="hero-right">
+
+        <!-- Floating stat cards -->
+        <div class="stat-float stat-f1 float-anim">
+          <span class="mono" style="font-size:22px;font-weight:700;color:white;line-height:1;">10s</span>
+          <span style="font-size:10px;color:var(--text-muted);margin-top:2px;">GPS refresh</span>
+        </div>
+        <div class="stat-float stat-f2 float-anim" style="animation-delay:1s;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:16px;">🇲🇬</span>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:white;">Madagascar</div>
+              <div style="font-size:10px;color:var(--text-muted);">Solution locale</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main dashboard card -->
+        <div class="dash-card scanlines">
+
+          <!-- Window chrome -->
+          <div class="dash-chrome">
+            <div class="chrome-dots">
+              <span style="background:#FF5F57;"></span>
+              <span style="background:#FFBD2E;"></span>
+              <span style="background:#28CA42;"></span>
+            </div>
+            <span class="mono" style="font-size:10px;color:#2A3D35;">trackeo.zenkai.mg — flotte</span>
+            <div class="chrome-live">
+              <span class="status-dot inline sm"><span class="ping-anim"></span><span></span></span>
+              <span class="mono" style="font-size:10px;font-weight:700;color:var(--green);">LIVE</span>
+            </div>
+          </div>
+
+          <!-- Map area -->
+          <div class="dash-map-area">
+            <svg class="map-svg" viewBox="0 0 540 260" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+              <!-- Background tiles subtle -->
+              <rect width="540" height="260" fill="#070D14"/>
+
+              <!-- Grid lines (map tiles) -->
+              <g stroke="rgba(61,255,154,0.05)" stroke-width="1" fill="none">
+                <line x1="0" y1="65" x2="540" y2="65"/>
+                <line x1="0" y1="130" x2="540" y2="130"/>
+                <line x1="0" y1="195" x2="540" y2="195"/>
+                <line x1="90" y1="0" x2="90" y2="260"/>
+                <line x1="180" y1="0" x2="180" y2="260"/>
+                <line x1="315" y1="0" x2="315" y2="260"/>
+                <line x1="430" y1="0" x2="430" y2="260"/>
+              </g>
+
+              <!-- Road network -->
+              <g stroke="rgba(61,255,154,0.1)" stroke-width="1.5" fill="none">
+                <line x1="0" y1="130" x2="540" y2="130"/>
+                <line x1="180" y1="0" x2="180" y2="260"/>
+                <path d="M 90 195 Q 135 195 180 130 Q 225 65 315 65"/>
+              </g>
+              <g stroke="rgba(61,255,154,0.2)" stroke-width="2" fill="none">
+                <line x1="0" y1="130" x2="540" y2="130"/>
+                <line x1="180" y1="0" x2="180" y2="260"/>
+              </g>
+
+              <!-- GPS route (ghost) -->
+              <path d="M 60 205 L 180 205 L 180 130 L 315 130 L 315 65 L 430 65"
+                fill="none" stroke="var(--green)" stroke-width="1.5"
+                stroke-dasharray="5 4" stroke-linecap="round" opacity="0.15"/>
+
+              <!-- GPS route (animated) -->
+              <path class="route-animated"
+                d="M 60 205 L 180 205 L 180 130 L 315 130 L 315 65 L 430 65"
+                fill="none" stroke="var(--green)" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round"
+                stroke-dasharray="600" stroke-dashoffset="600"/>
+
+              <!-- Geofence zone -->
+              <circle cx="430" cy="65" r="34" fill="rgba(77,158,255,0.06)" stroke="#4D9EFF" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.8"/>
+              <text x="430" y="30" text-anchor="middle" fill="#4D9EFF" font-size="8" font-family="JetBrains Mono,monospace" opacity="0.8">Zone Bureau</text>
+
+              <!-- Origin point -->
+              <circle cx="60" cy="205" r="4" fill="var(--green)" opacity="0.4"/>
+              <circle cx="60" cy="205" r="2" fill="var(--green)"/>
+
+              <!-- Vehicle 1 — active, in geofence -->
+              <circle cx="430" cy="65" r="18" fill="rgba(61,255,154,0.08)" class="vring-anim"/>
+              <circle cx="430" cy="65" r="11" fill="rgba(61,255,154,0.9)"/>
+              <text x="430" y="69" text-anchor="middle" fill="#030508" font-size="10">🚗</text>
+
+              <!-- Vehicle 2 — idle -->
+              <circle cx="180" cy="130" r="14" fill="rgba(77,158,255,0.1)" class="vring-anim2"/>
+              <circle cx="180" cy="130" r="9" fill="#4D9EFF" opacity="0.9"/>
+              <text x="180" y="134" text-anchor="middle" fill="white" font-size="8">🚙</text>
+
+              <!-- Vehicle 3 — offline -->
+              <circle cx="315" cy="205" r="7" fill="rgba(74,98,88,0.4)"/>
+              <text x="315" y="209" text-anchor="middle" fill="rgba(74,98,88,0.8)" font-size="8">🚐</text>
+
+              <!-- Coordinate labels -->
+              <text x="8" y="12" fill="rgba(61,255,154,0.2)" font-size="7" font-family="JetBrains Mono,monospace">-18.91°S</text>
+              <text x="480" y="12" fill="rgba(61,255,154,0.2)" font-size="7" font-family="JetBrains Mono,monospace">47.53°E</text>
+            </svg>
+
+            <!-- Telemetry overlay -->
+            <div class="telem-card" style="top:10px;right:10px;">
+              <div class="telem-header">
+                <span class="status-dot inline sm"><span class="ping-anim"></span><span></span></span>
+                <span style="font-size:12px;font-weight:600;color:white;">Camion-01</span>
+              </div>
+              <div class="telem-data">
+                <div class="telem-row"><span>Vitesse</span><span class="mono" style="color:var(--green);">72 km/h</span></div>
+                <div class="telem-row"><span>Batterie</span><span class="mono" style="color:var(--amber);">84%</span></div>
+                <div class="telem-row"><span>Signal</span><span class="mono" style="color:var(--green);">GSM 4G</span></div>
+              </div>
+              <div style="font-size:9px;color:var(--text-muted);margin-top:6px;font-family:'JetBrains Mono',monospace;">📍 Analakely, Tana</div>
+            </div>
+
+            <!-- Alert overlay -->
+            <div class="alert-card" style="bottom:10px;left:10px;">
+              <div class="alert-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4D9EFF" stroke-width="2.5"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:600;color:white;">Entrée zone détectée</div>
+                <div style="font-size:9px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Camion-01 · Zone Bureau · il y a 12s</div>
               </div>
             </div>
-            
-            <!-- Floating Elements around phone -->
-            <div class="absolute -left-20 top-1/4 glass rounded-2xl p-4 animate-float hidden lg:block">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-[#4ECB8D] rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                </div>
-                <div>
-                  <div class="text-sm font-medium text-white">Alertes en temps réel</div>
-                  <div class="text-xs text-[#9CA3AF]">Push & WhatsApp</div>
-                </div>
+          </div>
+
+          <!-- Vehicle strip -->
+          <div class="vehicle-strip">
+            <div class="vstrip-item">
+              <span class="vstatus active"></span>
+              <div>
+                <div style="font-size:11px;font-weight:600;color:white;">Camion-01</div>
+                <div class="mono" style="font-size:9px;color:var(--text-muted);">72 km/h · 🔋 84%</div>
               </div>
             </div>
-            
-            <div class="absolute -right-20 bottom-1/4 glass rounded-2xl p-4 animate-float hidden lg:block" style="animation-delay: 2s;">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-[#5B8DEF] rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4.5 8-11.8A8 8 0 0 0 12 2a8 8 0 0 0-8 8.2c0 7.3 8 11.8 8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
-                </div>
-                <div>
-                  <div class="text-sm font-medium text-white">Geofencing</div>
-                  <div class="text-xs text-[#9CA3AF]">Alertes entrée/sortie</div>
-                </div>
+            <div class="vstrip-sep"></div>
+            <div class="vstrip-item">
+              <span class="vstatus idle"></span>
+              <div>
+                <div style="font-size:11px;font-weight:600;color:white;">Voiture-02</div>
+                <div class="mono" style="font-size:9px;color:var(--text-muted);">En attente · 🔋 61%</div>
               </div>
+            </div>
+            <div class="vstrip-sep"></div>
+            <div class="vstrip-item">
+              <span class="vstatus offline"></span>
+              <div>
+                <div style="font-size:11px;font-weight:600;color:var(--text-muted);">Bus-03</div>
+                <div class="mono" style="font-size:9px;color:var(--text-dim);">Hors ligne · 🔋 22%</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /dash-card -->
+      </div><!-- /hero-right -->
+
+    </div><!-- /hero-layout -->
+  </div><!-- /hero-container -->
+
+  <!-- Scroll cue -->
+  <div class="scroll-cue">
+    <div class="scroll-line"></div>
+    <span class="mono" style="font-size:9px;color:var(--text-muted);letter-spacing:0.15em;">DÉFILER</span>
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     TICKER
+═══════════════════════════════════════════════════════ -->
+<div class="ticker-bar">
+  <div class="ticker-label mono">FLUX GPS</div>
+  <div class="ticker-track">
+    <div class="ticker-inner">
+      <span class="titem"><span class="tdot green"></span><span class="mono">–18.9151°S, 47.5316°E</span>&nbsp;· Camion-01 · Analakely, Tana · <span style="color:var(--green);">72 km/h</span></span>
+      <span class="titem"><span class="tdot blue"></span>Entrée zone &ldquo;Bureau Central&rdquo; · il y a 2 min</span>
+      <span class="titem"><span class="tdot amber"></span><span class="mono">ALERTE</span>&nbsp;· Vitesse excessive · 94 km/h · Camion-03</span>
+      <span class="titem"><span class="tdot red"></span><span class="mono">ALERTE</span>&nbsp;· Batterie faible 18% · Moto-04</span>
+      <span class="titem"><span class="tdot green"></span>Voiture-02 · En ligne · Ankadifotsy · <span style="color:var(--green);">stationnaire</span></span>
+      <span class="titem"><span class="tdot green"></span>Flotte du jour · <span class="mono">1 234 km</span> parcourus · 3 véhicules actifs</span>
+      <span class="titem"><span class="tdot blue"></span>Bus-03 · Arrêt détecté · Ambohimanarina · <span class="mono">08:42</span></span>
+      <!-- Duplicate for seamless loop -->
+      <span class="titem"><span class="tdot green"></span><span class="mono">–18.9151°S, 47.5316°E</span>&nbsp;· Camion-01 · Analakely, Tana · <span style="color:var(--green);">72 km/h</span></span>
+      <span class="titem"><span class="tdot blue"></span>Entrée zone &ldquo;Bureau Central&rdquo; · il y a 2 min</span>
+      <span class="titem"><span class="tdot amber"></span><span class="mono">ALERTE</span>&nbsp;· Vitesse excessive · 94 km/h · Camion-03</span>
+      <span class="titem"><span class="tdot red"></span><span class="mono">ALERTE</span>&nbsp;· Batterie faible 18% · Moto-04</span>
+      <span class="titem"><span class="tdot green"></span>Voiture-02 · En ligne · Ankadifotsy · <span style="color:var(--green);">stationnaire</span></span>
+      <span class="titem"><span class="tdot green"></span>Flotte du jour · <span class="mono">1 234 km</span> parcourus · 3 véhicules actifs</span>
+      <span class="titem"><span class="tdot blue"></span>Bus-03 · Arrêt détecté · Ambohimanarina · <span class="mono">08:42</span></span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     FEATURES
+═══════════════════════════════════════════════════════ -->
+<section id="features" class="section-pad" style="background:var(--bg);">
+  <div class="container">
+
+    <div class="section-header">
+      <span class="tag-chip">FONCTIONNALITÉS</span>
+      <h2 class="section-title">Tout pour piloter<br/>votre flotte.</h2>
+      <p class="section-sub">Un outil complet, taillé pour les réalités malgaches.</p>
+    </div>
+
+    <div class="bento-grid">
+
+      <!-- Card 1: Large — Real-time tracking -->
+      <div class="bcard bcard-lg">
+        <div class="bcard-top">
+          <div class="feat-icon green-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <span class="live-badge">EN DIRECT</span>
+        </div>
+        <h3 class="feat-title">Suivi en temps réel</h3>
+        <p class="feat-desc">Position de tous vos véhicules sur carte, mise à jour toutes les 10 secondes. Vitesse, batterie, statut en un coup d'œil.</p>
+        <div class="feat-viz">
+          <svg width="100%" height="80" viewBox="0 0 380 80" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="rgba(61,255,154,0.07)" stroke-width="1" fill="none">
+              <line x1="0" y1="28" x2="380" y2="28"/>
+              <line x1="0" y1="56" x2="380" y2="56"/>
+              <line x1="72" y1="0" x2="72" y2="80"/>
+              <line x1="175" y1="0" x2="175" y2="80"/>
+              <line x1="290" y1="0" x2="290" y2="80"/>
+            </g>
+            <path class="bento-route" d="M 20 64 L 72 64 L 72 28 L 175 28 L 175 14 L 290 14"
+              fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round"
+              stroke-dasharray="500" stroke-dashoffset="500"/>
+            <circle cx="290" cy="14" r="9" fill="var(--green)"/>
+            <circle cx="290" cy="14" r="16" fill="rgba(61,255,154,0.1)" class="vring-anim"/>
+            <circle cx="72" cy="28" r="6" fill="#4D9EFF"/>
+            <circle cx="175" cy="56" r="4.5" fill="rgba(74,98,88,0.5)"/>
+            <circle cx="20" cy="64" r="3.5" fill="var(--green)" opacity="0.4"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Card 2: Medium — Geofencing -->
+      <div class="bcard bcard-md">
+        <div class="feat-icon blue-icon" style="margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4D9EFF" stroke-width="2"><path d="M12 22s8-4.5 8-11.8A8 8 0 0 0 12 2a8 8 0 0 0-8 8.2c0 7.3 8 11.8 8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <h3 class="feat-title">Geofencing</h3>
+        <p class="feat-desc">Zones virtuelles avec alertes d'entrée et sortie automatiques. Drag & drop sur la carte.</p>
+        <div class="geo-viz">
+          <div class="geo-ring geo-r1"></div>
+          <div class="geo-ring geo-r2"></div>
+          <div class="geo-core">
+            <span class="ping-anim" style="position:absolute;inset:0;border-radius:50%;background:#4D9EFF;opacity:0.3;"></span>
+            <span style="position:relative;width:10px;height:10px;border-radius:50%;background:#4D9EFF;display:block;"></span>
+          </div>
+          <div class="geo-badge">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:block;"></span>
+            <span style="font-size:9px;color:var(--green);">ENTRÉ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Medium — Alerts -->
+      <div class="bcard bcard-md">
+        <div class="feat-icon red-icon" style="margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <h3 class="feat-title">Alertes intelligentes</h3>
+        <p class="feat-desc">Push, WhatsApp, SMS — pour geofence, batterie faible et vitesse excessive.</p>
+        <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
+          <div class="alert-chip" style="--chip-color:var(--red);">
+            <span class="mono" style="color:var(--red);font-size:9px;">ALERTE</span>
+            <span>Sortie de zone — Camion-01</span>
+          </div>
+          <div class="alert-chip" style="--chip-color:var(--amber);">
+            <span class="mono" style="color:var(--amber);font-size:9px;">VITESSE</span>
+            <span>Excessive — 94 km/h</span>
+          </div>
+          <div class="alert-chip" style="--chip-color:var(--blue);">
+            <span class="mono" style="color:var(--blue);font-size:9px;">ZONE</span>
+            <span>Entrée — Bureau Central</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Large — Reports -->
+      <div class="bcard bcard-lg">
+        <div class="feat-icon amber-icon" style="margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8"/></svg>
+        </div>
+        <h3 class="feat-title">Rapports détaillés</h3>
+        <p class="feat-desc">Distance parcourue, temps d'inactivité, violations de vitesse, historique des trajets. Exportable CSV.</p>
+        <div class="feat-viz">
+          <div class="mono" style="font-size:9px;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.06em;">DISTANCE (km) — 7 DERNIERS JOURS</div>
+          <div class="bar-chart">
+            <div class="bar" style="--h:40%;--c:rgba(255,184,48,0.25);" title="Lun">
+              <span class="bar-val mono">87</span>
+            </div>
+            <div class="bar" style="--h:65%;--c:rgba(255,184,48,0.4);" title="Mar">
+              <span class="bar-val mono">142</span>
+            </div>
+            <div class="bar" style="--h:50%;--c:rgba(255,184,48,0.3);" title="Mer">
+              <span class="bar-val mono">109</span>
+            </div>
+            <div class="bar" style="--h:85%;--c:rgba(255,184,48,0.55);" title="Jeu">
+              <span class="bar-val mono">185</span>
+            </div>
+            <div class="bar" style="--h:70%;--c:rgba(255,184,48,0.45);" title="Ven">
+              <span class="bar-val mono">153</span>
+            </div>
+            <div class="bar" style="--h:100%;--c:var(--amber);" title="Sam">
+              <span class="bar-val mono">218</span>
+            </div>
+            <div class="bar" style="--h:78%;--c:rgba(255,184,48,0.5);" title="Dim">
+              <span class="bar-val mono">170</span>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- Card 5: Medium — PWA -->
+      <div class="bcard bcard-md">
+        <div class="feat-icon purple-icon" style="margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+        </div>
+        <h3 class="feat-title">Application PWA</h3>
+        <p class="feat-desc">Accessible depuis n'importe quel navigateur. Installez sur votre téléphone. Pas d'App Store requis.</p>
+        <div style="display:flex;gap:6px;margin-top:20px;flex-wrap:wrap;">
+          <span class="platform-tag">Android</span>
+          <span class="platform-tag">iOS</span>
+          <span class="platform-tag">Web</span>
+          <span class="platform-tag">Desktop</span>
+        </div>
+      </div>
+
+      <!-- Card 6: Medium — Compatibility -->
+      <div class="bcard bcard-md">
+        <div class="feat-icon pink-icon" style="margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F472B6" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <h3 class="feat-title">Multi-protocoles</h3>
+        <p class="feat-desc">Compatible avec des centaines de traceurs disponibles à Madagascar.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;">
+          <span class="compat-tag">Teltonika</span>
+          <span class="compat-tag">Coban</span>
+          <span class="compat-tag">GT06</span>
+          <span class="compat-tag">Sinotrack</span>
+          <span class="compat-tag mono">+900</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     STATS
+═══════════════════════════════════════════════════════ -->
+<div class="stats-bar">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-block">
+        <div class="stat-num display">500<span style="color:var(--green);">+</span></div>
+        <div class="stat-lbl">Véhicules suivis</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-block">
+        <div class="stat-num display" style="color:var(--green);">10s</div>
+        <div class="stat-lbl">Fréquence de mise à jour</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-block">
+        <div class="stat-num display">99.9<span style="color:var(--green);">%</span></div>
+        <div class="stat-lbl">Uptime garanti</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-block">
+        <div class="stat-num display">24<span style="font-size:0.5em;color:var(--text-muted);">/</span>7</div>
+        <div class="stat-lbl">Support disponible</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     HOW IT WORKS
+═══════════════════════════════════════════════════════ -->
+<section id="how" class="section-pad" style="background:var(--surface);">
+  <div class="container">
+
+    <div class="section-header">
+      <span class="tag-chip">PROTOCOLE</span>
+      <h2 class="section-title">Opérationnel<br/>en 3 étapes.</h2>
     </div>
 
-    <!-- Scroll Indicator -->
-    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-[#9CA3AF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
-    </div>
-  </section>
+    <div class="steps-grid">
 
-  <!-- Features Section -->
-  <section id="features" class="py-32 relative">
-    <div class="absolute inset-0 bg-[#12121A]"></div>
-    <div class="max-w-7xl mx-auto px-6 relative z-10">
-      <div class="text-center mb-20">
-        <span class="text-[#4ECB8D] font-medium">FONCTIONNALITÉS</span>
-        <h2 class="text-4xl md:text-5xl font-bold mt-4 mb-6">Tout ce dont vous avez besoin</h2>
-        <p class="text-xl text-[#9CA3AF] max-w-2xl mx-auto">
-          Une solution complète pour gérer votre flotte de véhicules en toute simplicité.
+      <div class="step-card">
+        <div class="step-num display">01</div>
+        <div class="step-icon green-icon" style="margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h3 class="step-title">Installez le traceur GPS</h3>
+        <p class="step-desc">Branchez le traceur dans votre véhicule. Compatible Teltonika, Coban, Sinotrack et la plupart des appareils disponibles à Madagascar. Installation en moins de 10 minutes.</p>
+        <div class="step-proof">
+          <span class="status-dot inline sm"><span class="ping-anim"></span><span></span></span>
+          <span style="font-size:12px;font-weight:600;color:white;">Traceur connecté</span>
+          <span class="mono" style="font-size:10px;color:var(--green);margin-left:4px;">GPS OK ✓</span>
+        </div>
+      </div>
+
+      <div class="step-connector">
+        <div class="connector-line"></div>
+        <div class="connector-arrow">→</div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num display" style="color:#4D9EFF;">02</div>
+        <div class="step-icon blue-icon" style="margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4D9EFF" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+        </div>
+        <h3 class="step-title">Créez votre compte</h3>
+        <p class="step-desc">Inscrivez-vous et ajoutez vos véhicules en quelques clics. L'interface intuitive vous guide étape par étape. Aucune compétence technique requise.</p>
+        <div class="step-proof" style="--proof-border:rgba(77,158,255,0.25);">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div class="mono" style="font-size:10px;color:#4D9EFF;">✓ Compte créé</div>
+            <div class="mono" style="font-size:10px;color:#4D9EFF;">✓ Camion-01 ajouté</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="status-dot inline sm" style="--dot-c:#4D9EFF;"><span class="ping-anim" style="background:#4D9EFF;"></span><span style="background:#4D9EFF;"></span></span>
+              <span class="mono" style="font-size:10px;color:var(--text-muted);">Voiture-02 — en cours…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-connector">
+        <div class="connector-line"></div>
+        <div class="connector-arrow">→</div>
+      </div>
+
+      <div class="step-card" style="--card-border:rgba(61,255,154,0.2);">
+        <div class="step-num display" style="color:var(--green);">03</div>
+        <div class="step-icon green-icon" style="margin-bottom:20px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <h3 class="step-title">Suivez en temps réel</h3>
+        <p class="step-desc">Accédez à votre tableau de bord depuis n'importe quel appareil. Visualisez vos véhicules, configurez vos zones, recevez vos alertes instantanément.</p>
+        <div class="step-proof" style="--proof-border:rgba(61,255,154,0.25);">
+          <span class="status-dot inline"><span class="ping-anim"></span><span></span></span>
+          <span style="font-size:12px;font-weight:600;color:white;">Flotte en ligne</span>
+          <span class="mono" style="font-size:10px;color:var(--green);margin-left:4px;">3 actifs</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     PRICING
+═══════════════════════════════════════════════════════ -->
+<section id="pricing" class="section-pad" style="background:var(--bg);">
+  <div class="container">
+
+    <div class="section-header">
+      <span class="tag-chip">TARIFS</span>
+      <h2 class="section-title">Simple<br/>et transparent.</h2>
+      <p class="section-sub">Commencez gratuitement, upgradez quand vous êtes prêt.</p>
+    </div>
+
+    <div class="pricing-grid">
+
+      <!-- Free -->
+      <div class="plan-card">
+        <div class="plan-tier">Gratuit</div>
+        <div class="plan-price">
+          <span class="price-num display">0</span>
+          <div>
+            <div class="mono" style="font-size:11px;color:var(--text-muted);">Ariary</div>
+            <div class="mono" style="font-size:10px;color:var(--text-dim);">/ mois</div>
+          </div>
+        </div>
+        <p class="plan-desc">Pour découvrir la plateforme</p>
+        <div class="plan-feats">
+          <div class="pf pf-on"><span>✓</span><span>1 véhicule</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Suivi temps réel</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Alertes push</span></div>
+          <div class="pf pf-off"><span>—</span><span>Geofencing</span></div>
+          <div class="pf pf-off"><span>—</span><span>Rapports</span></div>
+          <div class="pf pf-off"><span>—</span><span>WhatsApp</span></div>
+        </div>
+        <a href="https://trackeo.zenkai.mg" class="plan-btn plan-btn-ghost">Commencer gratuitement</a>
+      </div>
+
+      <!-- Basic (Featured) -->
+      <div class="plan-card plan-featured">
+        <div class="plan-badge">POPULAIRE</div>
+        <div class="plan-tier" style="color:var(--green);">Basic</div>
+        <div class="plan-price">
+          <span class="price-num display" style="color:var(--green);">45K</span>
+          <div>
+            <div class="mono" style="font-size:11px;color:var(--green);opacity:0.7;">Ariary</div>
+            <div class="mono" style="font-size:10px;color:var(--text-muted);">/ mois</div>
+          </div>
+        </div>
+        <p class="plan-desc">Pour les petites flottes</p>
+        <div class="plan-feats">
+          <div class="pf pf-on"><span>✓</span><span>5 véhicules</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Suivi temps réel</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Geofencing</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Alertes WhatsApp</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Rapports complets</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Export CSV</span></div>
+        </div>
+        <a href="https://trackeo.zenkai.mg" class="plan-btn plan-btn-primary">Choisir Basic</a>
+      </div>
+
+      <!-- Premium -->
+      <div class="plan-card">
+        <div class="plan-tier">Premium</div>
+        <div class="plan-price">
+          <span class="price-num display" style="font-size:clamp(2rem,4vw,3rem);">Sur devis</span>
+        </div>
+        <p class="plan-desc">Pour les grandes flottes B2B</p>
+        <div class="plan-feats">
+          <div class="pf pf-on"><span>✓</span><span>Véhicules illimités</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Tout Basic inclus</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Support prioritaire</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Export PDF / CSV</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Accès API</span></div>
+          <div class="pf pf-on"><span>✓</span><span>Dashboard admin</span></div>
+        </div>
+        <a href="https://trackeo.zenkai.mg" class="plan-btn plan-btn-ghost">Nous contacter</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     CTA FINAL
+═══════════════════════════════════════════════════════ -->
+<section class="cta-section">
+  <div class="cta-bg grid-bg"></div>
+  <div class="cta-orb"></div>
+
+  <!-- Coordinate corners -->
+  <div class="coord-corner top-left mono">–18.9151°S</div>
+  <div class="coord-corner top-right mono">47.5316°E</div>
+  <div class="coord-corner bottom-left mono">ALT 1279m</div>
+  <div class="coord-corner bottom-right mono">UTC+3</div>
+
+  <div class="container" style="position:relative;z-index:1;text-align:center;">
+    <span class="tag-chip" style="margin-bottom:32px;display:inline-block;">PASSEZ À L'ACTION</span>
+    <h2 class="cta-title display">
+      Prêt à sécuriser<br/>
+      <span style="color:var(--green);">votre flotte ?</span>
+    </h2>
+    <p class="cta-sub">
+      Rejoignez les propriétaires qui font confiance à Trackeo<br/>
+      pour suivre et protéger leurs véhicules à Madagascar.
+    </p>
+    <a href="https://trackeo.zenkai.mg" class="cta-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+      Démarrer gratuitement
+    </a>
+    <p class="mono" style="color:var(--text-muted);font-size:11px;margin-top:20px;letter-spacing:0.06em;">AUCUNE CARTE · OPÉRATIONNEL EN 5 MINUTES</p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="logo-mark sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="2.5" fill="#030508"/><path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 14.5A5.5 5.5 0 1 1 12 6.5a5.5 5.5 0 0 1 0 11z" fill="#030508"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3" stroke="#030508" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <span class="logo-text sm">TRACKEO</span>
+        </div>
+        <p style="color:var(--text-muted);font-size:14px;line-height:1.6;max-width:240px;margin-top:16px;">
+          Solution de tracking GPS en temps réel, pensée pour les entrepreneurs et entreprises malgaches.
         </p>
+        <div class="mono" style="margin-top:16px;font-size:11px;color:var(--text-dim);">🇲🇬 Fait à Madagascar · <span style="color:var(--green);">zenkai.mg</span></div>
       </div>
 
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <!-- Feature 1 -->
-        <div class="glass rounded-2xl p-8 card-glow animate-fade-up">
-          <div class="w-14 h-14 bg-[#4ECB8D]/20 rounded-2xl flex items-center justify-center mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-[#4ECB8D]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
-          </div>
-          <h3 class="text-xl font-bold mb-3">Suivi en temps réel</h3>
-          <p class="text-[#9CA3AF]">Visualisez la position de tous vos véhicules sur une carte interactive. Mises à jour toutes les 10 secondes.</p>
-        </div>
-
-        <!-- Feature 2 -->
-        <div class="glass rounded-2xl p-8 card-glow animate-fade-up delay-100">
-          <div class="w-14 h-14 bg-[#5B8DEF]/20 rounded-2xl flex items-center justify-center mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-[#5B8DEF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4.5 8-11.8A8 8 0 0 0 12 2a8 8 0 0 0-8 8.2c0 7.3 8 11.8 8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
-          </div>
-          <h3 class="text-xl font-bold mb-3">Geofencing intelligent</h3>
-          <p class="text-[#9CA3AF]">Créez des zones virtuelles et recevez des alertes instantanées lors des entrées et sorties.</p>
-        </div>
-
-        <!-- Feature 3 -->
-        <div class="glass rounded-2xl p-8 card-glow animate-fade-up delay-200">
-          <div class="w-14 h-14 bg-[#F59E0B]/20 rounded-2xl flex items-center justify-center mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-[#F59E0B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-          </div>
-          <h3 class="text-xl font-bold mb-3">Rapports détaillés</h3>
-          <p class="text-[#9CA3AF]">Distance parcourue, temps d'inactivité, violations de vitesse. Des statistiques complètes pour optimiser vos opérations.</p>
-        </div>
-
-        <!-- Feature 4 -->
-        <div class="glass rounded-2xl p-8 card-glow animate-fade-up delay-300">
-          <div class="w-14 h-14 bg-[#EF4444]/20 rounded-2xl flex items-center justify-center mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-[#EF4444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          </div>
-          <h3 class="text-xl font-bold mb-3">Alertes intelligentes</h3>
-          <p class="text-[#9CA3AF]">Notifications push, WhatsApp ou SMS pour les alertes de geofence, batterie faible, vitesse excessive et plus encore.</p>
-        </div>
-
-        <!-- Feature 5 -->
-        <div class="glass rounded-2xl p-8 card-glow animate-fade-up delay-400">
-          <div class="w-14 h-14 bg-[#8B5CF6]/20 rounded-2xl flex items-center justify-center mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-[#8B5CF6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-          </div>
-          <h3 class="text-xl font-bold mb-3">Application mobile PWA</h3>
-          <p class="text-[#9CA3AF]">Accédez à votre flotte depuis n'importe où via votre navigateur ou installez l'app sur votre téléphone.</p>
-        </div>
-
-        <!-- Feature 6 -->
-        <div class="glass rounded-2xl p-8 card-glow animate-fade-up delay-500">
-          <div class="w-14 h-14 bg-[#EC4899]/20 rounded-2xl flex items-center justify-center mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-[#EC4899]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-          </div>
-          <h3 class="text-xl font-bold mb-3">Compatible tous appareils</h3>
-          <p class="text-[#9CA3AF]">Fonctionne avec la plupart des traceurs GPS du marché. Installation rapide et configuration simple.</p>
-        </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Produit</div>
+        <a href="#features" class="footer-link">Fonctionnalités</a>
+        <a href="#pricing" class="footer-link">Tarifs</a>
+        <a href="#how" class="footer-link">Comment ça marche</a>
+        <a href="https://trackeo.zenkai.mg" class="footer-link">Connexion</a>
       </div>
+
+      <div class="footer-col">
+        <div class="footer-col-title">Contact</div>
+        <span class="footer-link">WhatsApp</span>
+        <span class="footer-link">Support 24/7</span>
+        <span class="footer-info">Antananarivo, Madagascar</span>
+      </div>
+
     </div>
-  </section>
 
-  <!-- Stats Section -->
-  <section class="py-24 relative overflow-hidden">
-    <div class="absolute inset-0 bg-gradient-to-r from-[#4ECB8D]/10 to-[#5B8DEF]/10"></div>
-    <div class="max-w-7xl mx-auto px-6 relative z-10">
-      <div class="grid md:grid-cols-4 gap-8">
-        <div class="text-center animate-fade-up">
-          <div class="text-5xl font-bold gradient-text mb-2">99.9%</div>
-          <div class="text-[#9CA3AF]">Uptime garanti</div>
-        </div>
-        <div class="text-center animate-fade-up delay-100">
-          <div class="text-5xl font-bold gradient-text mb-2">500+</div>
-          <div class="text-[#9CA3AF]">Véhicules suivis</div>
-        </div>
-        <div class="text-center animate-fade-up delay-200">
-          <div class="text-5xl font-bold gradient-text mb-2">24/7</div>
-          <div class="text-[#9CA3AF]">Support disponible</div>
-        </div>
-        <div class="text-center animate-fade-up delay-300">
-          <div class="text-5xl font-bold gradient-text mb-2">50K+</div>
-          <div class="text-[#9CA3AF]">Positions/jour</div>
-        </div>
-      </div>
+    <div class="footer-bottom">
+      <span>© 2026 Trackeo. Tous droits réservés.</span>
+      <span class="mono" style="font-size:11px;color:var(--text-dim);">Traccar · NestJS · Flutter</span>
     </div>
-  </section>
+  </div>
+</footer>
 
-  <!-- How It Works -->
-  <section class="py-32 relative">
-    <div class="absolute inset-0 bg-[#12121A]"></div>
-    <div class="max-w-7xl mx-auto px-6 relative z-10">
-      <div class="text-center mb-20">
-        <span class="text-[#4ECB8D] font-medium">COMMENT ÇA MARCHE</span>
-        <h2 class="text-4xl md:text-5xl font-bold mt-4 mb-6">En 3 étapes simples</h2>
-      </div>
 
-      <div class="grid md:grid-cols-3 gap-12">
-        <div class="relative text-center animate-fade-up">
-          <div class="w-20 h-20 bg-[#4ECB8D] rounded-full flex items-center justify-center mx-auto mb-6 relative">
-            <span class="text-3xl font-bold text-white">1</span>
-          </div>
-          <h3 class="text-xl font-bold mb-3">Installez le tracker</h3>
-          <p class="text-[#9CA3AF]">Connectez le traceur GPS à votre véhicule. Compatible avec la plupart des appareils du marché.</p>
-        </div>
-
-        <div class="relative text-center animate-fade-up delay-200">
-          <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-0.5 bg-gradient-to-r from-transparent via-[#4ECB8D] to-transparent hidden md:block"></div>
-          <div class="w-20 h-20 bg-[#4ECB8D] rounded-full flex items-center justify-center mx-auto mb-6 relative">
-            <span class="text-3xl font-bold text-white">2</span>
-          </div>
-          <h3 class="text-xl font-bold mb-3">Créez votre compte</h3>
-          <p class="text-[#9CA3AF]">Inscrivez-vous et ajoutez vos véhicules. L'interface intuitive vous guide étape par étape.</p>
-        </div>
-
-        <div class="relative text-center animate-fade-up delay-400">
-          <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-0.5 bg-gradient-to-r from-transparent via-[#4ECB8D] to-transparent hidden md:block"></div>
-          <div class="w-20 h-20 bg-[#4ECB8D] rounded-full flex items-center justify-center mx-auto mb-6 relative">
-            <span class="text-3xl font-bold text-white">3</span>
-          </div>
-          <h3 class="text-xl font-bold mb-3">Suivez en temps réel</h3>
-          <p class="text-[#9CA3AF]">Accédez à votre tableau de bord et gardez un œil sur tous vos véhicules en temps réel.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA Section -->
-  <section class="py-32 relative overflow-hidden">
-    <div class="absolute inset-0">
-      <div class="absolute top-0 left-1/4 w-96 h-96 bg-[#4ECB8D] rounded-full blur-[200px] opacity-20"></div>
-      <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-[#5B8DEF] rounded-full blur-[200px] opacity-15"></div>
-    </div>
-    <div class="max-w-4xl mx-auto px-6 relative z-10 text-center">
-      <h2 class="text-4xl md:text-5xl font-bold mb-6">Prêt à démarrer?</h2>
-      <p class="text-xl text-[#9CA3AF] mb-12">
-        Rejoignez les milliers de propriétaires qui font confiance à Trackeo pour sécuriser leur flotte.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="https://trackeo.zenkai.mg" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#4ECB8D] text-white font-semibold rounded-xl hover:bg-[#3DB87A] transition-all glow">
-          Commencer maintenant
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="py-12 border-t border-white/5">
-    <div class="max-w-7xl mx-auto px-6">
-      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-[#4ECB8D] rounded-xl flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
-          </div>
-          <span class="text-xl font-bold">Trackeo</span>
-        </div>
-        <div class="text-[#9CA3AF] text-sm">
-          © 2026 Trackeo. Tous droits réservés.
-        </div>
-        <div class="flex gap-4">
-          <a href="https://trackeo.zenkai.mg" class="text-[#9CA3AF] hover:text-[#4ECB8D] transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
-          </a>
-        </div>
-      </div>
-    </div>
-  </footer>
 </Layout>
+
+<style>
+/* ══════════════════════════════════════════
+   LAYOUT UTILITIES
+══════════════════════════════════════════ */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+.section-pad { padding: 100px 0; }
+
+/* ══════════════════════════════════════════
+   SECTION HEADER
+══════════════════════════════════════════ */
+.section-header {
+  text-align: center;
+  margin-bottom: 64px;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-radius: 4px;
+  background: var(--green-dim);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: 0.12em;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 5vw, 4.5rem);
+  color: white;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  margin-top: 20px;
+  margin-bottom: 16px;
+}
+.section-sub {
+  color: var(--text-muted);
+  font-size: 17px;
+  max-width: 440px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════
+   NAV
+══════════════════════════════════════════ */
+.nav-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 14px 20px 0;
+}
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: rgba(3, 5, 8, 0.9);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.logo-mark.sm { width: 26px; height: 26px; border-radius: 6px; }
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  color: white;
+  line-height: 1;
+}
+.logo-text.sm { font-size: 18px; }
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.nav-link {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+  letter-spacing: 0.02em;
+}
+.nav-link:hover { color: white; }
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.nav-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-cta {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: var(--green);
+  color: #030508;
+  text-decoration: none;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+.nav-cta:hover {
+  background: #5DFFA8;
+  box-shadow: 0 0 30px rgba(61, 255, 154, 0.3);
+}
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .nav-status { display: none; }
+}
+
+/* ══════════════════════════════════════════
+   STATUS DOT
+══════════════════════════════════════════ */
+.status-dot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+.status-dot span:first-child {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--green);
+  opacity: 0.7;
+}
+.status-dot span:last-child {
+  position: relative;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  display: block;
+}
+.status-dot.inline { display: inline-flex; }
+.status-dot.sm { width: 8px; height: 8px; }
+.status-dot.sm span:last-child { width: 4px; height: 4px; }
+
+/* ══════════════════════════════════════════
+   HERO
+══════════════════════════════════════════ */
+.hero-section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: var(--bg);
+  padding-top: 90px;
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.6;
+}
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(200px);
+  pointer-events: none;
+}
+.orb-1 {
+  top: 10%;
+  left: -200px;
+  width: 700px;
+  height: 700px;
+  background: var(--green);
+  opacity: 0.04;
+}
+.orb-2 {
+  bottom: -100px;
+  right: -150px;
+  width: 600px;
+  height: 600px;
+  background: #4D9EFF;
+  opacity: 0.04;
+}
+.radar-container {
+  position: absolute;
+  top: 50%;
+  left: 60%;
+  transform: translate(-50%, -50%);
+  width: 700px;
+  height: 700px;
+  pointer-events: none;
+  opacity: 0.07;
+}
+.radar-circle {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid var(--green);
+}
+.radar-c1 { width: 200px; height: 200px; }
+.radar-c2 { width: 380px; height: 380px; }
+.radar-c3 { width: 580px; height: 580px; }
+.radar-sweep {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 290px;
+  height: 290px;
+  margin-top: -290px;
+  margin-left: 0;
+  transform-origin: bottom left;
+  background: conic-gradient(from 0deg, transparent 330deg, rgba(61,255,154,0.6) 360deg);
+  animation: radar-sweep 4s linear infinite;
+}
+.radar-blip {
+  position: absolute;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: ping 2s cubic-bezier(0,0,0.2,1) infinite;
+}
+.hero-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+.hero-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+@media (max-width: 1024px) {
+  .hero-layout { grid-template-columns: 1fr; gap: 48px; }
+  .radar-container { display: none; }
+}
+
+/* Signal badge */
+.signal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: rgba(61, 255, 154, 0.06);
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+
+/* Hero headline */
+.hero-headline {
+  display: flex;
+  flex-direction: column;
+  line-height: 0.9;
+  letter-spacing: 0.02em;
+  margin-bottom: 28px;
+  font-family: var(--font-display);
+}
+.hl-outline {
+  font-size: clamp(3.5rem, 8vw, 7rem);
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(61, 255, 154, 0.3);
+}
+.hl-solid {
+  font-size: clamp(3.5rem, 8vw, 7rem);
+  color: white;
+}
+.hl-green {
+  font-size: clamp(3.5rem, 8vw, 7rem);
+  color: var(--green);
+}
+
+.hero-sub {
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1.65;
+  max-width: 420px;
+  margin-bottom: 36px;
+}
+.hero-sub strong { color: var(--text); font-weight: 600; }
+
+/* CTA buttons */
+.hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+.cta-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 26px;
+  border-radius: 10px;
+  background: var(--green);
+  color: #030508;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+.cta-primary:hover {
+  background: #5DFFA8;
+  box-shadow: 0 0 48px rgba(61, 255, 154, 0.4);
+}
+.cta-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 26px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  border: 1px solid var(--border-subtle);
+  transition: all 0.2s;
+}
+.cta-ghost:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--border);
+}
+
+/* Metrics strip */
+.hero-metrics {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.metric { padding: 0 24px; }
+.metric:first-child { padding-left: 0; }
+.metric-val {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.metric-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+.metric-sep {
+  width: 1px;
+  height: 32px;
+  background: var(--border-subtle);
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════
+   DASHBOARD CARD
+══════════════════════════════════════════ */
+.hero-right {
+  position: relative;
+  width: 100%;
+}
+.stat-float {
+  position: absolute;
+  z-index: 20;
+  background: rgba(14, 20, 28, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+}
+.stat-f1 { top: -16px; right: -10px; min-width: 80px; }
+.stat-f2 { bottom: 40px; left: -20px; }
+@media (max-width: 640px) {
+  .stat-float { display: none; }
+}
+.dash-card {
+  position: relative;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(61, 255, 154, 0.05);
+}
+.dash-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.chrome-dots {
+  display: flex;
+  gap: 6px;
+}
+.chrome-dots span {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  display: block;
+}
+.chrome-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.dash-map-area {
+  position: relative;
+  height: 260px;
+  overflow: hidden;
+}
+.map-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* Animated GPS route */
+.route-animated {
+  animation: route-draw 2.5s ease-out 0.5s forwards;
+}
+/* Vehicle ring pulse */
+@keyframes vring {
+  0% { r: 18; opacity: 0.3; }
+  100% { r: 28; opacity: 0; }
+}
+.vring-anim {
+  animation: vring 2s ease-out infinite;
+}
+.vring-anim2 {
+  animation: vring 2.5s ease-out infinite 0.8s;
+}
+@keyframes bento-route-draw {
+  from { stroke-dashoffset: 500; }
+  to { stroke-dashoffset: 0; }
+}
+.bento-route {
+  animation: bento-route-draw 2s ease-out 0.8s forwards;
+}
+/* Telemetry + alert overlays */
+.telem-card {
+  position: absolute;
+  background: rgba(8, 12, 17, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 140px;
+}
+.telem-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.telem-data {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.telem-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.alert-card {
+  position: absolute;
+  background: rgba(8, 12, 17, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(77, 158, 255, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 240px;
+}
+.alert-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: rgba(77, 158, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+/* Vehicle strip */
+.vehicle-strip {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 0;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-3);
+}
+.vstrip-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vstrip-sep {
+  width: 1px;
+  height: 28px;
+  background: var(--border-subtle);
+  margin: 0 12px;
+  flex-shrink: 0;
+}
+.vstatus {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.vstatus.active { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.vstatus.idle { background: #4D9EFF; box-shadow: 0 0 8px #4D9EFF; }
+.vstatus.offline { background: var(--text-dim); }
+
+/* Scroll cue */
+.scroll-cue {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.35;
+}
+.scroll-line {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, var(--green));
+  animation: float 2s ease-in-out infinite;
+}
+
+/* ══════════════════════════════════════════
+   TICKER
+══════════════════════════════════════════ */
+.ticker-bar {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface);
+  height: 44px;
+  overflow: hidden;
+  user-select: none;
+}
+.ticker-label {
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: 0.12em;
+  background: var(--green-dim);
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ticker-track {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+.ticker-inner {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  animation: ticker-scroll 40s linear infinite;
+}
+.titem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 48px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.titem .mono { font-family: var(--font-mono); font-size: 11px; }
+.tdot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tdot.green { background: var(--green); }
+.tdot.blue { background: #4D9EFF; }
+.tdot.amber { background: var(--amber); }
+.tdot.red { background: var(--red); }
+
+/* ══════════════════════════════════════════
+   BENTO FEATURES
+══════════════════════════════════════════ */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+.bcard {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 28px;
+  transition: border-color 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.bcard::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 80px; height: 80px;
+  background: radial-gradient(circle at top right, rgba(61,255,154,0.04), transparent 70%);
+}
+.bcard:hover { border-color: var(--border); }
+.bcard-lg { grid-column: span 3; }
+.bcard-md { grid-column: span 2; }
+@media (max-width: 1024px) {
+  .bcard-lg { grid-column: span 6; }
+  .bcard-md { grid-column: span 3; }
+}
+@media (max-width: 640px) {
+  .bcard-md { grid-column: span 6; }
+}
+.bcard-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.live-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.1em;
+  animation: blink 2s ease-in-out infinite;
+}
+/* Feature icons */
+.feat-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.green-icon { background: rgba(61, 255, 154, 0.1); }
+.blue-icon { background: rgba(77, 158, 255, 0.1); }
+.red-icon { background: rgba(255, 77, 77, 0.1); }
+.amber-icon { background: rgba(255, 184, 48, 0.1); }
+.purple-icon { background: rgba(167, 139, 250, 0.1); }
+.pink-icon { background: rgba(244, 114, 182, 0.1); }
+.feat-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  letter-spacing: 0.03em;
+  color: white;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+.feat-desc {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.feat-viz {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+/* Bar chart */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 60px;
+}
+.bar {
+  flex: 1;
+  height: var(--h);
+  background: var(--c);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  animation: bar-grow 1.2s ease-out;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.bar-val {
+  font-size: 0; /* hide by default */
+  position: absolute;
+  top: -16px;
+  color: var(--text-muted);
+}
+/* Alert chips */
+.alert-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(from var(--chip-color) r g b / 0.2);
+  background: rgba(from var(--chip-color) r g b / 0.06);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+/* Geo animation */
+.geo-viz {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  margin-top: 20px;
+}
+.geo-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(77, 158, 255, 0.4);
+}
+.geo-r1 { width: 60px; height: 60px; }
+.geo-r2 { width: 96px; height: 96px; opacity: 0.3; }
+.geo-core {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(77, 158, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.geo-badge {
+  position: absolute;
+  top: 4px;
+  right: calc(50% - 54px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-family: var(--font-mono);
+}
+/* Compat tags */
+.compat-tag, .platform-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 4px 10px;
+  letter-spacing: 0.04em;
+}
+.compat-tag:hover, .platform-tag:hover { border-color: var(--border); color: var(--text); }
+
+/* ══════════════════════════════════════════
+   STATS BAR
+══════════════════════════════════════════ */
+.stats-bar {
+  padding: 56px 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.stats-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+.stat-block {
+  text-align: center;
+  padding: 0 56px;
+}
+.stat-num {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6vw, 5rem);
+  color: white;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+.stat-lbl {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  letter-spacing: 0.04em;
+}
+.stat-divider {
+  width: 1px;
+  height: 56px;
+  background: var(--border-subtle);
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .stat-block { padding: 20px 32px; }
+  .stat-divider { display: none; }
+}
+
+/* ══════════════════════════════════════════
+   HOW IT WORKS / STEPS
+══════════════════════════════════════════ */
+.steps-grid {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+@media (max-width: 900px) {
+  .steps-grid { flex-direction: column; }
+  .step-connector { transform: rotate(90deg); }
+}
+.step-card {
+  flex: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--card-border, var(--border-subtle));
+  border-radius: 16px;
+  padding: 32px 28px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.step-card:hover { border-color: var(--border); }
+.step-num {
+  font-family: var(--font-display);
+  font-size: 5rem;
+  color: rgba(255, 255, 255, 0.06);
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  line-height: 1;
+  pointer-events: none;
+  letter-spacing: 0.04em;
+}
+.step-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: white;
+  margin-bottom: 12px;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+.step-desc {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.65;
+  margin-bottom: 20px;
+}
+.step-proof {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--proof-border, var(--border-subtle));
+}
+.step-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+.connector-line {
+  width: 32px;
+  height: 1px;
+  background: var(--border);
+}
+.connector-arrow {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ══════════════════════════════════════════
+   PRICING
+══════════════════════════════════════════ */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+@media (max-width: 900px) {
+  .pricing-grid { grid-template-columns: 1fr; max-width: 440px; margin: 0 auto; }
+}
+.plan-card {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: border-color 0.3s;
+}
+.plan-card:hover { border-color: var(--border); }
+.plan-featured {
+  background: var(--surface-2);
+  border-color: var(--border);
+  box-shadow: 0 0 0 1px var(--border), 0 24px 64px rgba(61, 255, 154, 0.08);
+}
+.plan-badge {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--green);
+  color: #030508;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 3px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.plan-tier {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.plan-price {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.price-num {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  color: white;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+.plan-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+  font-family: var(--font-mono);
+}
+.plan-feats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+  flex: 1;
+}
+.pf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.pf-on { color: var(--text); }
+.pf-on span:first-child { color: var(--green); font-family: var(--font-mono); font-size: 12px; }
+.pf-off { color: var(--text-dim); }
+.pf-off span:first-child { color: var(--text-dim); font-family: var(--font-mono); font-size: 12px; }
+.plan-btn {
+  display: block;
+  text-align: center;
+  padding: 13px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.2s;
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+.plan-btn-primary {
+  background: var(--green);
+  color: #030508;
+}
+.plan-btn-primary:hover {
+  background: #5DFFA8;
+  box-shadow: 0 0 40px rgba(61, 255, 154, 0.3);
+}
+.plan-btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-subtle);
+}
+.plan-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border);
+}
+
+/* ══════════════════════════════════════════
+   CTA SECTION
+══════════════════════════════════════════ */
+.cta-section {
+  position: relative;
+  padding: 140px 0;
+  overflow: hidden;
+  background: var(--surface);
+}
+.cta-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+}
+.cta-orb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px;
+  height: 400px;
+  border-radius: 50%;
+  background: var(--green);
+  filter: blur(180px);
+  opacity: 0.05;
+  pointer-events: none;
+}
+.coord-corner {
+  position: absolute;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+.top-left { top: 20px; left: 28px; }
+.top-right { top: 20px; right: 28px; }
+.bottom-left { bottom: 20px; left: 28px; }
+.bottom-right { bottom: 20px; right: 28px; }
+.cta-title {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 7vw, 6rem);
+  color: white;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  margin-bottom: 20px;
+}
+.cta-sub {
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1.65;
+  margin-bottom: 48px;
+}
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 40px;
+  border-radius: 12px;
+  background: var(--green);
+  color: #030508;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+.cta-btn:hover {
+  background: #5DFFA8;
+  box-shadow: 0 0 80px rgba(61, 255, 154, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ══════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════ */
+.footer {
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg);
+  padding: 64px 0 40px;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr; }
+}
+.footer-brand {}
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.footer-col {}
+.footer-col-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.footer-link {
+  display: block;
+  font-size: 14px;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: 12px;
+  transition: color 0.2s;
+}
+.footer-link:hover { color: var(--text); }
+.footer-info {
+  display: block;
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+.footer-bottom {
+  padding-top: 32px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+</style>
+
+<script>
+// Animate bars on scroll into view
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(el => {
+    if (el.isIntersecting) el.target.classList.add('in-view');
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.bcard, .step-card, .plan-card').forEach(el => observer.observe(el));
+</script>
