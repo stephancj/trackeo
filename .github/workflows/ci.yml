@@ -6,11 +6,13 @@ on:
     paths:
       - 'apps/api/**'
       - 'apps/mobile/**'
+      - 'apps/landing/**'
   push:
     branches: [develop]
     paths:
       - 'apps/api/**'
       - 'apps/mobile/**'
+      - 'apps/landing/**'
 
 # ===========================================
 # JOBS
@@ -176,11 +178,34 @@ jobs:
         run: cd apps/mobile && flutter build web --release
 
   # ═══════════════════════════════════════
+  # LANDING PATH: Install → Build
+  # ═══════════════════════════════════════
+  landing-build:
+    name: 📦 Landing Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: apps/landing/package-lock.json
+
+      - name: Install dependencies
+        run: cd apps/landing && npm ci
+
+      - name: Build
+        run: cd apps/landing && npm run build
+
+  # ═══════════════════════════════════════
   # FINAL: Combine results
   # ═══════════════════════════════════════
   notify:
     name: ✅ Complete
-    needs: [api-build, flutter-build]
+    needs: [api-build, flutter-build, landing-build]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -201,9 +226,12 @@ jobs:
           echo "| Lint | ${{ needs.flutter-lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Test | ${{ needs.flutter-test.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build | ${{ needs.flutter-build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Landing" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.landing-build.result }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: Check results
-        if: needs.api-build.result != 'success' || needs.flutter-build.result != 'success'
+        if: needs.api-build.result != 'success' || needs.flutter-build.result != 'success' || needs.landing-build.result != 'success'
         run: |
           echo "❌ CI Failed!"
           exit 1
