@@ -48,6 +48,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     final positions = positionsAsync.valueOrNull ?? [];
     final stats = TripStats.fromPositions(positions);
     final points = positions.map((p) => LatLng(p.lat, p.lon)).toList();
+    final speedPolyline = _buildGradientPolyline(positions);
 
     // Ajuster la carte quand les données arrivent
     ref.listen(historyPositionsProvider(widget.vehicleId), (_, next) {
@@ -78,17 +79,9 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                 retinaMode: true,
                 userAgentPackageName: 'mg.trackeo.app',
               ),
-              // Polyligne bleue du trajet
-              if (points.length > 1)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: points,
-                      strokeWidth: 4.5,
-                      color: const Color(0xFF5B8DEF),
-                    ),
-                  ],
-                ),
+              // Polyligne avec dégradé de vitesse
+              if (speedPolyline != null)
+                PolylineLayer(polylines: [speedPolyline]),
               // Marqueurs départ (vert) + arrivée (rose)
               if (points.isNotEmpty)
                 MarkerLayer(
@@ -281,6 +274,32 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
           ],
         ),
       ),
+    );
+  }
+
+  // ── Speed-gradient polyline ───────────────────────────────────────────────
+
+  /// Couleur correspondant à une vitesse en km/h.
+  static Color _speedColor(double kmh) {
+    if (kmh < 5)   return const Color(0xFF9CA3AF); // arrêté → gris
+    if (kmh < 30)  return const Color(0xFF4ECB8D); // lent   → vert
+    if (kmh < 70)  return const Color(0xFF5B8DEF); // urbain → bleu
+    if (kmh < 100) return const Color(0xFFF59E0B); // route  → orange
+    return const Color(0xFFEF4444);                // excès  → rouge
+  }
+
+  /// Polyligne unique avec `gradientColors` — une couleur par point.
+  /// flutter_map interpole automatiquement entre les couleurs consécutives,
+  /// produisant un dégradé fluide aux transitions de vitesse.
+  static Polyline? _buildGradientPolyline(List<VehiclePosition> positions) {
+    if (positions.length < 2) return null;
+
+    return Polyline(
+      points: positions.map((p) => LatLng(p.lat, p.lon)).toList(),
+      strokeWidth: 5,
+      gradientColors: positions.map((p) => _speedColor(p.speedKmh)).toList(),
+      strokeCap: StrokeCap.round,
+      strokeJoin: StrokeJoin.round,
     );
   }
 
@@ -567,6 +586,11 @@ class _TripPanel extends StatelessWidget {
             ),
           ),
 
+          const SizedBox(height: 16),
+
+          // ── Légende vitesse ───────────────────────────────────────────
+          const _SpeedLegend(),
+
           const SizedBox(height: 24),
 
           // ── Journey Timeline ──────────────────────────────────────────
@@ -799,6 +823,77 @@ class _TimelineItem extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Speed Legend ──────────────────────────────────────────────────────────────
+
+class _SpeedLegend extends StatelessWidget {
+  const _SpeedLegend();
+
+  static const _entries = [
+    (color: Color(0xFF9CA3AF), label: 'Arrêté',  sub: '< 5'),
+    (color: Color(0xFF4ECB8D), label: 'Lent',    sub: '5–30'),
+    (color: Color(0xFF5B8DEF), label: 'Urbain',  sub: '30–70'),
+    (color: Color(0xFFF59E0B), label: 'Route',   sub: '70–100'),
+    (color: Color(0xFFEF4444), label: 'Excès',   sub: '> 100'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: _entries
+            .map((e) => _LegendItem(e.color, e.label, e.sub))
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _LegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+  final String sub;
+  const _LegendItem(this.color, this.label, this.sub);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 28,
+          height: 5,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        Text(
+          '$sub km/h',
+          style: const TextStyle(
+            fontSize: 9,
+            color: AppColors.textHint,
           ),
         ),
       ],
