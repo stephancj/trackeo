@@ -12,11 +12,7 @@ import Layout from '../layouts/Layout.astro';
     <!-- Logo -->
     <a href="/" class="nav-logo">
       <div class="logo-mark">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="2.5" fill="#030508"/>
-          <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 14.5A5.5 5.5 0 1 1 12 6.5a5.5 5.5 0 0 1 0 11z" fill="#030508"/>
-          <path d="M12 1v3M12 20v3M1 12h3M20 12h3" stroke="#030508" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+        <img src="/favicon.png" alt="Trackeo" width="22" height="22" style="object-fit:contain;border-radius:4px;"/>
       </div>
       <span class="logo-text">TRACKEO</span>
     </a>
@@ -707,7 +703,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="footer-brand">
         <div class="footer-logo">
           <div class="logo-mark sm">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="2.5" fill="#030508"/><path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 14.5A5.5 5.5 0 1 1 12 6.5a5.5 5.5 0 0 1 0 11z" fill="#030508"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3" stroke="#030508" stroke-width="2" stroke-linecap="round"/></svg>
+            <img src="/favicon.png" alt="Trackeo" width="16" height="16" style="object-fit:contain;border-radius:3px;"/>
           </div>
           <span class="logo-text sm">TRACKEO</span>
         </div>
@@ -824,11 +820,12 @@ import Layout from '../layouts/Layout.astro';
 .logo-mark {
   width: 32px; height: 32px;
   border-radius: 8px;
-  background: var(--green);
+  background: #333549;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 .logo-mark.sm { width: 26px; height: 26px; border-radius: 6px; }
 .logo-text {
