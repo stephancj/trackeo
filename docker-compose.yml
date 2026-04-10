@@ -78,3 +78,19 @@ services:
       - /app/node_modules
     networks:
       - trackeo-net
+
+  # ─── Admin Next.js ────────────────────────────────────────────────────────────
+  admin:
+    build:
+      context: ./apps/admin
+      dockerfile: Dockerfile
+    container_name: trackeo-admin
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_URL: https://api.trackeo.zenkai.mg
+    ports:
+      - "3001:3000"
+    networks:
+      - trackeo-net
