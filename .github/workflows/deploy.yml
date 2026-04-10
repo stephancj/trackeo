@@ -39,13 +39,19 @@ jobs:
       - name: Check for API changes
         id: changes
         run: |
-          # For testing: always run all jobs
-          echo "api=true" >> $GITHUB_OUTPUT
-          echo "web=true" >> $GITHUB_OUTPUT
-          echo "ios=true" >> $GITHUB_OUTPUT
-          echo "infra=true" >> $GITHUB_OUTPUT
-          echo "landing=true" >> $GITHUB_OUTPUT
-          echo "admin=true" >> $GITHUB_OUTPUT
+          # Only changed projects will be deployed
+          api=$(git diff --name-only ${{ github.event.before }} HEAD | grep -E '^apps/api/' | head -1 && echo "true" || echo "false")
+          web=$(git diff --name-only ${{ github.event.before }} HEAD | grep -E '^apps/mobile/' | head -1 && echo "true" || echo "false")
+          admin=$(git diff --name-only ${{ github.event.before }} HEAD | grep -E '^apps/admin/' | head -1 && echo "true" || echo "false")
+          landing=$(git diff --name-only ${{ github.event.before }} HEAD | grep -E '^apps/landing/' | head -1 && echo "true" || echo "false")
+          infra=$(git diff --name-only ${{ github.event.before }} HEAD | grep -E '^(infra/|docker-compose\.yml|infra/nginx/)' | head -1 && echo "true" || echo "false")
+          
+          echo "api=$api" >> $GITHUB_OUTPUT
+          echo "web=$web" >> $GITHUB_OUTPUT
+          echo "admin=$admin" >> $GITHUB_OUTPUT
+          echo "landing=$landing" >> $GITHUB_OUTPUT
+          echo "infra=$infra" >> $GITHUB_OUTPUT
+          echo "ios=false" >> $GITHUB_OUTPUT
 
   # ===========================================
   # BUILD API (on VPS, no Docker Hub push needed)
