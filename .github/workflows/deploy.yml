@@ -39,18 +39,21 @@ jobs:
       - name: Check for API changes
         id: changes
         run: |
-          # Only changed projects will be deployed
-          api=$(git diff --name-only ${{ github.event.before }} HEAD | grep -E '^apps/api/' | head -1 && echo "true" || echo "false")
-          web=$(git diff --name-only ${{ github.event.before }} HEAD | grep -E '^apps/mobile/' | head -1 && echo "true" || echo "false")
-          admin=$(git diff --name-only ${{ github.event.before }} HEAD | grep -E '^apps/admin/' | head -1 && echo "true" || echo "false")
-          landing=$(git diff --name-only ${{ github.event.before }} HEAD | grep -E '^apps/landing/' | head -1 && echo "true" || echo "false")
-          infra=$(git diff --name-only ${{ github.event.before }} HEAD | grep -E '^(infra/|docker-compose\.yml|infra/nginx/)' | head -1 && echo "true" || echo "false")
+          # Get the base commit (handle first push case)
+          BASE_REF=${{ github.event.before }}
+          if [ -z "$BASE_REF" ]; then
+            BASE_REF=$(git rev-list --max-parents=0 HEAD)
+          fi
           
-          echo "api=$api" >> $GITHUB_OUTPUT
-          echo "web=$web" >> $GITHUB_OUTPUT
-          echo "admin=$admin" >> $GITHUB_OUTPUT
-          echo "landing=$landing" >> $GITHUB_OUTPUT
-          echo "infra=$infra" >> $GITHUB_OUTPUT
+          # Get the list of changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_REF HEAD)
+          
+          # Check each project
+          if echo "$CHANGED_FILES" | grep -qE '^apps/api/'; then echo "api=true" >> $GITHUB_OUTPUT; else echo "api=false" >> $GITHUB_OUTPUT; fi
+          if echo "$CHANGED_FILES" | grep -qE '^apps/mobile/'; then echo "web=true" >> $GITHUB_OUTPUT; else echo "web=false" >> $GITHUB_OUTPUT; fi
+          if echo "$CHANGED_FILES" | grep -qE '^apps/admin/'; then echo "admin=true" >> $GITHUB_OUTPUT; else echo "admin=false" >> $GITHUB_OUTPUT; fi
+          if echo "$CHANGED_FILES" | grep -qE '^apps/landing/'; then echo "landing=true" >> $GITHUB_OUTPUT; else echo "landing=false" >> $GITHUB_OUTPUT; fi
+          if echo "$CHANGED_FILES" | grep -qE '^(infra/|docker-compose\.yml|infra/nginx/)'; then echo "infra=true" >> $GITHUB_OUTPUT; else echo "infra=false" >> $GITHUB_OUTPUT; fi
           echo "ios=false" >> $GITHUB_OUTPUT
 
   # ===========================================
