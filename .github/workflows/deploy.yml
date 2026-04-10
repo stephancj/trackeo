@@ -29,6 +29,7 @@ jobs:
       web_changed: ${{ steps.changes.outputs.web }}
       ios_changed: ${{ steps.changes.outputs.ios }}
       infra_changed: ${{ steps.changes.outputs.infra }}
+      landing_changed: ${{ steps.changes.outputs.landing }}
     steps:
       - uses: actions/checkout@v4
         with:
