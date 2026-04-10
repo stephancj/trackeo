@@ -285,9 +285,10 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                       ),
                       children: [
                         TileLayer(
-                          urlTemplate:
-                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.trackeo.mobile',
+                          urlTemplate: AppMapTiles.positron,
+                          subdomains: AppMapTiles.subdomains,
+                          retinaMode: true,
+                          userAgentPackageName: 'mg.trackeo.app',
                         ),
                         CircleLayer(
                           circles: [

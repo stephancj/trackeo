@@ -302,9 +302,10 @@ class VehicleDetailsView extends ConsumerWidget {
                             ),
                             children: [
                               TileLayer(
-                                urlTemplate:
-                                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                subdomains: const ['a', 'b', 'c'],
+                                urlTemplate: AppMapTiles.positron,
+                                subdomains: AppMapTiles.subdomains,
+                                retinaMode: true,
+                                userAgentPackageName: 'mg.trackeo.app',
                               ),
                               MarkerLayer(
                                 markers: [

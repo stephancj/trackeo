@@ -119,6 +119,28 @@ class AppRadius {
   static const double pill = 24.0;  // chips, pills
 }
 
+/// URLs des tuiles cartographiques.
+///
+/// CartoDB Dark Matter — map principale (fleet tracking, markers pop)
+/// CartoDB Positron    — maps de détail (historique, geofences, prévisualisations)
+class AppMapTiles {
+  AppMapTiles._();
+
+  /// CartoDB Dark Matter — fond sombre premium, sans clé API.
+  static const String darkMatter =
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+  /// CartoDB Positron — fond très clair, minimal, sans clé API.
+  static const String positron =
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+  static const List<String> subdomains = ['a', 'b', 'c', 'd'];
+
+  /// Attribution légale requise par CartoDB.
+  static const String attribution =
+      '© CartoDB  ©  OpenStreetMap contributors';
+}
+
 class AppTheme {
   AppTheme._();
 

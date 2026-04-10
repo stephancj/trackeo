@@ -73,7 +73,9 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: AppMapTiles.positron,
+                subdomains: AppMapTiles.subdomains,
+                retinaMode: true,
                 userAgentPackageName: 'mg.trackeo.app',
               ),
               // Polyligne bleue du trajet

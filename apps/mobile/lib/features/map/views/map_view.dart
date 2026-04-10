@@ -211,7 +211,9 @@ class _MapViewState extends ConsumerState<MapView>
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: AppMapTiles.darkMatter,
+                subdomains: AppMapTiles.subdomains,
+                retinaMode: true,
                 userAgentPackageName: 'mg.trackeo.app',
               ),
               MarkerLayer(
@@ -223,12 +225,12 @@ class _MapViewState extends ConsumerState<MapView>
             ],
           ),
 
-          // ── Gradient de lisibilité — header + barre de recherche + chips ─
+          // ── Gradient de lisibilité — sombre en haut, fondu vers transparent ─
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: topPad + 160,
+            height: topPad + 180,
             child: IgnorePointer(
               child: Container(
                 decoration: BoxDecoration(
@@ -236,7 +238,7 @@ class _MapViewState extends ConsumerState<MapView>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.white.withValues(alpha: 0.72),
+                      AppColors.primaryDark.withValues(alpha: 0.55),
                       Colors.transparent,
                     ],
                     stops: const [0.0, 1.0],
