@@ -134,8 +134,21 @@ jobs:
             cd /opt/trackeo &&
             git pull origin main &&
             docker-compose build api &&
+            docker ps -q --filter 'publish=3000' | xargs -r docker rm -f &&
             docker rm -f trackeo-api 2>/dev/null || true &&
-            docker-compose up -d api
+            docker run -d \
+              --name trackeo-api \
+              --network trackeo_trackeo-net \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              -e NODE_ENV=production \
+              -e DB_HOST=postgres \
+              -e DB_PORT=5432 \
+              -e DB_USER=trackeo \
+              -e DB_PASS=Password_1234 \
+              -e DB_NAME=traccar_db \
+              -e PORT=3000 \
+              trackeo_api
           "
 
       - name: Wait for API
