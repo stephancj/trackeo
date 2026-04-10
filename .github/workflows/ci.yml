@@ -7,12 +7,14 @@ on:
       - 'apps/api/**'
       - 'apps/mobile/**'
       - 'apps/landing/**'
+      - 'apps/admin/**'
   push:
     branches: [develop]
     paths:
       - 'apps/api/**'
       - 'apps/mobile/**'
       - 'apps/landing/**'
+      - 'apps/admin/**'
 
 # ===========================================
 # JOBS

@@ -30,6 +30,7 @@ jobs:
       ios_changed: ${{ steps.changes.outputs.ios }}
       infra_changed: ${{ steps.changes.outputs.infra }}
       landing_changed: ${{ steps.changes.outputs.landing }}
+      admin_changed: ${{ steps.changes.outputs.admin }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,6 +45,7 @@ jobs:
           echo "ios=true" >> $GITHUB_OUTPUT
           echo "infra=true" >> $GITHUB_OUTPUT
           echo "landing=true" >> $GITHUB_OUTPUT
+          echo "admin=true" >> $GITHUB_OUTPUT
 
   # ===========================================
   # BUILD API (on VPS, no Docker Hub push needed)
@@ -162,6 +164,69 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "chmod -R 755 /opt/trackeo/web && chown -R www-data:www-data /opt/trackeo/web"
 
   # ===========================================
+  # BUILD ADMIN
+  # ===========================================
+  build-admin:
+    name: Build Admin
+    needs: check-changes
+    runs-on: ubuntu-latest
+    if: needs.check-changes.outputs.admin_changed == 'true' || needs.check-changes.outputs.infra_changed == 'true' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: apps/admin/package-lock.json
+
+      - name: Install dependencies
+        run: cd apps/admin && npm ci
+
+      - name: Build
+        run: cd apps/admin && npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-build
+          path: apps/admin/.next
+          retention-days: 7
+
+  # ===========================================
+  # DEPLOY ADMIN
+  # ===========================================
+  deploy-admin:
+    name: Deploy Admin
+    needs: [check-changes, build-admin]
+    runs-on: ubuntu-latest
+    if: needs.check-changes.outputs.admin_changed == 'true' || needs.check-changes.outputs.infra_changed == 'true' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: admin-build
+          path: admin
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy Admin
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
+            docker rm -f trackeo-admin 2>/dev/null || true &&
+            docker build -t trackeo_admin admin &&
+            docker run -d --name trackeo-admin --network trackeo_trackeo-net -p 3001:3000 trackeo_admin
+          "
+
+  # ===========================================
   # BUILD LANDING
   # ===========================================
   build-landing:
@@ -243,7 +308,8 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             docker-compose pull &&
-            docker-compose up -d --no-recreate
+            docker rm -f trackeo-api trackeo-admin 2>/dev/null || true &&
+            docker-compose up -d
           "
 
   # ===========================================
@@ -262,7 +328,7 @@ jobs:
   # ===========================================
   notify:
     name: Notify
-    needs: [check-changes, deploy-api, deploy-web, deploy-landing, deploy-infra]
+    needs: [check-changes, deploy-api, deploy-web, deploy-admin, deploy-landing, deploy-infra]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -273,6 +339,7 @@ jobs:
           echo "Changes detected:" >> $GITHUB_STEP_SUMMARY
           echo "- API: ${{ needs.check-changes.outputs.api_changed }}" >> $GITHUB_STEP_SUMMARY
           echo "- Web App: ${{ needs.check-changes.outputs.web_changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Admin: ${{ needs.check-changes.outputs.admin_changed }}" >> $GITHUB_STEP_SUMMARY
           echo "- Landing: ${{ needs.check-changes.outputs.landing_changed }}" >> $GITHUB_STEP_SUMMARY
           echo "- iOS: Skipped (Fastlane Match not configured)" >> $GITHUB_STEP_SUMMARY
           echo "- Infra: ${{ needs.check-changes.outputs.infra_changed }}" >> $GITHUB_STEP_SUMMARY
@@ -281,6 +348,7 @@ jobs:
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy API | ${{ needs.deploy-api.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy Web | ${{ needs.deploy-web.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Admin | ${{ needs.deploy-admin.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy Landing | ${{ needs.deploy-landing.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy iOS | Skipped |" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy Infra | ${{ needs.deploy-infra.result }} |" >> $GITHUB_STEP_SUMMARY
