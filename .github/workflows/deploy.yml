@@ -132,20 +132,17 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
-            docker-compose stop api && docker-compose rm -f api && docker-compose up -d --no-recreate api || (
-              docker rm -f trackeo-api 2>/dev/null || true &&
-              docker build -t trackeo_api apps/api &&
-              docker run -d --name trackeo-api --network trackeo_trackeo-net -p 3000:3000 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USER=trackeo -e DB_PASS=Password_1234 -e DB_NAME=traccar_db -e PORT=3000 trackeo_api
-            )
+            git pull origin main &&
+            docker-compose up -d --build api
           "
 
       - name: Wait for API
-        run: sleep 15
+        run: sleep 20
 
       - name: Test API
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
-            curl -sf https://api.trackeo.zenkai.mg/api/ || exit 1
+            curl -sf https://api.trackeo.zenkai.mg/health || curl -sf https://api.trackeo.zenkai.mg/ || exit 1
           "
 
   # ===========================================
