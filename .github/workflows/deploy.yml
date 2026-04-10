@@ -133,7 +133,9 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             git pull origin main &&
-            docker-compose up -d --build api
+            docker-compose build api &&
+            docker rm -f trackeo-api 2>/dev/null || true &&
+            docker-compose up -d api
           "
 
       - name: Wait for API
