@@ -211,7 +211,7 @@ class _MapViewState extends ConsumerState<MapView>
             ),
             children: [
               TileLayer(
-                urlTemplate: AppMapTiles.darkMatter,
+                urlTemplate: AppMapTiles.voyager,
                 subdomains: AppMapTiles.subdomains,
                 retinaMode: true,
                 userAgentPackageName: 'mg.trackeo.app',
@@ -238,7 +238,7 @@ class _MapViewState extends ConsumerState<MapView>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.primaryDark.withValues(alpha: 0.55),
+                      Colors.white.withValues(alpha: 0.72),
                       Colors.transparent,
                     ],
                     stops: const [0.0, 1.0],

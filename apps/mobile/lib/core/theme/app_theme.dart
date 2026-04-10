@@ -130,6 +130,10 @@ class AppMapTiles {
   static const String darkMatter =
       'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 
+  /// CartoDB Voyager — style moderne équilibré, ni trop clair ni trop sombre.
+  static const String voyager =
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
   /// CartoDB Positron — fond très clair, minimal, sans clé API.
   static const String positron =
       'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
