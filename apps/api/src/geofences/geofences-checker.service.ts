@@ -37,14 +37,18 @@ export class GeofencesCheckerService {
   // Clé: "{vehicleId}_{geofenceId}", Valeur: boolean (true = inside)
   private readonly insideGeofencesCache = new Map<string, boolean>();
 
-  // Cache du subscription ID OneSignal par userId (évite un SELECT à chaque alerte)
+  // Cache du subscription ID OneSignal par userId (TTL: 60s)
   private readonly subIdCache = new Map<number, string | null>();
+  private readonly subIdCacheTs = new Map<number, number>();
 
-  // Cache du numéro de téléphone par userId
+  // Cache du numéro de téléphone par userId (TTL: 60s)
   private readonly phoneCache = new Map<number, string | null>();
+  private readonly phoneCacheTs = new Map<number, number>();
 
-  // Cache des paramètres d'alerte par userId
+  // Cache des paramètres d'alerte par userId (TTL: 60s)
   private readonly alertSettingsCache = new Map<number, AlertSettings>();
+  private readonly alertSettingsCacheTs = new Map<number, number>();
+  private readonly SETTINGS_CACHE_TTL_MS = 60_000;
 
   @Cron('*/15 * * * * *')
   async checkGeofences() {
@@ -280,12 +284,17 @@ export class GeofencesCheckerService {
    * Met en cache le résultat pour éviter les requêtes DB répétitives.
    */
   private async getUserSubId(userId: number): Promise<string | null> {
-    if (this.subIdCache.has(userId)) {
+    const cachedTs = this.subIdCacheTs.get(userId) ?? 0;
+    if (
+      this.subIdCache.has(userId) &&
+      Date.now() - cachedTs < this.SETTINGS_CACHE_TTL_MS
+    ) {
       return this.subIdCache.get(userId) ?? null;
     }
     const user = await this.usersService.findById(userId);
     const subId = user?.onesignalSubId ?? null;
     this.subIdCache.set(userId, subId);
+    this.subIdCacheTs.set(userId, Date.now());
     return subId;
   }
 
@@ -294,12 +303,17 @@ export class GeofencesCheckerService {
    * Met en cache le résultat pour éviter les requêtes DB répétitives.
    */
   private async getUserPhone(userId: number): Promise<string | null> {
-    if (this.phoneCache.has(userId)) {
+    const cachedTs = this.phoneCacheTs.get(userId) ?? 0;
+    if (
+      this.phoneCache.has(userId) &&
+      Date.now() - cachedTs < this.SETTINGS_CACHE_TTL_MS
+    ) {
       return this.phoneCache.get(userId) ?? null;
     }
     const user = await this.usersService.findById(userId);
     const phone = user?.phone ?? null;
     this.phoneCache.set(userId, phone);
+    this.phoneCacheTs.set(userId, Date.now());
     return phone;
   }
 
@@ -308,7 +322,11 @@ export class GeofencesCheckerService {
    * Met en cache le résultat pour éviter les requêtes DB répétitives.
    */
   private async getUserAlertSettings(userId: number): Promise<AlertSettings> {
-    if (this.alertSettingsCache.has(userId)) {
+    const cachedTs = this.alertSettingsCacheTs.get(userId) ?? 0;
+    if (
+      this.alertSettingsCache.has(userId) &&
+      Date.now() - cachedTs < this.SETTINGS_CACHE_TTL_MS
+    ) {
       return this.alertSettingsCache.get(userId)!;
     }
     const user = await this.usersService.findById(userId);
@@ -321,6 +339,7 @@ export class GeofencesCheckerService {
       alertViaWhatsapp: user?.alertViaWhatsapp ?? false,
     };
     this.alertSettingsCache.set(userId, settings);
+    this.alertSettingsCacheTs.set(userId, Date.now());
     return settings;
   }
 
