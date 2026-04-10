@@ -72,13 +72,15 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                 }
                 return SizedBox(
                   height: 230,
-                  child: CarouselView(
-                    itemExtent: MediaQuery.of(context).size.width * 1,
-                    shrinkExtent: MediaQuery.of(context).size.width * 0.8,
-                    padding: const EdgeInsets.only(right: 16),
-                    children: geofences.map((gf) {
-                      return _buildActiveGeofenceCard(gf);
-                    }).toList(),
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    clipBehavior: Clip.none,
+                    itemCount: geofences.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (_, i) => SizedBox(
+                      width: MediaQuery.of(context).size.width - 32,
+                      child: _buildActiveGeofenceCard(geofences[i]),
+                    ),
                   ),
                 );
               },
