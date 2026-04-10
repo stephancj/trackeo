@@ -237,29 +237,29 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
 
   Widget _buildActiveGeofenceCard(Geofence geofence) {
     final vehicleNames = _vehicleNamesFor(geofence);
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CreateGeofenceView(geofence: geofence),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      child: Column(
+        children: [
+          // Map mockup — tap uniquement sur la partie carte
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CreateGeofenceView(geofence: geofence),
+              ),
             ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Map mockup
-            ClipRRect(
+            child: ClipRRect(
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16),
               ),
@@ -382,10 +382,11 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                   ],
                 ),
               ),
-            ),
-            // Info row
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            ), // end ClipRRect
+          ), // end GestureDetector (carte)
+          // Info row
+          Padding(
+            padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
                   Container(
@@ -523,8 +524,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
             ),
           ],
         ),
-      ), // end Container
-    ); // end GestureDetector
+    ); // end Container
   }
 
   void _showQuickActionsSheet(Geofence geofence) {
