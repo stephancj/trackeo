@@ -504,6 +504,31 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                           .toggleGeofence(geofence, v);
                     },
                   ),
+                  // Bouton édition directe
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                CreateGeofenceView(geofence: geofence),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.edit_rounded,
+                          size: 18,
+                          color: AppColors.textHint,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   // Bouton actions — remplace le longPress (non fiable sur PWA)
                   SizedBox(
                     width: 32,
@@ -620,6 +645,10 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         return Colors.green;
       case 'geofence_exit':
         return Colors.orange;
+      case 'speed_limit':
+        return AppColors.statusAlert;
+      case 'low_battery':
+        return Colors.amber;
       default:
         return AppColors.primary;
     }
@@ -631,6 +660,10 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         return 'Entrée dans la zone';
       case 'geofence_exit':
         return 'Sortie de la zone';
+      case 'speed_limit':
+        return 'Excès de vitesse';
+      case 'low_battery':
+        return 'Batterie faible';
       default:
         return type;
     }

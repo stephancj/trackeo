@@ -352,39 +352,68 @@ class _DateSelector extends ConsumerWidget {
               ),
             ),
           ),
-          // Date centrale
+          // Date centrale — tap pour ouvrir le sélecteur natif
           Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.calendar_today_outlined,
-                      size: 14,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _formatDate(date),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: AppColors.primaryDark,
+            child: GestureDetector(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: date,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                  builder: (context, child) => Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: ColorScheme.light(
+                        primary: AppColors.primary,
+                        onPrimary: Colors.white,
+                        surface: AppColors.surface,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  isToday ? 'Aujourd\'hui' : _dayName(date),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
+                    child: child!,
                   ),
-                ),
-              ],
+                );
+                if (picked != null) {
+                  ref.read(historyDateProvider.notifier).state = picked;
+                }
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _formatDate(date),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.expand_more_rounded,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isToday ? 'Aujourd\'hui' : _dayName(date),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           // Jour suivant (désactivé si aujourd'hui)

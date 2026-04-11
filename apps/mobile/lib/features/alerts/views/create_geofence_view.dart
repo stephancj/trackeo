@@ -119,18 +119,12 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
   }
 
   Future<void> _deleteGeofence() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAdaptiveDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Supprimer la zone ?',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
+      builder: (_) => AlertDialog.adaptive(
+        title: const Text('Supprimer la zone ?'),
         content: Text(
           'Supprimer "${_nameController.text.trim()}" ?\nCette action est irréversible.',
-          style: const TextStyle(color: AppColors.textHint),
         ),
         actions: [
           TextButton(
@@ -728,8 +722,10 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                             ? const SizedBox(
                                 width: 22,
                                 height: 22,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
+                                child: CircularProgressIndicator.adaptive(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                   strokeWidth: 2.5,
                                 ),
                               )

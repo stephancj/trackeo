@@ -63,9 +63,11 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(
+                    child: CircularProgressIndicator.adaptive(
                       strokeWidth: 2,
-                      color: AppColors.primary,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
                     ),
                   )
                 : const Text(
