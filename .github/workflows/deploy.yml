@@ -189,55 +189,14 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "chmod -R 755 /opt/trackeo/web && chown -R www-data:www-data /opt/trackeo/web"
 
   # ===========================================
-  # BUILD ADMIN
+  # DEPLOY ADMIN (build + deploy on VPS)
   # ===========================================
-  build-admin:
-    name: Build Admin
+  deploy-admin:
+    name: Deploy Admin
     needs: check-changes
     runs-on: ubuntu-latest
     if: needs.check-changes.outputs.admin_changed == 'true' || needs.check-changes.outputs.infra_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: apps/admin/package-lock.json
-
-      - name: Install dependencies
-        run: cd apps/admin && npm ci
-
-      - name: Build
-        run: cd apps/admin && npm run build
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: admin-build
-          path: apps/admin/.next
-          retention-days: 7
-
-  # ===========================================
-  # DEPLOY ADMIN
-  # ===========================================
-  deploy-admin:
-    name: Deploy Admin
-    needs: [check-changes, build-admin]
-    runs-on: ubuntu-latest
-    if: needs.build-admin.result == 'success'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: admin-build
-          path: admin
-
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
@@ -246,9 +205,18 @@ jobs:
       - name: Deploy Admin
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
+            cd /opt/trackeo &&
+            git pull origin main &&
+            docker-compose build admin &&
+            docker ps -q --filter 'publish=3001' | xargs -r docker rm -f &&
             docker rm -f trackeo-admin 2>/dev/null || true &&
-            docker build -t trackeo_admin admin &&
-            docker run -d --name trackeo-admin --network trackeo_trackeo-net -p 3001:3000 trackeo_admin
+            docker run -d \
+              --name trackeo-admin \
+              --network trackeo_trackeo-net \
+              --restart unless-stopped \
+              -p 3001:3000 \
+              -e NODE_ENV=production \
+              trackeo_admin
           "
 
   # ===========================================
