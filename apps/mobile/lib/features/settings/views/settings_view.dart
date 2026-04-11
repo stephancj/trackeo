@@ -235,11 +235,9 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   void _showLogoutDialog(BuildContext context) {
-    showDialog(
+    showAdaptiveDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      builder: (ctx) => AlertDialog.adaptive(
         title: const Text('Déconnexion',
             style: TextStyle(fontWeight: FontWeight.w700)),
         content: const Text('Voulez-vous vraiment vous déconnecter ?'),
@@ -294,156 +292,255 @@ class _ProfileCard extends StatelessWidget {
       color: AppColors.surface,
       child: Column(
         children: [
-          // Avatar + info row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-            child: Row(
+          // ── Gradient Hero ────────────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF2C3E5A),
+                  Color(0xFF1A2E3B),
+                ],
+              ),
+            ),
+            child: Column(
               children: [
-                // Avatar
+                // Avatar with ring
                 Container(
-                  width: 60,
-                  height: 60,
-                  decoration: const BoxDecoration(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [Color(0xFF4ECB8D), Color(0xFF2BA870)],
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4ECB8D).withValues(alpha: 0.4),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Center(
                     child: Text(
                       _initials(displayName),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 22,
+                        fontSize: 28,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.5,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 14),
+
+                // Name
+                Text(
+                  displayName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+
+                // Email
+                Text(
+                  email,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                // Phone
+                if (phone != null && phone!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Icon(
+                        Icons.phone_rounded,
+                        size: 12,
+                        color: Colors.white.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(width: 4),
                       Text(
-                        displayName,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                        phone!,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 12,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        email,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      if (phone != null && phone!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          phone!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textHint,
-                          ),
-                        ),
-                      ],
-                      if (role == 'admin') ...[
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color:
-                                const Color(0xFF8B5CF6).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'Admin',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF8B5CF6),
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
-                ),
+                ],
+
+                // Role badge
+                if (role == 'admin') ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: const Text(
+                      'Admin',
+                      style: TextStyle(
+                        color: Color(0xFFB39DDB),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
 
-          // Edit fields (animated)
+          // ── Edit Form (animated) ─────────────────────────────────────────
           AnimatedCrossFade(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 250),
             crossFadeState: isEditing
                 ? CrossFadeState.showSecond
                 : CrossFadeState.showFirst,
             firstChild: const SizedBox(width: double.infinity),
-            secondChild: Column(
-              children: [
-                Divider(height: 1, color: AppColors.divider),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nom',
-                          prefixIcon: Icon(Icons.person_outline, size: 20),
+            secondChild: Container(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Nom',
+                      prefixIcon: const Icon(
+                        Icons.person_outline,
+                        size: 20,
+                        color: AppColors.textHint,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          labelText: 'Téléphone WhatsApp',
-                          hintText: '+261341234567',
-                          prefixIcon:
-                              Icon(Icons.phone_outlined, size: 20),
-                        ),
-                        validator: (v) {
-                          if (v != null && v.isNotEmpty) {
-                            if (!v.startsWith('+') && !v.startsWith('0')) {
-                              return 'Format : +261341234567';
-                            }
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: isSaving ? null : onSave,
-                          child: isSaving
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text('Enregistrer'),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Téléphone WhatsApp',
+                      hintText: '+261341234567',
+                      prefixIcon: const Icon(
+                        Icons.phone_outlined,
+                        size: 20,
+                        color: AppColors.textHint,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.background,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v != null && v.isNotEmpty) {
+                        if (!v.startsWith('+') && !v.startsWith('0')) {
+                          return 'Format : +261341234567';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: isSaving ? null : onSave,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: isSaving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator.adaptive(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_rounded, size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Enregistrer',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
           ),
         ],
