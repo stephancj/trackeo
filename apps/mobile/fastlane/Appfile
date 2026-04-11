@@ -1,6 +1,5 @@
 # Appfile for Fastlane
-# Store your Apple ID and app identifiers
-
-app_identifier("com.trackeo.mobile")
+app_identifier("com.trackeo.client.app")
 apple_id(ENV["APPLE_ID"])
+team_id(ENV["APPLE_TEAM_ID"])
 itc_team_id(ENV["APPLE_TEAM_ID"])

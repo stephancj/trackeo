@@ -13,6 +13,7 @@ on:
         options:
           - api
           - web
+          - ios
           - landing
           - infra
           - all
@@ -54,7 +55,7 @@ jobs:
           if echo "$CHANGED_FILES" | grep -qE '^apps/admin/'; then echo "admin=true" >> $GITHUB_OUTPUT; else echo "admin=false" >> $GITHUB_OUTPUT; fi
           if echo "$CHANGED_FILES" | grep -qE '^apps/landing/'; then echo "landing=true" >> $GITHUB_OUTPUT; else echo "landing=false" >> $GITHUB_OUTPUT; fi
           if echo "$CHANGED_FILES" | grep -qE '^(infra/|docker-compose\.yml|infra/nginx/)'; then echo "infra=true" >> $GITHUB_OUTPUT; else echo "infra=false" >> $GITHUB_OUTPUT; fi
-          echo "ios=false" >> $GITHUB_OUTPUT
+          if echo "$CHANGED_FILES" | grep -qE '^apps/mobile/'; then echo "ios=true" >> $GITHUB_OUTPUT; else echo "ios=false" >> $GITHUB_OUTPUT; fi
 
   # ===========================================
   # BUILD API (on VPS, no Docker Hub push needed)
@@ -309,22 +310,71 @@ jobs:
           "
 
   # ===========================================
-  # DEPLOY IOS (Manual - requires Fastlane Match setup)
+  # BUILD & DEPLOY IOS (TestFlight)
   # ===========================================
   deploy-ios:
-    name: Deploy iOS (Manual)
+    name: Deploy iOS (TestFlight)
     needs: check-changes
-    runs-on: ubuntu-latest
-    if: false # Disabled - requires Fastlane Match to be set up first
+    runs-on: macos-latest
+    if: >-
+      (needs.check-changes.outputs.ios_changed == 'true') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.deploy_target == 'ios' || github.event.inputs.deploy_target == 'all'))
+    timeout-minutes: 45
     steps:
-      - run: echo "iOS deployment requires Fastlane Match to be configured first"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.6'
+          cache: true
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: apps/mobile
+
+      - name: Install Fastlane
+        run: cd apps/mobile && bundle install
+
+      - name: Flutter dependencies
+        run: cd apps/mobile && flutter pub get
+
+      - name: Pod install
+        run: cd apps/mobile/ios && pod install
+
+      - name: Increment build number
+        run: |
+          cd apps/mobile
+          # Use GitHub run number as build number (always increases)
+          BUILD_NUMBER=${{ github.run_number }}
+          echo "Build number: $BUILD_NUMBER"
+          # Update pubspec.yaml build number
+          sed -i '' "s/^version: \(.*\)+.*/version: \1+$BUILD_NUMBER/" pubspec.yaml
+          cat pubspec.yaml | grep "^version:"
+
+      - name: Build & Upload to TestFlight
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 120
+        run: cd apps/mobile && bundle exec fastlane ios release
 
   # ===========================================
   # NOTIFICATION
   # ===========================================
   notify:
     name: Notify
-    needs: [check-changes, deploy-api, deploy-web, deploy-admin, deploy-landing, deploy-infra]
+    needs: [check-changes, deploy-api, deploy-web, deploy-admin, deploy-landing, deploy-infra, deploy-ios]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -337,7 +387,7 @@ jobs:
           echo "- Web App: ${{ needs.check-changes.outputs.web_changed }}" >> $GITHUB_STEP_SUMMARY
           echo "- Admin: ${{ needs.check-changes.outputs.admin_changed }}" >> $GITHUB_STEP_SUMMARY
           echo "- Landing: ${{ needs.check-changes.outputs.landing_changed }}" >> $GITHUB_STEP_SUMMARY
-          echo "- iOS: Skipped (Fastlane Match not configured)" >> $GITHUB_STEP_SUMMARY
+          echo "- iOS: ${{ needs.check-changes.outputs.ios_changed }}" >> $GITHUB_STEP_SUMMARY
           echo "- Infra: ${{ needs.check-changes.outputs.infra_changed }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
@@ -346,5 +396,5 @@ jobs:
           echo "| Deploy Web | ${{ needs.deploy-web.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy Admin | ${{ needs.deploy-admin.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy Landing | ${{ needs.deploy-landing.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deploy iOS | Skipped |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy iOS | ${{ needs.deploy-ios.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy Infra | ${{ needs.deploy-infra.result }} |" >> $GITHUB_STEP_SUMMARY

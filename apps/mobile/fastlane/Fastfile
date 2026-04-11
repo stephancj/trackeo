@@ -5,13 +5,12 @@ default_platform :ios
 platform :ios do
   desc "Build iOS app for simulator"
   lane :build_simulator do
-    # Build Flutter for iOS simulator
-    sh("flutter", "build", "ios", "--simulator", "--no-codesign")
+    sh("cd", "..", "&&", "flutter", "build", "ios", "--simulator", "--no-codesign")
   end
 
   desc "Build iOS app for TestFlight using Match"
   lane :build_testflight do
-    # Setup Match (read password from environment)
+    # Setup Match — fetch certificates and provisioning profiles
     match(
       type: "appstore",
       app_identifier: "com.trackeo.client.app",
@@ -19,18 +18,15 @@ platform :ios do
     )
 
     # Build Flutter for iOS release
-    sh("flutter", "build", "ios", "--release")
+    sh("cd .. && flutter build ios --release --no-codesign")
 
-    # Get version and build number from flutter
-    version = get_version_code
-    build = get_build_number
-
-    # Build the ipa using xcodebuild with Match provisioning
+    # Build the IPA with Match provisioning
     build_app(
       scheme: "Runner",
-      workspace: "ios/Runner.xcworkspace",
+      workspace: "../ios/Runner.xcworkspace",
       configuration: "Release",
       export_method: "app-store",
+      output_directory: "../build/ios/ipa",
       export_options: {
         provisioningProfiles: {
           "com.trackeo.client.app" => "match AppStore com.trackeo.client.app"
@@ -41,14 +37,27 @@ platform :ios do
 
   desc "Upload to TestFlight"
   lane :upload_testflight do
-    # Upload to TestFlight
-    upload_to_testflight(
-      username: ENV["APPLE_ID"],
-      app_identifier: "com.trackeo.client.app",
-      ipa: "build/ios/iphoneos/*.ipa",
-      skip_waiting_for_build_processing: true,
-      notify_external_testers: true
-    )
+    # Use API key if available, otherwise fall back to Apple ID
+    if ENV["APP_STORE_CONNECT_API_KEY_ID"]
+      api_key = app_store_connect_api_key(
+        key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+        issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+        key_content: ENV["APP_STORE_CONNECT_API_KEY"],
+        in_house: false,
+      )
+      upload_to_testflight(
+        api_key: api_key,
+        app_identifier: "com.trackeo.client.app",
+        skip_waiting_for_build_processing: true,
+        notify_external_testers: false,
+      )
+    else
+      upload_to_testflight(
+        app_identifier: "com.trackeo.client.app",
+        skip_waiting_for_build_processing: true,
+        notify_external_testers: false,
+      )
+    end
   end
 
   desc "Build and upload to TestFlight"
@@ -66,19 +75,28 @@ platform :ios do
       force_for_new_devices: true
     )
   end
+
+  desc "Sync Match certificates (read-only)"
+  lane :sync_certs do
+    match(
+      type: "appstore",
+      app_identifier: "com.trackeo.client.app",
+      readonly: true
+    )
+  end
 end
 
 platform :android do
   desc "Build Android APK"
   lane :build_apk do
-    sh("flutter", "build", "apk", "--release")
+    sh("cd .. && flutter build apk --release")
   end
 
   desc "Upload to Google Play (Internal)"
   lane :upload_play_store do
     supply(
       track: "internal",
-      apk: "build/app/outputs/flutter-apk/app-release.apk"
+      apk: "../build/app/outputs/flutter-apk/app-release.apk"
     )
   end
 end
