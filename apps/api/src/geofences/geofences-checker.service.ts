@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import * as https from 'https';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GeofencesService } from './geofences.service';
@@ -238,10 +239,12 @@ export class GeofencesCheckerService {
             const durationMs = Date.now() - excess.startTime.getTime();
             const durationStr = this.formatDuration(durationMs);
             const mapsUrl = `https://maps.google.com/?q=${excess.lat.toFixed(5)},${excess.lon.toFixed(5)}`;
+            const location = await this.reverseGeocode(excess.lat, excess.lon);
             const message =
               `${vehicle.name} • ${Math.round(speedKmh)} km/h` +
               ` • depuis ${durationStr}` +
-              ` • vitesse max ${Math.round(excess.maxSpeed)} km/h` +
+              ` • max ${Math.round(excess.maxSpeed)} km/h` +
+              ` • ${location}` +
               ` • ${mapsUrl}`;
 
             await this.sendAlertIfNotSpammed(
@@ -413,6 +416,44 @@ export class GeofencesCheckerService {
       geofenceName: alertMessage,
       alertType,
     });
+  }
+
+  // Reverse geocoding cache: "lat,lon" (1 decimal) → address string
+  private readonly geocodeCache = new Map<string, string>();
+
+  private async reverseGeocode(lat: number, lon: number): Promise<string> {
+    // Round to ~11km grid to maximize cache hits for nearby points
+    const key = `${lat.toFixed(1)},${lon.toFixed(1)}`;
+    if (this.geocodeCache.has(key)) return this.geocodeCache.get(key)!;
+
+    try {
+      const address = await new Promise<string>((resolve, reject) => {
+        const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=16`;
+        https
+          .get(url, { headers: { 'User-Agent': 'Trackeo/1.0' } }, (res) => {
+            let data = '';
+            res.on('data', (chunk) => (data += chunk));
+            res.on('end', () => {
+              try {
+                const json = JSON.parse(data);
+                const a = json.address ?? {};
+                const parts = [
+                  a.road ?? a.pedestrian ?? a.path,
+                  a.suburb ?? a.neighbourhood ?? a.village ?? a.town ?? a.city,
+                ].filter(Boolean);
+                resolve(parts.length > 0 ? parts.join(', ') : json.display_name?.split(',')[0] ?? `${lat.toFixed(4)},${lon.toFixed(4)}`);
+              } catch {
+                resolve(`${lat.toFixed(4)},${lon.toFixed(4)}`);
+              }
+            });
+          })
+          .on('error', () => resolve(`${lat.toFixed(4)},${lon.toFixed(4)}`));
+      });
+      this.geocodeCache.set(key, address);
+      return address;
+    } catch {
+      return `${lat.toFixed(4)},${lon.toFixed(4)}`;
+    }
   }
 
   private getDistanceFromLatLonInM(
