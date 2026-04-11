@@ -323,7 +323,7 @@ function sendPosition(pt: GpsPoint, index: number, total: number): Promise<void>
       timestamp: Math.floor(Date.now() / 1000).toString(),
       hdop:      '1.1',
       altitude:  CONFIG.altitude.toString(),
-      speed:     pt.speed.toFixed(1),
+      speed:     (pt.speed / 1.852).toFixed(2), // km/h → knots (OsmAnd protocol)
       bearing:   pt.course.toFixed(0),
       batt:      pt.battery.toString(),
     });
