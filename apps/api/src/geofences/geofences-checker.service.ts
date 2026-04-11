@@ -240,7 +240,7 @@ export class GeofencesCheckerService {
             const mapsUrl = `https://maps.google.com/?q=${excess.lat.toFixed(5)},${excess.lon.toFixed(5)}`;
             const message =
               `${vehicle.name} • ${Math.round(speedKmh)} km/h` +
-              (durationMs > 30_000 ? ` • depuis ${durationStr}` : '') +
+              ` • depuis ${durationStr}` +
               ` • vitesse max ${Math.round(excess.maxSpeed)} km/h` +
               ` • ${mapsUrl}`;
 
@@ -284,8 +284,8 @@ export class GeofencesCheckerService {
     const lastAlert = this.lastAlertCache.get(cacheKey);
     const now = new Date();
 
-    // Éviter le spam: une alerte toutes les 5 minutes max
-    if (lastAlert && now.getTime() - lastAlert.getTime() < 5 * 60 * 1000) {
+    // Éviter le spam: une alerte toutes les 5 secondes max
+    if (lastAlert && now.getTime() - lastAlert.getTime() < 5 * 1000) {
       return;
     }
 
