@@ -236,13 +236,17 @@ export class GeofencesCheckerService {
             }
 
             const excess = this.speedExcessStartCache.get(vehicle.id)!;
-            const durationMs = Date.now() - excess.startTime.getTime();
+            const now = new Date();
+            const durationMs = now.getTime() - excess.startTime.getTime();
             const durationStr = this.formatDuration(durationMs);
+            const startStr = this.formatTime(excess.startTime);
+            const endStr = this.formatTime(now);
+            const timeStr = durationMs < 60_000 ? startStr : `${startStr} – ${endStr}`;
             const mapsUrl = `https://maps.google.com/?q=${excess.lat.toFixed(5)},${excess.lon.toFixed(5)}`;
             const location = await this.reverseGeocode(excess.lat, excess.lon);
             const message =
               `${vehicle.name} • ${Math.round(speedKmh)} km/h` +
-              ` • depuis ${durationStr}` +
+              ` • ${timeStr} (${durationStr})` +
               ` • max ${Math.round(excess.maxSpeed)} km/h` +
               ` • ${location}` +
               ` • ${mapsUrl}`;
@@ -264,6 +268,14 @@ export class GeofencesCheckerService {
     } catch (e) {
       this.logger.error('Erreur lors du check alerts véhicule', e);
     }
+  }
+
+  private formatTime(date: Date): string {
+    return date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Indian/Antananarivo',
+    });
   }
 
   private formatDuration(ms: number): string {
