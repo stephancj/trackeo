@@ -171,6 +171,12 @@ export class GeofencesCheckerService {
   // Cache pour éviter le spam d'alertes (clé: vehicleId_alertType)
   private readonly lastAlertCache = new Map<string, Date>();
 
+  // Cache pour suivre le début d'un excès de vitesse par véhicule
+  private readonly speedExcessStartCache = new Map<
+    number,
+    { startTime: Date; lat: number; lon: number; maxSpeed: number }
+  >();
+
   @Cron('*/30 * * * * *')
   async checkVehicleAlerts() {
     this.logger.debug('Vérification des alertes véhicule...');
@@ -208,25 +214,62 @@ export class GeofencesCheckerService {
           );
         }
 
-        // Speed Limit Alert
-        if (
-          userAlertSettings.alertSpeedLimit &&
-          vehicle.position.speedKmh != null &&
-          vehicle.position.speedKmh > 120
-        ) {
-          await this.sendAlertIfNotSpammed(
-            userId,
-            vehicle.id,
-            vehicle.name,
-            AlertType.SPEED_LIMIT,
-            `Vitesse excessive: ${vehicle.position.speedKmh} km/h`,
-            userAlertSettings,
-          );
+        // Speed Limit Alert — track duration and location
+        const speedKmh = vehicle.position.speedKmh;
+        if (userAlertSettings.alertSpeedLimit && speedKmh != null) {
+          if (speedKmh > 120) {
+            // Update or start tracking this excess
+            const existing = this.speedExcessStartCache.get(vehicle.id);
+            if (!existing) {
+              this.speedExcessStartCache.set(vehicle.id, {
+                startTime: new Date(),
+                lat: vehicle.position.lat,
+                lon: vehicle.position.lon,
+                maxSpeed: speedKmh,
+              });
+            } else {
+              // Update max speed seen during this excess
+              if (speedKmh > existing.maxSpeed) {
+                existing.maxSpeed = speedKmh;
+              }
+            }
+
+            const excess = this.speedExcessStartCache.get(vehicle.id)!;
+            const durationMs = Date.now() - excess.startTime.getTime();
+            const durationStr = this.formatDuration(durationMs);
+            const mapsUrl = `https://maps.google.com/?q=${excess.lat.toFixed(5)},${excess.lon.toFixed(5)}`;
+            const message =
+              `${vehicle.name} • ${Math.round(speedKmh)} km/h` +
+              (durationMs > 30_000 ? ` • depuis ${durationStr}` : '') +
+              ` • vitesse max ${Math.round(excess.maxSpeed)} km/h` +
+              ` • ${mapsUrl}`;
+
+            await this.sendAlertIfNotSpammed(
+              userId,
+              vehicle.id,
+              vehicle.name,
+              AlertType.SPEED_LIMIT,
+              message,
+              userAlertSettings,
+            );
+          } else {
+            // Speed back to normal — reset tracking
+            this.speedExcessStartCache.delete(vehicle.id);
+          }
         }
       }
     } catch (e) {
       this.logger.error('Erreur lors du check alerts véhicule', e);
     }
+  }
+
+  private formatDuration(ms: number): string {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    if (minutes === 0) return `${seconds}s`;
+    if (seconds === 0) return `${minutes}min`;
+    return `${minutes}min ${seconds}s`;
   }
 
   private async sendAlertIfNotSpammed(
@@ -256,12 +299,17 @@ export class GeofencesCheckerService {
       const title =
         alertType === AlertType.LOW_BATTERY
           ? '🔋 Batterie faible'
-          : '⚡ Vitesse excessive';
+          : '⚡ Excès de vitesse';
+      // For push, use a clean body without the maps URL (keep it short)
+      const pushBody =
+        alertType === AlertType.SPEED_LIMIT
+          ? message.replace(/\s*•\s*https:\/\/maps\.google\.com[^\s]*/g, '')
+          : message;
       await this.notificationsService.sendPush({
         externalUserId: userId.toString(),
         subscriptionId: subscriptionId ?? undefined,
         title,
-        body: `${vehicleName}: ${message}`,
+        body: pushBody,
         data: {
           type: alertType,
           vehicleId: vehicleId.toString(),
