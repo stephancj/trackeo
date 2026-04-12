@@ -54,7 +54,7 @@ jobs:
               - 'apps/landing/**'
             infra:
               - 'infra/**'
-              - 'docker-compose.yml'
+              - 'docker compose.yml'
 
       - name: Compute deploy targets
         id: targets
@@ -89,7 +89,7 @@ jobs:
           echo "- Infra: ${{ steps.targets.outputs.deploy_infra }}" >> $GITHUB_STEP_SUMMARY
 
   # ===========================================
-  # DEPLOY API (docker-compose on VPS)
+  # DEPLOY API (docker compose on VPS)
   # ===========================================
   deploy-api:
     name: Deploy API
@@ -101,12 +101,12 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy API via docker-compose
+      - name: Deploy API via docker compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             git pull origin main &&
-            docker-compose up -d --build api
+            docker compose up -d --build api
           "
 
       - name: Health check
@@ -173,7 +173,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "chmod -R 755 /opt/trackeo/web && chown -R www-data:www-data /opt/trackeo/web"
 
   # ===========================================
-  # DEPLOY ADMIN (docker-compose on VPS)
+  # DEPLOY ADMIN (docker compose on VPS)
   # ===========================================
   deploy-admin:
     name: Deploy Admin
@@ -185,12 +185,12 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Admin via docker-compose
+      - name: Deploy Admin via docker compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             git pull origin main &&
-            docker-compose up -d --build admin
+            docker compose up -d --build admin
           "
 
       - name: Health check
@@ -258,7 +258,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "chmod -R 755 /opt/trackeo/landing && chown -R www-data:www-data /opt/trackeo/landing"
 
   # ===========================================
-  # DEPLOY INFRA (docker-compose on VPS)
+  # DEPLOY INFRA (docker compose on VPS)
   # ===========================================
   deploy-infra:
     name: Deploy Infrastructure
@@ -270,13 +270,13 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy infrastructure via docker-compose
+      - name: Deploy infrastructure via docker compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             git pull origin main &&
-            docker-compose pull &&
-            docker-compose up -d
+            docker compose pull &&
+            docker compose up -d
           "
 
       - name: Health check
