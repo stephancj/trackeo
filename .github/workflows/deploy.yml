@@ -336,7 +336,7 @@ jobs:
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
         run: |
           mkdir -p apps/mobile/private_keys
-          echo "$APP_STORE_CONNECT_API_KEY" > apps/mobile/private_keys/AuthKey.p8
+          printf '%b' "$APP_STORE_CONNECT_API_KEY" > apps/mobile/private_keys/AuthKey.p8
 
       - name: Build & Upload to TestFlight
         env:
@@ -350,6 +350,8 @@ jobs:
           FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 120
           LC_ALL: en_US.UTF-8
           LANG: en_US.UTF-8
+          # Fix: OpenSSL 3 on macOS arm64 rejects 'prime256v1' curve name in p8 keys
+          OPENSSL_CONF: /dev/null
         run: cd apps/mobile && bundle exec fastlane ios release
 
   # ===========================================
