@@ -8,372 +8,346 @@ on:
       deploy_target:
         description: 'What to deploy'
         required: true
-        default: 'api'
+        default: 'all'
         type: choice
         options:
           - api
           - web
           - ios
+          - admin
           - landing
           - infra
           - all
 
 jobs:
   # ===========================================
-  # CHECK CHANGES
+  # DETECT CHANGES & COMPUTE DEPLOY TARGETS
   # ===========================================
   check-changes:
     name: Check changes
     runs-on: ubuntu-latest
     outputs:
-      api_changed: ${{ steps.changes.outputs.api }}
-      web_changed: ${{ steps.changes.outputs.web }}
-      ios_changed: ${{ steps.changes.outputs.ios }}
-      infra_changed: ${{ steps.changes.outputs.infra }}
-      landing_changed: ${{ steps.changes.outputs.landing }}
-      admin_changed: ${{ steps.changes.outputs.admin }}
+      deploy_api: ${{ steps.targets.outputs.deploy_api }}
+      deploy_web: ${{ steps.targets.outputs.deploy_web }}
+      deploy_ios: ${{ steps.targets.outputs.deploy_ios }}
+      deploy_admin: ${{ steps.targets.outputs.deploy_admin }}
+      deploy_landing: ${{ steps.targets.outputs.deploy_landing }}
+      deploy_infra: ${{ steps.targets.outputs.deploy_infra }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check for API changes
-        id: changes
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name == 'push'
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+            mobile:
+              - 'apps/mobile/**'
+            admin:
+              - 'apps/admin/**'
+            landing:
+              - 'apps/landing/**'
+            infra:
+              - 'infra/**'
+              - 'docker-compose.yml'
+
+      - name: Compute deploy targets
+        id: targets
         run: |
-          # Get the base commit (handle first push case)
-          BASE_REF=${{ github.event.before }}
-          if [ -z "$BASE_REF" ]; then
-            BASE_REF=$(git rev-list --max-parents=0 HEAD)
+          EVENT="${{ github.event_name }}"
+          TARGET="${{ github.event.inputs.deploy_target }}"
+
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            echo "deploy_api=$( [ "$TARGET" = "api" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+            echo "deploy_web=$( [ "$TARGET" = "web" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+            echo "deploy_ios=$( [ "$TARGET" = "ios" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+            echo "deploy_admin=$( [ "$TARGET" = "admin" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+            echo "deploy_landing=$( [ "$TARGET" = "landing" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+            echo "deploy_infra=$( [ "$TARGET" = "infra" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+          else
+            echo "deploy_api=${{ steps.filter.outputs.api }}" >> $GITHUB_OUTPUT
+            echo "deploy_web=${{ steps.filter.outputs.mobile }}" >> $GITHUB_OUTPUT
+            echo "deploy_ios=${{ steps.filter.outputs.mobile }}" >> $GITHUB_OUTPUT
+            echo "deploy_admin=${{ steps.filter.outputs.admin }}" >> $GITHUB_OUTPUT
+            echo "deploy_landing=${{ steps.filter.outputs.landing }}" >> $GITHUB_OUTPUT
+            echo "deploy_infra=${{ steps.filter.outputs.infra }}" >> $GITHUB_OUTPUT
           fi
-          
-          # Get the list of changed files
-          CHANGED_FILES=$(git diff --name-only $BASE_REF HEAD)
-          
-          # Check each project
-          if echo "$CHANGED_FILES" | grep -qE '^apps/api/'; then echo "api=true" >> $GITHUB_OUTPUT; else echo "api=false" >> $GITHUB_OUTPUT; fi
-          if echo "$CHANGED_FILES" | grep -qE '^apps/mobile/'; then echo "web=true" >> $GITHUB_OUTPUT; else echo "web=false" >> $GITHUB_OUTPUT; fi
-          if echo "$CHANGED_FILES" | grep -qE '^apps/admin/'; then echo "admin=true" >> $GITHUB_OUTPUT; else echo "admin=false" >> $GITHUB_OUTPUT; fi
-          if echo "$CHANGED_FILES" | grep -qE '^apps/landing/'; then echo "landing=true" >> $GITHUB_OUTPUT; else echo "landing=false" >> $GITHUB_OUTPUT; fi
-          if echo "$CHANGED_FILES" | grep -qE '^(infra/|docker-compose\.yml|infra/nginx/)'; then echo "infra=true" >> $GITHUB_OUTPUT; else echo "infra=false" >> $GITHUB_OUTPUT; fi
-          if echo "$CHANGED_FILES" | grep -qE '^apps/mobile/'; then echo "ios=true" >> $GITHUB_OUTPUT; else echo "ios=false" >> $GITHUB_OUTPUT; fi
+
+      - name: Log deploy targets
+        run: |
+          echo "## Deploy targets" >> $GITHUB_STEP_SUMMARY
+          echo "- API: ${{ steps.targets.outputs.deploy_api }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Web: ${{ steps.targets.outputs.deploy_web }}" >> $GITHUB_STEP_SUMMARY
+          echo "- iOS: ${{ steps.targets.outputs.deploy_ios }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Admin: ${{ steps.targets.outputs.deploy_admin }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Landing: ${{ steps.targets.outputs.deploy_landing }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Infra: ${{ steps.targets.outputs.deploy_infra }}" >> $GITHUB_STEP_SUMMARY
 
   # ===========================================
-  # BUILD API (on VPS, no Docker Hub push needed)
+  # DEPLOY API (docker-compose on VPS)
   # ===========================================
-  build-api:
-    name: Build API
+  deploy-api:
+    name: Deploy API
     needs: check-changes
+    if: needs.check-changes.outputs.deploy_api == 'true'
     runs-on: ubuntu-latest
-    if: needs.check-changes.outputs.api_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.8.0
+      - uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Build API on VPS
+      - name: Deploy API via docker-compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
-            docker-compose build api
+            git pull origin main &&
+            docker-compose up -d --build api
           "
 
+      - name: Health check
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} '
+            for i in 1 2 3 4 5 6; do
+              sleep 10
+              if curl -sf https://api.trackeo.zenkai.mg/health 2>/dev/null || curl -sf https://api.trackeo.zenkai.mg/ 2>/dev/null; then
+                echo "API is healthy"
+                exit 0
+              fi
+              echo "Attempt $i failed, retrying..."
+            done
+            echo "Health check failed after 6 attempts"
+            exit 1
+          '
+
   # ===========================================
-  # BUILD WEB
+  # BUILD WEB (Flutter web on GH runner)
   # ===========================================
   build-web:
     name: Build Web
     needs: check-changes
+    if: needs.check-changes.outputs.deploy_web == 'true'
     runs-on: ubuntu-latest
-    if: needs.check-changes.outputs.web_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.41.6'
           cache: true
 
-      - name: Install dependencies
-        run: cd apps/mobile && flutter pub get
+      - run: cd apps/mobile && flutter pub get
+      - run: cd apps/mobile && flutter build web --release
 
-      - name: Build
-        run: cd apps/mobile && flutter build web --release
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: web-build
           path: apps/mobile/build/web
           retention-days: 7
 
   # ===========================================
-  # DEPLOY API
-  # ===========================================
-  deploy-api:
-    name: Deploy API
-    needs: [check-changes, build-api]
-    runs-on: ubuntu-latest
-    if: needs.check-changes.outputs.api_changed == 'true' || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy API
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
-            cd /opt/trackeo &&
-            git pull origin main &&
-            docker-compose build api &&
-            docker ps -q --filter 'publish=3000' | xargs -r docker rm -f &&
-            docker rm -f trackeo-api 2>/dev/null || true &&
-            docker run -d \
-              --name trackeo-api \
-              --network trackeo_trackeo-net \
-              --restart unless-stopped \
-              -p 3000:3000 \
-              -e NODE_ENV=production \
-              -e DB_HOST=postgres \
-              -e DB_PORT=5432 \
-              -e DB_USER=trackeo \
-              -e DB_PASS=Password_1234 \
-              -e DB_NAME=traccar_db \
-              -e PORT=3000 \
-              trackeo_api
-          "
-
-      - name: Wait for API
-        run: sleep 20
-
-      - name: Test API
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
-            curl -sf https://api.trackeo.zenkai.mg/health || curl -sf https://api.trackeo.zenkai.mg/ || exit 1
-          "
-
-  # ===========================================
-  # DEPLOY WEB
+  # DEPLOY WEB (static files to VPS)
   # ===========================================
   deploy-web:
     name: Deploy Web
     needs: [check-changes, build-web]
+    if: needs.check-changes.outputs.deploy_web == 'true'
     runs-on: ubuntu-latest
-    if: needs.build-web.result == 'success'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: web-build
           path: web
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.8.0
+      - uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Web
+      - name: Deploy static files
         run: |
           scp -o StrictHostKeyChecking=no -r web/* ${{ secrets.VPS_HOST }}:/opt/trackeo/web/
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "chmod -R 755 /opt/trackeo/web && chown -R www-data:www-data /opt/trackeo/web"
 
   # ===========================================
-  # DEPLOY ADMIN (build + deploy on VPS)
+  # DEPLOY ADMIN (docker-compose on VPS)
   # ===========================================
   deploy-admin:
     name: Deploy Admin
     needs: check-changes
+    if: needs.check-changes.outputs.deploy_admin == 'true'
     runs-on: ubuntu-latest
-    if: needs.check-changes.outputs.admin_changed == 'true' || needs.check-changes.outputs.infra_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.8.0
+      - uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Admin
+      - name: Deploy Admin via docker-compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             git pull origin main &&
-            docker-compose build admin &&
-            docker ps -q --filter 'publish=3001' | xargs -r docker rm -f &&
-            docker rm -f trackeo-admin 2>/dev/null || true &&
-            docker run -d \
-              --name trackeo-admin \
-              --network trackeo_trackeo-net \
-              --restart unless-stopped \
-              -p 3001:3000 \
-              -e NODE_ENV=production \
-              trackeo_admin
+            docker-compose up -d --build admin
           "
 
+      - name: Health check
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} '
+            for i in 1 2 3 4 5; do
+              sleep 10
+              if curl -sf http://localhost:3001 2>/dev/null; then
+                echo "Admin is healthy"
+                exit 0
+              fi
+              echo "Attempt $i failed, retrying..."
+            done
+            echo "Health check failed after 5 attempts"
+            exit 1
+          '
+
   # ===========================================
-  # BUILD LANDING
+  # BUILD LANDING (on GH runner)
   # ===========================================
   build-landing:
     name: Build Landing
     needs: check-changes
+    if: needs.check-changes.outputs.deploy_landing == 'true'
     runs-on: ubuntu-latest
-    if: needs.check-changes.outputs.landing_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: apps/landing/package-lock.json
 
-      - name: Install dependencies
-        run: cd apps/landing && npm install
+      - run: cd apps/landing && npm install
+      - run: cd apps/landing && npm run build
 
-      - name: Build
-        run: cd apps/landing && npm run build
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: landing-build
           path: apps/landing/dist
           retention-days: 7
 
   # ===========================================
-  # DEPLOY LANDING
+  # DEPLOY LANDING (static files to VPS)
   # ===========================================
   deploy-landing:
     name: Deploy Landing
     needs: [check-changes, build-landing]
+    if: needs.check-changes.outputs.deploy_landing == 'true'
     runs-on: ubuntu-latest
-    if: needs.build-landing.result == 'success'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: landing-build
           path: landing
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.8.0
+      - uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Landing
+      - name: Deploy static files
         run: |
           scp -o StrictHostKeyChecking=no -r landing/* ${{ secrets.VPS_HOST }}:/opt/trackeo/landing/
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "chmod -R 755 /opt/trackeo/landing && chown -R www-data:www-data /opt/trackeo/landing"
 
   # ===========================================
-  # DEPLOY INFRA
+  # DEPLOY INFRA (docker-compose on VPS)
   # ===========================================
   deploy-infra:
     name: Deploy Infrastructure
     needs: check-changes
+    if: needs.check-changes.outputs.deploy_infra == 'true'
     runs-on: ubuntu-latest
-    if: needs.check-changes.outputs.infra_changed == 'true' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.8.0
+      - uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Infrastructure
+      - name: Deploy infrastructure via docker-compose
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
+            git pull origin main &&
             docker-compose pull &&
-            docker rm -f trackeo-api trackeo-admin 2>/dev/null || true &&
-            docker-compose up -d --no-recreate 2>/dev/null || (
-              docker rm -f trackeo-api 2>/dev/null || true &&
-              docker run -d --name trackeo-api --network trackeo_trackeo-net -p 3000:3000 -e DB_HOST=postgres -e DB_PORT=5432 -e DB_USER=trackeo -e DB_PASS=Password_1234 -e DB_NAME=traccar_db -e PORT=3000 trackeo_api
-            )
+            docker-compose up -d
           "
 
+      - name: Health check
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} '
+            for i in 1 2 3 4 5 6; do
+              sleep 10
+              if curl -sf https://api.trackeo.zenkai.mg/health 2>/dev/null || curl -sf https://api.trackeo.zenkai.mg/ 2>/dev/null; then
+                echo "Infrastructure is healthy"
+                exit 0
+              fi
+              echo "Attempt $i failed, retrying..."
+            done
+            echo "Health check failed after 6 attempts"
+            exit 1
+          '
+
   # ===========================================
-  # BUILD & DEPLOY IOS (TestFlight)
+  # DEPLOY iOS (TestFlight via Fastlane)
   # ===========================================
   deploy-ios:
     name: Deploy iOS (TestFlight)
     needs: check-changes
+    if: needs.check-changes.outputs.deploy_ios == 'true'
     runs-on: macos-latest
-    if: >-
-      (needs.check-changes.outputs.ios_changed == 'true') ||
-      (github.event_name == 'workflow_dispatch' && (github.event.inputs.deploy_target == 'ios' || github.event.inputs.deploy_target == 'all'))
     timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.41.6'
           cache: true
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
           bundler-cache: true
           working-directory: apps/mobile
 
-      - name: Install Fastlane
-        run: cd apps/mobile && bundle install
-
-      - name: Flutter dependencies
-        run: cd apps/mobile && flutter pub get
-
-      - name: Pod install
-        run: cd apps/mobile/ios && pod install
+      - run: cd apps/mobile && bundle install
+      - run: cd apps/mobile && flutter pub get
+      - run: cd apps/mobile/ios && pod install
 
       - name: Increment build number
         run: |
           cd apps/mobile
-          # Use GitHub run number as build number (always increases)
           BUILD_NUMBER=${{ github.run_number }}
           echo "Build number: $BUILD_NUMBER"
-          # Update pubspec.yaml build number
           sed -i '' "s/^version: \(.*\)+.*/version: \1+$BUILD_NUMBER/" pubspec.yaml
           cat pubspec.yaml | grep "^version:"
 
       - name: Build & Upload to TestFlight
         env:
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 120
+          LC_ALL: en_US.UTF-8
+          LANG: en_US.UTF-8
         run: cd apps/mobile && bundle exec fastlane ios release
 
   # ===========================================
   # NOTIFICATION
   # ===========================================
   notify:
-    name: Notify
+    name: Deploy Summary
     needs: [check-changes, deploy-api, deploy-web, deploy-admin, deploy-landing, deploy-infra, deploy-ios]
     if: always()
     runs-on: ubuntu-latest
@@ -382,19 +356,17 @@ jobs:
         run: |
           echo "## Deploy Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Changes detected:" >> $GITHUB_STEP_SUMMARY
-          echo "- API: ${{ needs.check-changes.outputs.api_changed }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Web App: ${{ needs.check-changes.outputs.web_changed }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Admin: ${{ needs.check-changes.outputs.admin_changed }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Landing: ${{ needs.check-changes.outputs.landing_changed }}" >> $GITHUB_STEP_SUMMARY
-          echo "- iOS: ${{ needs.check-changes.outputs.ios_changed }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Infra: ${{ needs.check-changes.outputs.infra_changed }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Deploy API | ${{ needs.deploy-api.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deploy Web | ${{ needs.deploy-web.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deploy Admin | ${{ needs.deploy-admin.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deploy Landing | ${{ needs.deploy-landing.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deploy iOS | ${{ needs.deploy-ios.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deploy Infra | ${{ needs.deploy-infra.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Target | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| API | ${{ needs.check-changes.outputs.deploy_api }} | ${{ needs.deploy-api.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Web | ${{ needs.check-changes.outputs.deploy_web }} | ${{ needs.deploy-web.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Admin | ${{ needs.check-changes.outputs.deploy_admin }} | ${{ needs.deploy-admin.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Landing | ${{ needs.check-changes.outputs.deploy_landing }} | ${{ needs.deploy-landing.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| iOS | ${{ needs.check-changes.outputs.deploy_ios }} | ${{ needs.deploy-ios.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Infra | ${{ needs.check-changes.outputs.deploy_infra }} | ${{ needs.deploy-infra.result }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if any deploy failed
+        if: contains(needs.*.result, 'failure')
+        run: |
+          echo "One or more deploy jobs failed"
+          exit 1

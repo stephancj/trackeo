@@ -47,13 +47,21 @@ Upload to TestFlight
 
 Build and upload to TestFlight
 
-### ios init_match
+### ios sync_certs
 
 ```sh
-[bundle exec] fastlane ios init_match
+[bundle exec] fastlane ios sync_certs
 ```
 
-Initialize Match (run once locally)
+Sync Match certificates (read-only)
+
+### ios create_profile
+
+```sh
+[bundle exec] fastlane ios create_profile
+```
+
+Create provisioning profile for new app
 
 ----
 

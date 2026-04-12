@@ -1,4 +1,4 @@
-git_url(ENV["MATCH_GIT_URL"] || "https://github.com/stephancj/trackeo-certs.git")
+git_url(ENV["MATCH_GIT_URL"] || "https://github.com/nyandrianinamamy/ios-certs.git")
 storage_mode("git")
 
 type("appstore")

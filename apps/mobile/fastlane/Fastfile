@@ -1,33 +1,57 @@
-fastlane_version "2.215.0"
+fastlane_version "2.225.0"
 
 default_platform :ios
 
 platform :ios do
+
+  # Helper: returns API key hash if env vars are set
+  def api_key_if_available
+    if ENV["APP_STORE_CONNECT_API_KEY_ID"]
+      params = {
+        key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+        issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+        in_house: false,
+      }
+      if ENV["APP_STORE_CONNECT_API_KEY_PATH"]
+        params[:key_filepath] = ENV["APP_STORE_CONNECT_API_KEY_PATH"]
+      else
+        params[:key_content] = ENV["APP_STORE_CONNECT_API_KEY"]
+      end
+      app_store_connect_api_key(params)
+    else
+      nil
+    end
+  end
+
   desc "Build iOS app for simulator"
   lane :build_simulator do
-    sh("cd", "..", "&&", "flutter", "build", "ios", "--simulator", "--no-codesign")
+    sh("cd .. && flutter build ios --simulator --no-codesign")
   end
 
   desc "Build iOS app for TestFlight using Match"
   lane :build_testflight do
-    # Setup Match — fetch certificates and provisioning profiles
+    api_key = api_key_if_available
+
+    # Fetch certificates and provisioning profiles from git repo
     match(
       type: "appstore",
       app_identifier: "com.trackeo.client.app",
-      readonly: true
+      readonly: is_ci,
+      api_key: api_key,
     )
 
-    # Build Flutter for iOS release
+    # Build Flutter for iOS release (no codesign — Xcode handles it via Match)
     sh("cd .. && flutter build ios --release --no-codesign")
 
     # Build the IPA with Match provisioning
     build_app(
       scheme: "Runner",
-      workspace: "../ios/Runner.xcworkspace",
+      workspace: File.expand_path("../ios/Runner.xcworkspace", __dir__),
       configuration: "Release",
       export_method: "app-store",
-      output_directory: "../build/ios/ipa",
+      output_directory: File.expand_path("../build/ios/ipa", __dir__),
       export_options: {
+        signingStyle: "manual",
         provisioningProfiles: {
           "com.trackeo.client.app" => "match AppStore com.trackeo.client.app"
         }
@@ -37,27 +61,14 @@ platform :ios do
 
   desc "Upload to TestFlight"
   lane :upload_testflight do
-    # Use API key if available, otherwise fall back to Apple ID
-    if ENV["APP_STORE_CONNECT_API_KEY_ID"]
-      api_key = app_store_connect_api_key(
-        key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
-        issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
-        key_content: ENV["APP_STORE_CONNECT_API_KEY"],
-        in_house: false,
-      )
-      upload_to_testflight(
-        api_key: api_key,
-        app_identifier: "com.trackeo.client.app",
-        skip_waiting_for_build_processing: true,
-        notify_external_testers: false,
-      )
-    else
-      upload_to_testflight(
-        app_identifier: "com.trackeo.client.app",
-        skip_waiting_for_build_processing: true,
-        notify_external_testers: false,
-      )
-    end
+    api_key = api_key_if_available
+
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: "com.trackeo.client.app",
+      skip_waiting_for_build_processing: true,
+      notify_external_testers: false,
+    )
   end
 
   desc "Build and upload to TestFlight"
@@ -66,22 +77,27 @@ platform :ios do
     upload_testflight
   end
 
-  desc "Initialize Match (run once locally)"
-  lane :init_match do
+  desc "Sync Match certificates (read-only)"
+  lane :sync_certs do
+    api_key = api_key_if_available
+
     match(
       type: "appstore",
       app_identifier: "com.trackeo.client.app",
-      git_url: ENV["MATCH_GIT_URL"],
-      force_for_new_devices: true
+      readonly: true,
+      api_key: api_key,
     )
   end
 
-  desc "Sync Match certificates (read-only)"
-  lane :sync_certs do
+  desc "Create provisioning profile for new app"
+  lane :create_profile do
+    api_key = api_key_if_available
+
     match(
       type: "appstore",
       app_identifier: "com.trackeo.client.app",
-      readonly: true
+      readonly: false,
+      api_key: api_key,
     )
   end
 end
