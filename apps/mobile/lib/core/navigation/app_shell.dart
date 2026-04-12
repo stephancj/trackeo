@@ -64,7 +64,6 @@ class _TrackeoBottomNav extends StatelessWidget {
           height: 62,
           child: Row(
             children: [
-              // List
               _NavItem(
                 pageIndex: 0,
                 icon: Icons.list_alt_outlined,
@@ -73,7 +72,6 @@ class _TrackeoBottomNav extends StatelessWidget {
                 activeTab: activeTab,
                 onTap: () => onTabChanged(0),
               ),
-              // Map
               _NavItem(
                 pageIndex: 1,
                 icon: Icons.map_outlined,
@@ -85,32 +83,11 @@ class _TrackeoBottomNav extends StatelessWidget {
               // FAB central
               Expanded(
                 child: Center(
-                  child: GestureDetector(
+                  child: _AnimatedFab(
                     onTap: () => _showAddVehicleSnackbar(context),
-                    child: Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.4),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
                   ),
                 ),
               ),
-              // Alerts
               _NavItem(
                 pageIndex: 2,
                 icon: Icons.notifications_outlined,
@@ -119,7 +96,6 @@ class _TrackeoBottomNav extends StatelessWidget {
                 activeTab: activeTab,
                 onTap: () => onTabChanged(2),
               ),
-              // Settings
               _NavItem(
                 pageIndex: 3,
                 icon: Icons.settings_outlined,
@@ -146,7 +122,74 @@ class _TrackeoBottomNav extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
+// ── Animated FAB ─────────────────────────────────────────────────────────────
+
+class _AnimatedFab extends StatefulWidget {
+  final VoidCallback onTap;
+  const _AnimatedFab({required this.onTap});
+
+  @override
+  State<_AnimatedFab> createState() => _AnimatedFabState();
+}
+
+class _AnimatedFabState extends State<_AnimatedFab>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 80),
+      reverseDuration: const Duration(milliseconds: 200),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.88).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) => _ctrl.reverse(),
+      onTapCancel: () => _ctrl.reverse(),
+      child: AnimatedBuilder(
+        animation: _scale,
+        builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
+        child: Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.4),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Nav Item with bounce ──────────────────────────────────────────────────────
+
+class _NavItem extends StatefulWidget {
   final int pageIndex;
   final IconData icon;
   final IconData activeIcon;
@@ -163,30 +206,84 @@ class _NavItem extends StatelessWidget {
     required this.onTap,
   });
 
-  bool get isActive => activeTab == pageIndex;
+  @override
+  State<_NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<_NavItem>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _bounce;
+  late final Animation<double> _scale;
+
+  bool get isActive => widget.activeTab == widget.pageIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _bounce = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(
+          tween: Tween<double>(begin: 1.0, end: 1.25)
+              .chain(CurveTween(curve: Curves.easeOut)),
+          weight: 50),
+      TweenSequenceItem(
+          tween: Tween<double>(begin: 1.25, end: 1.0)
+              .chain(CurveTween(curve: Curves.elasticOut)),
+          weight: 50),
+    ]).animate(_bounce);
+  }
+
+  @override
+  void didUpdateWidget(_NavItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (isActive && oldWidget.activeTab != widget.pageIndex) {
+      _bounce.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _bounce.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: GestureDetector(
-        onTap: onTap,
+        onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppColors.primary : AppColors.textHint,
-              size: 22,
+            AnimatedBuilder(
+              animation: _scale,
+              builder: (_, child) =>
+                  Transform.scale(scale: _scale.value, child: child),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 150),
+                transitionBuilder: (child, anim) =>
+                    ScaleTransition(scale: anim, child: child),
+                child: Icon(
+                  isActive ? widget.activeIcon : widget.icon,
+                  key: ValueKey(isActive),
+                  color: isActive ? AppColors.primary : AppColors.textHint,
+                  size: 22,
+                ),
+              ),
             ),
             const SizedBox(height: 2),
-            Text(
-              label,
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 150),
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                 color: isActive ? AppColors.primary : AppColors.textHint,
               ),
+              child: Text(widget.label),
             ),
           ],
         ),

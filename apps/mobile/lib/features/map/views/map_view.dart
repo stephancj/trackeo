@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../history/views/history_view.dart';
+import '../../../core/navigation/trackeo_route.dart';
 import '../../vehicles/models/vehicle_model.dart';
 import '../../vehicles/views/vehicle_details_view.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
@@ -409,7 +410,7 @@ class _MapViewState extends ConsumerState<MapView>
                 },
                 onHistoryTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  TrackeoRoute(
                     builder: (_) => HistoryView(
                       vehicleId: selected.id,
                       vehicleName: selected.name,
@@ -958,7 +959,7 @@ class _VehicleCard extends ConsumerWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(
+                    TrackeoRoute(
                       builder: (_) => VehicleDetailsView(vehicle: vehicle),
                     ),
                   ),

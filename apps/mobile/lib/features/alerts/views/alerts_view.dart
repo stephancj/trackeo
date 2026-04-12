@@ -17,6 +17,7 @@ import 'widgets/alert_detail_sheet.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
 import '../../../core/providers/geocoding_provider.dart';
 import '../../settings/views/alert_settings_view.dart';
+import '../../../core/navigation/trackeo_route.dart';
 
 // Local _reverseGeocodeProvider removed in favor of global reverseGeocodeProvider
 
@@ -42,7 +43,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
             tooltip: 'Paramètres d\'alertes',
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AlertSettingsView()),
+              TrackeoRoute(builder: (_) => const AlertSettingsView()),
             ),
           ),
         ],
@@ -58,7 +59,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
               onActionTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  TrackeoRoute(
                     builder: (context) => const CreateGeofenceView(),
                   ),
                 );
@@ -181,7 +182,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
               } else if (value == 'view_all') {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
+                  TrackeoRoute(
                       builder: (_) => const AllAlertsView()),
                 );
               }
@@ -257,7 +258,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
           GestureDetector(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(
+              TrackeoRoute(
                 builder: (_) => CreateGeofenceView(geofence: geofence),
               ),
             ),
@@ -515,7 +516,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                         borderRadius: BorderRadius.circular(8),
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          TrackeoRoute(
                             builder: (_) =>
                                 CreateGeofenceView(geofence: geofence),
                           ),
@@ -604,7 +605,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
           InkWell(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AllAlertsView()),
+              TrackeoRoute(builder: (_) => const AllAlertsView()),
             ),
             borderRadius: BorderRadius.circular(16),
             hoverColor: AppColors.primary.withValues(alpha: 0.04),
@@ -673,7 +674,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
     return InkWell(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const CreateGeofenceView()),
+        TrackeoRoute(builder: (context) => const CreateGeofenceView()),
       ),
       borderRadius: BorderRadius.circular(20),
       hoverColor: AppColors.primary.withValues(alpha: 0.04),

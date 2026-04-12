@@ -8,6 +8,7 @@ import '../providers/vehicles_provider.dart';
 import 'widgets/vehicle_card.dart';
 import 'widgets/vehicle_card_skeleton.dart';
 import 'vehicle_details_view.dart';
+import '../../../../core/navigation/trackeo_route.dart';
 
 class FleetListView extends ConsumerStatefulWidget {
   const FleetListView({super.key});
@@ -155,19 +156,23 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
                     child: ListView.builder(
                       padding: const EdgeInsets.only(top: 4, bottom: 20),
                       itemCount: vehicles.length,
-                      itemBuilder: (_, i) => VehicleCard(
-                        vehicle: vehicles[i],
-                        onTap: () {
-                          ref.read(selectedVehicleIdProvider.notifier).state =
-                              vehicles[i].id;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  VehicleDetailsView(vehicle: vehicles[i]),
-                            ),
-                          );
-                        },
+                      itemBuilder: (_, i) => _SlideInCard(
+                        index: i,
+                        key: ValueKey(vehicles[i].id),
+                        child: VehicleCard(
+                          vehicle: vehicles[i],
+                          onTap: () {
+                            ref.read(selectedVehicleIdProvider.notifier).state =
+                                vehicles[i].id;
+                            Navigator.push(
+                              context,
+                              TrackeoRoute(
+                                builder: (context) =>
+                                    VehicleDetailsView(vehicle: vehicles[i]),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   );
@@ -312,6 +317,59 @@ class _EmptyState extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+// ── Staggered entrance animation ────────────────────────────────────────────
+
+class _SlideInCard extends StatefulWidget {
+  final Widget child;
+  final int index;
+
+  const _SlideInCard({super.key, required this.child, required this.index});
+
+  @override
+  State<_SlideInCard> createState() => _SlideInCardState();
+}
+
+class _SlideInCardState extends State<_SlideInCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<Offset> _slide;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.25),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    _fade = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+
+    final delay = Duration(milliseconds: (widget.index * 55).clamp(0, 330));
+    Future.delayed(delay, () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(position: _slide, child: widget.child),
     );
   }
 }

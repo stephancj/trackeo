@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../reports/views/reports_view.dart';
 import 'alert_settings_view.dart';
+import '../../../../core/navigation/trackeo_route.dart';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -170,7 +171,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                     subtitle: 'Trajets, vitesse, inactivité',
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      TrackeoRoute(
                           builder: (_) => const ReportsView()),
                     ),
                   ),
@@ -182,7 +183,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                     subtitle: 'Push, WhatsApp, seuils',
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
+                      TrackeoRoute(
                           builder: (_) => const AlertSettingsView()),
                     ),
                   ),

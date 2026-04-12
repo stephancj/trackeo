@@ -10,16 +10,70 @@ class LoginView extends ConsumerStatefulWidget {
   ConsumerState<LoginView> createState() => _LoginViewState();
 }
 
-class _LoginViewState extends ConsumerState<LoginView> {
+class _LoginViewState extends ConsumerState<LoginView>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscure = true;
 
+  late final AnimationController _entrance;
+  late final Animation<double> _logoFade;
+  late final Animation<Offset> _logoSlide;
+  late final Animation<double> _titleFade;
+  late final Animation<Offset> _titleSlide;
+  late final Animation<double> _formFade;
+  late final Animation<Offset> _formSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+
+    _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+          parent: _entrance, curve: const Interval(0.0, 0.5, curve: Curves.easeOut)),
+    );
+    _logoSlide = Tween<Offset>(
+      begin: const Offset(0, -0.4),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+        parent: _entrance,
+        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic)));
+
+    _titleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+          parent: _entrance, curve: const Interval(0.25, 0.65, curve: Curves.easeOut)),
+    );
+    _titleSlide = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+        parent: _entrance,
+        curve: const Interval(0.25, 0.65, curve: Curves.easeOutCubic)));
+
+    _formFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+          parent: _entrance, curve: const Interval(0.45, 1.0, curve: Curves.easeOut)),
+    );
+    _formSlide = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+        parent: _entrance,
+        curve: const Interval(0.45, 1.0, curve: Curves.easeOutCubic)));
+
+    _entrance.forward();
+  }
+
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _entrance.dispose();
     super.dispose();
   }
 
@@ -46,121 +100,146 @@ class _LoginViewState extends ConsumerState<LoginView> {
             children: [
               const SizedBox(height: 60),
 
-              // Logo centré
-              const Center(child: _TrackeoLogo()),
-              const SizedBox(height: 56),
-
-              // Titre
-              const Text(
-                'Connexion',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryDark,
+              // Logo — slide from top + fade
+              FadeTransition(
+                opacity: _logoFade,
+                child: SlideTransition(
+                  position: _logoSlide,
+                  child: const Center(child: _TrackeoLogo()),
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Accédez à votre flotte GPS',
-                style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
+              const SizedBox(height: 56),
+
+              // Titre — slide from bottom + fade
+              FadeTransition(
+                opacity: _titleFade,
+                child: SlideTransition(
+                  position: _titleSlide,
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Connexion',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Accédez à votre flotte GPS',
+                        style: TextStyle(
+                            fontSize: 15, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 32),
 
-              // Formulaire
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _emailCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined,
-                            color: AppColors.textSecondary),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Email requis';
-                        final emailRegex = RegExp(
-                          r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$',
-                        );
-                        if (!emailRegex.hasMatch(v.trim())) {
-                          return 'Email invalide';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _passwordCtrl,
-                      obscureText: _obscure,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _submit(),
-                      decoration: InputDecoration(
-                        labelText: 'Mot de passe',
-                        prefixIcon: const Icon(Icons.lock_outline,
-                            color: AppColors.textSecondary),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscure
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: AppColors.textHint,
+              // Form — slide from bottom + fade (delayed)
+              FadeTransition(
+                opacity: _formFade,
+                child: SlideTransition(
+                  position: _formSlide,
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _emailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(Icons.email_outlined,
+                                color: AppColors.textSecondary),
                           ),
-                          onPressed: () =>
-                              setState(() => _obscure = !_obscure),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Email requis';
+                            final emailRegex = RegExp(
+                              r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$',
+                            );
+                            if (!emailRegex.hasMatch(v.trim())) {
+                              return 'Email invalide';
+                            }
+                            return null;
+                          },
                         ),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Mot de passe requis';
-                        if (v.length < 6) return '6 caractères minimum';
-                        return null;
-                      },
-                    ),
-
-                    // Message d'erreur
-                    if (auth.error != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.statusAlert.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                              color: AppColors.statusAlert.withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error_outline,
-                                color: AppColors.statusAlert, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                auth.error!,
-                                style: const TextStyle(
-                                    color: AppColors.statusAlert, fontSize: 13),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _passwordCtrl,
+                          obscureText: _obscure,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _submit(),
+                          decoration: InputDecoration(
+                            labelText: 'Mot de passe',
+                            prefixIcon: const Icon(Icons.lock_outline,
+                                color: AppColors.textSecondary),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscure
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: AppColors.textHint,
                               ),
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
                             ),
-                          ],
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Mot de passe requis';
+                            if (v.length < 6) return '6 caractères minimum';
+                            return null;
+                          },
                         ),
-                      ),
-                    ],
 
-                    const SizedBox(height: 28),
-                    ElevatedButton(
-                      onPressed: isLoading ? null : _submit,
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Text('Se connecter'),
+                        if (auth.error != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.statusAlert.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: AppColors.statusAlert
+                                      .withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline,
+                                    color: AppColors.statusAlert, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    auth.error!,
+                                    style: const TextStyle(
+                                        color: AppColors.statusAlert,
+                                        fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 28),
+                        ElevatedButton(
+                          onPressed: isLoading ? null : _submit,
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Text('Se connecter'),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -191,7 +270,6 @@ class _TrackeoLogo extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 1),
-        // Bulle GPS — imite le "o" du logo avec le pin GPS vert
         Stack(
           alignment: Alignment.center,
           children: [
