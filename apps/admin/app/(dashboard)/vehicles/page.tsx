@@ -60,9 +60,9 @@ interface User {
 type Tab = "all" | "online" | "idle" | "offline" | "unassigned";
 
 const STATUS_DOT: Record<string, string> = {
-  online: "bg-green-500",
-  idle: "bg-yellow-400",
-  offline: "bg-zinc-400",
+  online: "bg-trackeo-online",
+  idle: "bg-trackeo-idle",
+  offline: "bg-trackeo-offline",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -75,7 +75,7 @@ const REFRESH_INTERVAL = 30_000;
 
 function BatteryBar({ pct }: { pct: number | null | undefined }) {
   if (pct == null) return <span className="text-muted-foreground text-xs">—</span>;
-  const color = pct > 50 ? "bg-green-500" : pct > 20 ? "bg-yellow-400" : "bg-red-500";
+  const color = pct > 50 ? "bg-trackeo-online" : pct > 20 ? "bg-trackeo-warning" : "bg-trackeo-alert";
   return (
     <div className="flex items-center gap-1.5">
       <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
@@ -176,7 +176,7 @@ export default function VehiclesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Vehicles</h1>
+        <h1 className="text-2xl font-bold text-trackeo-dark">Vehicles</h1>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => router.push("/map")} className="gap-1.5">
             <Map className="h-3.5 w-3.5" />
@@ -195,10 +195,10 @@ export default function VehiclesPage() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
               tab === t.key
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-card text-muted-foreground border-border hover:text-foreground"
+                ? "bg-trackeo-primary text-white border-trackeo-primary"
+                : "bg-card text-muted-foreground border-border hover:bg-accent hover:text-foreground"
             }`}
           >
             {t.label}
@@ -269,14 +269,14 @@ export default function VehiclesPage() {
                     {v.position?.ignition == null ? (
                       <span className="text-muted-foreground text-xs">—</span>
                     ) : v.position.ignition ? (
-                      <span className="text-xs font-medium text-green-700">🔑 On</span>
+                      <span className="text-xs font-medium text-trackeo-online">🔑 On</span>
                     ) : (
                       <span className="text-xs text-muted-foreground">Off</span>
                     )}
                   </TableCell>
                   <TableCell>
                     {v.openAlertsCount > 0 ? (
-                      <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-semibold">
+                      <span className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-trackeo-alert text-white text-xs font-semibold">
                         {v.openAlertsCount}
                       </span>
                     ) : (

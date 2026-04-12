@@ -31,6 +31,14 @@ const TYPE_LABELS: Record<string, string> = {
   sos: "SOS",
 };
 
+const TYPE_COLORS: Record<string, string> = {
+  geofence_enter: "bg-trackeo-pastel-green text-trackeo-online",
+  geofence_exit: "bg-trackeo-pastel-orange text-amber-600",
+  low_battery: "bg-trackeo-pastel-red text-trackeo-alert",
+  speed_limit: "bg-trackeo-pastel-red text-trackeo-alert",
+  sos: "bg-trackeo-pastel-red text-trackeo-alert",
+};
+
 const REFRESH_INTERVAL = 60_000;
 
 export default function DashboardPage() {
@@ -82,43 +90,49 @@ export default function DashboardPage() {
       label: "Users",
       value: String(users),
       icon: Users,
-      color: "text-blue-500",
+      iconBg: "bg-trackeo-pastel-blue",
+      iconColor: "text-trackeo-idle",
     },
     {
       label: "Vehicles",
       value: `${online + idle}/${vehicles.length}`,
       sub: "active",
       icon: Car,
-      color: "text-green-500",
+      iconBg: "bg-trackeo-pastel-green",
+      iconColor: "text-trackeo-online",
     },
     {
       label: "Open Alerts",
       value: String(openAlerts.length),
       icon: Bell,
-      color: openAlerts.length > 0 ? "text-red-500" : "text-muted-foreground",
+      iconBg: openAlerts.length > 0 ? "bg-trackeo-pastel-red" : "bg-muted",
+      iconColor: openAlerts.length > 0 ? "text-trackeo-alert" : "text-muted-foreground",
     },
     {
       label: "Unassigned",
       value: String(unassigned),
       sub: "vehicles",
       icon: AlertTriangle,
-      color: unassigned > 0 ? "text-yellow-500" : "text-muted-foreground",
+      iconBg: unassigned > 0 ? "bg-trackeo-pastel-orange" : "bg-muted",
+      iconColor: unassigned > 0 ? "text-trackeo-warning" : "text-muted-foreground",
     },
   ];
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-trackeo-dark mb-6">Dashboard</h1>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        {cards.map(({ label, value, sub, icon: Icon, color }) => (
+        {cards.map(({ label, value, sub, icon: Icon, iconBg, iconColor }) => (
           <Card key={label}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-              <Icon className={`h-5 w-5 ${color}`} />
+              <div className={`h-9 w-9 rounded-lg ${iconBg} flex items-center justify-center`}>
+                <Icon className={`h-4.5 w-4.5 ${iconColor}`} />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold tabular-nums">{value}</div>
+              <div className="text-3xl font-bold tabular-nums text-foreground">{value}</div>
               {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
             </CardContent>
           </Card>
@@ -128,50 +142,52 @@ export default function DashboardPage() {
       {recentOpen.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold">Open Alerts</h2>
-            <a href="/alerts" className="text-xs text-primary hover:underline">
+            <h2 className="text-base font-semibold text-foreground">Open Alerts</h2>
+            <a href="/alerts" className="text-xs font-medium text-trackeo-primary hover:text-trackeo-primary-dark transition-colors">
               View all →
             </a>
           </div>
-          <div className="rounded-md border bg-card divide-y">
-            {recentOpen.map((alert) => (
-              <div key={alert.id} className="flex items-center gap-3 px-4 py-3">
-                <span className="h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
-                <Badge variant="destructive" className="shrink-0 text-xs">
-                  {TYPE_LABELS[alert.type] ?? alert.type}
-                </Badge>
-                <span className="text-xs font-mono text-muted-foreground shrink-0">
-                  {alert.deviceId}
-                </span>
-                {alert.message && (
-                  <span className="text-sm text-muted-foreground truncate flex-1">
-                    {alert.message}
+          <Card>
+            <div className="divide-y divide-border">
+              {recentOpen.map((alert) => (
+                <div key={alert.id} className="flex items-center gap-3 px-4 py-3">
+                  <span className="h-2 w-2 rounded-full bg-trackeo-alert shrink-0 animate-pulse" />
+                  <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold shrink-0 ${TYPE_COLORS[alert.type] ?? "bg-muted text-muted-foreground"}`}>
+                    {TYPE_LABELS[alert.type] ?? alert.type}
                   </span>
-                )}
-                <span
-                  className="text-xs text-muted-foreground shrink-0 ml-auto"
-                  title={new Date(alert.createdAt).toLocaleString()}
-                >
-                  {relativeTime(alert.createdAt)}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleAck(alert)}
-                  disabled={acking === alert.id}
-                  className="gap-1 h-7 text-xs shrink-0"
-                >
-                  <CheckCheck className="h-3 w-3" />
-                  {acking === alert.id ? "..." : "Ack"}
-                </Button>
-              </div>
-            ))}
-          </div>
+                  <span className="text-xs font-mono text-muted-foreground shrink-0">
+                    {alert.deviceId}
+                  </span>
+                  {alert.message && (
+                    <span className="text-sm text-muted-foreground truncate flex-1">
+                      {alert.message}
+                    </span>
+                  )}
+                  <span
+                    className="text-xs text-muted-foreground shrink-0 ml-auto"
+                    title={new Date(alert.createdAt).toLocaleString()}
+                  >
+                    {relativeTime(alert.createdAt)}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleAck(alert)}
+                    disabled={acking === alert.id}
+                    className="gap-1 h-7 text-xs shrink-0 hover:bg-trackeo-pastel-green hover:text-trackeo-online hover:border-trackeo-online/30"
+                  >
+                    <CheckCheck className="h-3 w-3" />
+                    {acking === alert.id ? "..." : "Ack"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
       ) : alerts.length > 0 ? (
-        <div className="rounded-md border bg-card px-4 py-6 text-center">
+        <Card className="px-4 py-6 text-center">
           <p className="text-muted-foreground text-sm">All clear — no open alerts.</p>
-        </div>
+        </Card>
       ) : null}
     </div>
   );

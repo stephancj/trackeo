@@ -127,7 +127,7 @@ export default function AlertsPage() {
             onClick={() => setTab(t.key)}
             className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
               tab === t.key
-                ? "bg-primary text-primary-foreground border-primary"
+                ? "bg-trackeo-primary text-white border-trackeo-primary"
                 : "bg-card text-muted-foreground border-border hover:text-foreground"
             }`}
           >

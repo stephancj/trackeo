@@ -65,9 +65,9 @@ interface AllUser {
 }
 
 const STATUS_DOT: Record<string, string> = {
-  online: "bg-green-500",
-  idle: "bg-yellow-400",
-  offline: "bg-zinc-400",
+  online: "bg-trackeo-online",
+  idle: "bg-trackeo-idle",
+  offline: "bg-trackeo-offline",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -180,7 +180,7 @@ export default function UserDetailPage() {
                 rel="noopener noreferrer"
                 className="gap-1.5"
               >
-                <MessageCircle className="h-3.5 w-3.5 text-green-600" />
+                <MessageCircle className="h-3.5 w-3.5 text-trackeo-online" />
                 WhatsApp
               </a>
             </Button>
@@ -220,7 +220,7 @@ export default function UserDetailPage() {
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
             Status
           </div>
-          <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${user.isActive ? "text-green-700" : "text-muted-foreground"}`}>
+          <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${user.isActive ? "text-trackeo-online" : "text-muted-foreground"}`}>
             {user.isActive ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
             {user.isActive ? "Active" : "Inactive"}
           </span>
@@ -253,13 +253,13 @@ export default function UserDetailPage() {
           </div>
           <div>
             <dt className="text-muted-foreground">Push notifications</dt>
-            <dd className={user.alertViaPush ? "text-green-700 font-medium" : "text-muted-foreground"}>
+            <dd className={user.alertViaPush ? "text-trackeo-online font-medium" : "text-muted-foreground"}>
               {user.alertViaPush ? "Enabled" : "Disabled"}
             </dd>
           </div>
           <div>
             <dt className="text-muted-foreground">WhatsApp alerts</dt>
-            <dd className={user.alertViaWhatsapp ? "text-green-700 font-medium" : "text-muted-foreground"}>
+            <dd className={user.alertViaWhatsapp ? "text-trackeo-online font-medium" : "text-muted-foreground"}>
               {user.alertViaWhatsapp ? "Enabled" : "Disabled"}
             </dd>
           </div>

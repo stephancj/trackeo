@@ -26,9 +26,9 @@ interface Vehicle {
 }
 
 const STATUS_DOT: Record<string, string> = {
-  online: "bg-green-500",
-  idle: "bg-yellow-400",
-  offline: "bg-zinc-400",
+  online: "bg-trackeo-online",
+  idle: "bg-trackeo-idle",
+  offline: "bg-trackeo-offline",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -91,13 +91,13 @@ export default function FleetMapPage() {
           <h1 className="text-lg font-bold">Fleet Map</h1>
           <div className="flex items-center gap-3 text-sm">
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-green-500" /> {counts.online} online
+              <span className="h-2 w-2 rounded-full bg-trackeo-online" /> {counts.online} online
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-yellow-400" /> {counts.idle} idle
+              <span className="h-2 w-2 rounded-full bg-trackeo-idle" /> {counts.idle} idle
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-zinc-400" /> {counts.offline} offline
+              <span className="h-2 w-2 rounded-full bg-trackeo-offline" /> {counts.offline} offline
             </span>
           </div>
         </div>
@@ -148,7 +148,7 @@ export default function FleetMapPage() {
                     <div className="mt-1 flex items-center gap-1.5">
                       <div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${v.position.battery > 50 ? "bg-green-500" : v.position.battery > 20 ? "bg-yellow-400" : "bg-red-500"}`}
+                          className={`h-full rounded-full ${v.position.battery > 50 ? "bg-trackeo-online" : v.position.battery > 20 ? "bg-trackeo-idle" : "bg-trackeo-alert"}`}
                           style={{ width: `${v.position.battery}%` }}
                         />
                       </div>

@@ -97,9 +97,9 @@ type ReportTab = "activity" | "trips" | "violations" | "idle";
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<string, string> = {
-  online: "bg-green-500",
-  idle: "bg-yellow-400",
-  offline: "bg-zinc-400",
+  online: "bg-trackeo-online",
+  idle: "bg-trackeo-idle",
+  offline: "bg-trackeo-offline",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -127,7 +127,7 @@ const PERIOD_LABELS: Record<ReportPeriod, string> = {
 function BatteryBar({ pct }: { pct: number | null | undefined }) {
   if (pct == null) return <span className="text-muted-foreground">—</span>;
   const color =
-    pct > 50 ? "bg-green-500" : pct > 20 ? "bg-yellow-400" : "bg-red-500";
+    pct > 50 ? "bg-trackeo-online" : pct > 20 ? "bg-trackeo-idle" : "bg-trackeo-alert";
   return (
     <div className="flex items-center gap-2">
       <div className="w-20 h-2.5 bg-muted rounded-full overflow-hidden">
@@ -765,7 +765,7 @@ export default function VehicleDetailPage() {
                   {vehicle.position?.ignition == null ? (
                     "—"
                   ) : vehicle.position.ignition ? (
-                    <span className="text-green-700">🔑 On</span>
+                    <span className="text-trackeo-online">🔑 On</span>
                   ) : (
                     "Off"
                   )}
@@ -844,7 +844,7 @@ export default function VehicleDetailPage() {
                       rel="noopener noreferrer"
                       className="gap-1.5"
                     >
-                      <MessageCircle className="h-3.5 w-3.5 text-green-600" />
+                      <MessageCircle className="h-3.5 w-3.5 text-trackeo-online" />
                       WhatsApp
                     </a>
                   </Button>

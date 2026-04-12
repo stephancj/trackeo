@@ -191,7 +191,7 @@ export default function UsersPage() {
             onClick={() => setFilter(f)}
             className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors capitalize ${
               filter === f
-                ? "bg-primary text-primary-foreground border-primary"
+                ? "bg-trackeo-primary text-white border-trackeo-primary"
                 : "bg-card text-muted-foreground border-border hover:text-foreground"
             }`}
           >
@@ -263,7 +263,7 @@ export default function UsersPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="text-green-600 hover:text-green-700"
+                          className="text-trackeo-online hover:text-trackeo-primary-dark"
                           title="WhatsApp"
                         >
                           <MessageCircle className="h-3.5 w-3.5" />
@@ -285,8 +285,8 @@ export default function UsersPage() {
                     <Badge variant={u.role === "admin" ? "default" : "secondary"}>{u.role}</Badge>
                   </TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${u.isActive !== false ? "text-green-700" : "text-muted-foreground"}`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${u.isActive !== false ? "bg-green-500" : "bg-zinc-400"}`} />
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${u.isActive !== false ? "text-trackeo-online" : "text-muted-foreground"}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${u.isActive !== false ? "bg-trackeo-online" : "bg-trackeo-offline"}`} />
                       {u.isActive !== false ? "Active" : "Inactive"}
                     </span>
                   </TableCell>

@@ -133,9 +133,9 @@ export function GlobalSearch() {
   }
 
   const ICON: Record<string, React.ReactNode> = {
-    user: <User className="h-4 w-4 text-blue-500" />,
-    vehicle: <Car className="h-4 w-4 text-green-600" />,
-    alert: <Bell className="h-4 w-4 text-orange-500" />,
+    user: <User className="h-4 w-4 text-trackeo-idle" />,
+    vehicle: <Car className="h-4 w-4 text-trackeo-online" />,
+    alert: <Bell className="h-4 w-4 text-trackeo-warning" />,
   };
 
   if (!open) return null;

@@ -166,7 +166,7 @@ function EditSheet({
                   className={cn(
                     "flex-1 rounded-md border py-2 text-sm font-medium capitalize transition-colors",
                     plan === p
-                      ? "bg-primary text-primary-foreground border-primary"
+                      ? "bg-trackeo-primary text-white border-trackeo-primary"
                       : "text-muted-foreground hover:bg-muted"
                   )}
                 >
@@ -195,7 +195,7 @@ function EditSheet({
                       className={cn(
                         "flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors",
                         status === s
-                          ? "bg-primary text-primary-foreground border-primary"
+                          ? "bg-trackeo-primary text-white border-trackeo-primary"
                           : "text-muted-foreground hover:bg-muted"
                       )}
                     >
