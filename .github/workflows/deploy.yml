@@ -329,12 +329,19 @@ jobs:
           sed -i '' "s/^version: \(.*\)+.*/version: \1+$BUILD_NUMBER/" pubspec.yaml
           cat pubspec.yaml | grep "^version:"
 
+      - name: Write API key to file
+        env:
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          mkdir -p apps/mobile/private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" > apps/mobile/private_keys/AuthKey.p8
+
       - name: Build & Upload to TestFlight
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_API_KEY_PATH: ${{ github.workspace }}/apps/mobile/private_keys/AuthKey.p8
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
