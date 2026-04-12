@@ -106,7 +106,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             git pull origin main &&
-            docker rm -f trackeo-api 2>/dev/null || true &&
+            docker ps -a --filter 'name=trackeo-api' -q | xargs -r docker rm -f &&
             DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d --build api
           "
 
@@ -191,7 +191,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             git pull origin main &&
-            docker rm -f trackeo-admin 2>/dev/null || true &&
+            docker ps -a --filter 'name=trackeo-admin' -q | xargs -r docker rm -f &&
             DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d --build admin
           "
 
