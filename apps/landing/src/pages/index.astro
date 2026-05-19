@@ -2,12 +2,12 @@
 import Layout from '../layouts/Layout.astro';
 
 const heroSignals = [
-  'Suivi GPS en direct toutes les 10 secondes',
-  'Historique brut, trip log, idle time, vitesse et geofences',
-  'Push OneSignal et alertes WhatsApp ciblees',
-  'PWA mobile first, sans App Store',
-  'Back-office admin pour users, devices, alertes et abonnements',
-  'Compatibilite Traccar pour 900+ protocoles GPS',
+  'Voir vos véhicules bouger en direct sur la carte',
+  'Revoir les trajets, les pauses et les derniers déplacements',
+  'Recevoir une alerte utile sur l’application ou WhatsApp',
+  'Ouvrir facilement Trackeo sur téléphone, tablette ou ordinateur',
+  'Partager les mêmes infos avec la personne qui vous aide',
+  'Pensé pour une utilisation simple, même avec plusieurs véhicules',
 ];
 
 const operationalFeatures = [
@@ -18,12 +18,12 @@ const operationalFeatures = [
     description:
       'Trackeo montre sur la carte la position, la vitesse, la batterie, le signal et le statut de chaque véhicule sans bruit visuel inutile.',
     bullets: [
-      'Vue flotte et détail véhicule depuis la même PWA',
-      'Statut online, arrêté ou hors ligne en lecture immédiate',
-      'Recherche par nom, plaque ou numéro de série',
+      'Voir tous vos véhicules sur une seule carte',
+      'Savoir s\'il roule, s\'il est arrêté ou s\'il ne répond plus',
+      'Retrouver vite un véhicule par nom ou par plaque',
     ],
     stat: '10 s',
-    note: 'Polling stable pour le MVP Flutter Web',
+    note: 'mise à jour régulière pour garder le bon rythme',
     tone: 'mint',
   },
   {
@@ -31,59 +31,59 @@ const operationalFeatures = [
     kicker: 'Historique et rapports',
     title: 'Comprendre le trajet, pas seulement le point GPS',
     description:
-      'L\'historique dessine la trace, reconstruit les segments utiles et résume distance, durée, vitesse max, idle time et activité par geofence.',
+      'L\'historique vous aide à revoir où le véhicule est passé, combien de temps il a roulé, quand il s\'est arrêté et quelle distance il a parcourue.',
     bullets: [
-      'Trip log reconstitué depuis tc_positions',
-      'Résumé distance, inactivité, vitesse excessive',
-      'Lecture cohérente côté client et côté admin',
+      'Revoir facilement les trajets de la journée',
+      'Retrouver distance, durée et vitesse la plus élevée',
+      'Comprendre les arrêts sans devoir tout reconstituer soi-même',
     ],
     stat: '30 jours',
-    note: 'Fenêtre claire pour les requêtes et le diagnostic',
+    note: 'pour revoir les derniers déplacements plus sereinement',
     tone: 'amber',
   },
   {
     slug: 'alerts',
-    kicker: 'Geofences et alertes',
+    kicker: 'Zones et alertes',
     title: 'Recevoir le bon signal avant l\'appel du chauffeur',
     description:
-      'Zones d\'entrée et de sortie, batterie faible, vitesse excessive, push, WhatsApp et réglages par utilisateur font partie du flux normal du produit.',
+      'Vous choisissez une zone à surveiller et Trackeo vous prévient quand un véhicule entre, sort, roule trop vite ou commence à manquer de batterie.',
     bullets: [
-      'Création de zone cercle depuis la carte',
-      'Alertes ciblées via subscription ID OneSignal',
-      'Ack, visibilité et statistiques dans le back-office',
+      'Créer une zone de sécurité directement sur la carte',
+      'Recevoir les messages sur l\'application ou WhatsApp',
+      'Choisir simplement les alertes que vous voulez garder',
     ],
-    stat: '30 s',
-    note: 'Cron de contrôle et cache anti-spam côté backend',
+    stat: 'quelques secondes',
+    note: 'pour réagir vite quand quelque chose change',
     tone: 'blue',
   },
   {
     slug: 'ops',
-    kicker: 'Exploitation et admin',
-    title: 'Le terrain et le support lisent la même vérité',
+    kicker: 'Pour vous et votre équipe',
+    title: 'Tout le monde garde les mêmes repères',
     description:
-      'Le dashboard admin couvre utilisateurs, devices, geofences, alertes, rapports, abonnements et configuration sans séparer le support du produit réel.',
+      'Quand plusieurs personnes suivent les mêmes véhicules, Trackeo garde les informations au même endroit pour éviter les appels inutiles et les oublis.',
     bullets: [
-      'Assignation device vers utilisateur',
-      'Rapports globaux et détail par véhicule',
-      'Gestion des plans, statuts et paramètres système',
+      'Le propriétaire voit ses véhicules en un coup d\'oeil',
+      'La personne qui aide retrouve plus vite les bonnes infos',
+      'Les véhicules, les alertes et l\'historique restent bien rangés',
     ],
-    stat: '7 modules',
-    note: 'Une seule plateforme pour l\'exploitation et le support',
+    stat: '1 seul espace',
+    note: 'pour parler de la même chose au bon moment',
     tone: 'ink',
   },
   {
     slug: 'reach',
-    kicker: 'Déploiement simple',
-    title: 'Ouvrir partout aujourd\'hui, étendre demain sans réécrire',
+    kicker: 'Accès facile',
+    title: 'Ouvrir Trackeo sur l\'écran que vous avez déjà',
     description:
-      'La PWA Flutter permet un accès immédiat sur web, mobile ou desktop, pendant que Traccar gère la diversité des traceurs et prépare la suite native.',
+      'Trackeo est pensé pour être ouvert simplement sur téléphone, tablette ou ordinateur, sans vous compliquer la vie au moment de consulter vos véhicules.',
     bullets: [
-      'Flutter Web maintenant, mobile natif ensuite',
-      'Compatible Teltonika, Coban, GT06, Sinotrack et autres',
-      'Workflow local first pour tester avant le VPS',
+      'Pratique sur téléphone quand vous êtes dehors',
+      'Confortable sur ordinateur pour revoir l\'ensemble',
+      'Toujours la même lecture simple d\'un écran à l\'autre',
     ],
-    stat: '+900',
-    note: 'Protocoles pris en charge par Traccar',
+    stat: '3 écrans',
+    note: 'téléphone, tablette ou ordinateur',
     tone: 'paper',
   },
 ];
@@ -93,12 +93,12 @@ const roadmapPhases = [
     label: 'En service',
     title: 'Le coeur du produit est déjà en ligne',
     copy:
-      'La proposition Trackeo existe aujourd\'hui: live tracking, historique, rapports, geofences, alertes multi-canales, administration et plans.',
+      'Les bases utiles sont déjà là pour suivre un véhicule, revoir ses trajets et recevoir les alertes qui comptent.',
     items: [
-      'Tracking en direct avec statuts, batterie et signal',
-      'Historique trajet, trip log, vitesse, idle et activité geofence',
-      'Push OneSignal, WhatsApp, réglages d\'alerte par utilisateur',
-      'Admin users, devices, alerts, reports, subscriptions et settings',
+      'Suivi en direct avec vitesse, batterie et état du véhicule',
+      'Historique des trajets, des pauses et des dernières alertes',
+      'Messages sur l\'application et sur WhatsApp',
+      'Un espace de gestion pour garder les véhicules bien organisés',
     ],
     tone: 'mint',
   },
@@ -106,12 +106,12 @@ const roadmapPhases = [
     label: 'Prochaine vague',
     title: 'Rendre l\'activation et la réaction encore plus fluides',
     copy:
-      'La prochaine étape rapproche le produit du terrain: onboarding plus net, support plus rapide, sécurité mieux orchestrée.',
+      'La suite vise surtout à rendre le démarrage plus simple et l\'accompagnement plus rassurant pour les premiers utilisateurs.',
     items: [
-      'Activation appareil par QR ou OTP',
-      'Mode vol, partage live et escalade support',
-      'Flow installateur avec VIN et photos de pose',
-      'Abonnements plus complets et parcours d\'activation améliorés',
+      'Ajouter un véhicule plus rapidement',
+      'Partager plus facilement le suivi quand il le faut',
+      'Mieux accompagner en cas d\'alerte ou de doute',
+      'Guider pas à pas les premières mises en route',
     ],
     tone: 'blue',
   },
@@ -119,54 +119,54 @@ const roadmapPhases = [
     label: 'Extension',
     title: 'Passer de la flotte suivie à la flotte opérée',
     copy:
-      'La vision produit s\'élargit vers la télémétrie, la livraison, les partenaires et le natif mobile sans perdre la même base.',
+      'Plus tard, Trackeo pourra aller plus loin autour du véhicule sans perdre cette même logique simple et claire.',
     items: [
-      'Carburant, distance agrégée et exports avancés',
-      'Livraison et collecte avec tracking client',
-      'Webhook partenaires, B2B multi-équipe et RBAC',
-      'Applications mobiles natives, OTA et analytics avancées',
+      'Plus de suivi autour des trajets et de l\'usage du véhicule',
+      'Davantage d\'aide pour les familles et les petites flottes',
+      'Des services pensés aussi pour les équipes qui grandissent',
+      'Une ouverture plus large sur mobile et sur le terrain',
     ],
     tone: 'amber',
   },
 ];
 
-const plans = [
+const launchCards = [
   {
-    name: 'Gratuit',
-    price: '0',
-    unit: 'Ariary / mois',
-    description: 'Pour tester la plateforme avec un seul véhicule.',
+    name: 'Premiers accès',
+    price: 'Bientôt',
+    unit: 'ouverture progressive',
+    description: 'Nous ouvrons Trackeo petit à petit pour bien accompagner les premiers utilisateurs.',
     features: [
-      '1 véhicule',
-      'Suivi GPS en direct',
-      'Alertes push',
-      'Accès PWA',
+      'Découvrir la carte en direct',
+      'Recevoir les premières alertes utiles',
+      'Revoir les trajets sans difficulté',
+      'Prendre en main l\'application simplement',
     ],
     tone: 'paper',
   },
   {
-    name: 'Basic',
-    price: '45K',
-    unit: 'Ariary / mois',
-    description: 'Pour une petite flotte qui veut géofences, WhatsApp et rapports.',
+    name: 'Liste d\'attente',
+    price: 'Coming soon',
+    unit: 'accès à venir',
+    description: 'Une ouverture plus large arrive. Vous pourrez bientôt faire partie des prochains utilisateurs.',
     features: [
-      '5 véhicules',
-      'Geofencing complet',
-      'Alertes WhatsApp et push',
-      'Rapports d\'activité et exports',
+      'Un accès plus simple pour démarrer',
+      'Une découverte guidée étape par étape',
+      'Pensé pour particuliers et petites flottes',
+      'Des nouvelles dès l\'ouverture plus large',
     ],
     tone: 'mint',
   },
   {
-    name: 'Premium',
-    price: 'Sur devis',
-    unit: 'B2B et flotte étendue',
-    description: 'Pour les équipes qui veulent le back-office complet et une montée en charge accompagnée.',
+    name: 'Ouverture plus large',
+    price: 'Prochainement',
+    unit: 'pour encore plus de monde',
+    description: 'Trackeo est pensé pour s\'ouvrir ensuite à davantage de véhicules et à des usages plus larges.',
     features: [
-      'Véhicules illimités',
-      'Tout Basic inclus',
-      'Support prioritaire',
-      'Administration et intégration avancées',
+      'Plus de véhicules à suivre',
+      'Plus de partage quand c\'est utile',
+      'Plus d\'aide pour les alertes importantes',
+      'Toujours une interface claire à utiliser',
     ],
     tone: 'ink',
   },
@@ -175,21 +175,21 @@ const plans = [
 const steps = [
   {
     number: '01',
-    title: 'Brancher ou déclarer le traceur',
+    title: 'Brancher le boîtier dans le véhicule',
     text:
-      'Traccar permet d\'absorber la diversité des appareils du marché malgache, sans inventer un protocole maison.',
+      'Une fois le boîtier en place, Trackeo peut commencer à recevoir les positions du véhicule.',
   },
   {
     number: '02',
-    title: 'Associer le véhicule au bon compte',
+    title: 'Ajouter le véhicule à votre espace',
     text:
-      'Aujourd\'hui via l\'admin, demain via QR et OTP. Le but reste le même: une activation sans friction.',
+      'Le véhicule apparaît dans votre espace pour que vous puissiez le retrouver facilement ensuite.',
   },
   {
     number: '03',
-    title: 'Piloter depuis la PWA et le back-office',
+    title: 'Suivre, recevoir, réagir',
     text:
-      'Le propriétaire suit sa flotte, le support voit la même chose, l\'admin garde la main sur les devices et les alertes.',
+      'Vous voyez les trajets, vous recevez les alertes et vous gardez une lecture simple de la situation.',
   },
 ];
 ---
@@ -203,7 +203,7 @@ const steps = [
         </span>
         <span class="brand-copy">
           <strong>Trackeo</strong>
-          <span>tracking GPS pensé pour Madagascar</span>
+          <span>application GPS pensée pour Madagascar</span>
         </span>
       </a>
 
@@ -211,10 +211,10 @@ const steps = [
         <a href="#plateforme">Plateforme</a>
         <a href="#mise-en-route">Démarrage</a>
         <a href="#roadmap">Cap produit</a>
-        <a href="#pricing">Tarifs</a>
+        <a href="#coming-soon">Bientôt</a>
       </nav>
 
-      <a href="https://trackeo.zenkai.mg" class="button button-dark">Ouvrir la PWA</a>
+      <a href="https://trackeo.zenkai.mg" class="button button-dark">Découvrir Trackeo</a>
     </div>
   </header>
 
@@ -222,20 +222,19 @@ const steps = [
     <section class="hero">
       <div class="shell hero-grid">
         <div class="hero-copy reveal">
-          <p class="eyebrow">Une plateforme GPS calme, lisible et prête pour le terrain.</p>
+          <p class="eyebrow">Une application simple pour savoir où est votre véhicule, sans stress.</p>
           <h1>
-            Voir chaque véhicule, comprendre chaque trajet, recevoir chaque alerte
-            avant qu&apos;elle ne devienne un problème.
+            Voir où est votre véhicule, revoir son trajet, être averti au bon moment.
           </h1>
           <p class="hero-body">
-            Trackeo réunit la carte live, l&apos;historique, les geofences, les alertes,
-            les rapports et l&apos;administration dans une expérience claire, mobile first
-            et adaptée aux réalités d&apos;une flotte à Madagascar.
+            Trackeo vous aide à suivre vos véhicules sur la carte, revoir les trajets,
+            recevoir les alertes utiles et garder tout au même endroit, dans une
+            expérience claire et adaptée au quotidien à Madagascar.
           </p>
 
           <div class="hero-actions">
-            <a href="https://trackeo.zenkai.mg" class="button button-brand">Essayer la PWA</a>
-            <a href="#roadmap" class="button button-ghost">Voir le cap produit</a>
+            <a href="https://trackeo.zenkai.mg" class="button button-brand">Voir l&apos;application</a>
+            <a href="#coming-soon" class="button button-ghost">Voir ce qui arrive bientôt</a>
           </div>
 
           <ul class="hero-proof">
@@ -251,14 +250,14 @@ const steps = [
         <div class="hero-scene reveal reveal-delay-2">
           <div class="hero-slip hero-slip-top">
             <span class="slip-dot slip-dot-blue"></span>
-            <span>Zone “Dépôt Nord” franchie, WhatsApp envoyé en 12 s</span>
+            <span>Le véhicule vient d&apos;entrer dans la zone surveillée, message envoyé</span>
           </div>
 
           <div class="hero-board">
             <div class="hero-top-grid">
               <div class="map-sheet">
                 <div class="map-meta">
-                  <span class="mini-kicker">Flotte live</span>
+                  <span class="mini-kicker">Suivi en direct</span>
                   <span class="mini-pill">Antananarivo centre</span>
                 </div>
 
@@ -304,11 +303,11 @@ const steps = [
 
                 <div class="map-tag map-tag-main">
                   <strong>Camion-01</strong>
-                  <span>72 km/h, batterie 84%, GPS OK</span>
+                  <span>72 km/h, batterie 84%</span>
                 </div>
                 <div class="map-tag map-tag-fence">
-                  <strong>Geofence active</strong>
-                  <span>Zone Bureau, entrée confirmée</span>
+                  <strong>Zone surveillée</strong>
+                  <span>Bureau, entrée confirmée</span>
                 </div>
               </div>
 
@@ -333,16 +332,16 @@ const steps = [
                     <span class="tone-dot tone-dot-red"></span>
                     <div>
                       <strong>1 batterie faible</strong>
-                      <span>alerte générée côté backend</span>
+                      <span>message envoyé pour prévenir rapidement</span>
                     </div>
                   </div>
                 </div>
 
                 <div class="status-sheet status-sheet-contrast">
-                  <span class="mini-kicker">Stack prête</span>
+                  <span class="mini-kicker">Simple à ouvrir</span>
                   <p>
-                    Traccar pour l&apos;ingestion, NestJS pour l&apos;API, Flutter Web pour
-                    la PWA, Next.js pour l&apos;admin.
+                    Consultez Trackeo facilement sur téléphone, tablette ou ordinateur,
+                    selon l&apos;écran que vous avez sous la main.
                   </p>
                 </div>
               </div>
@@ -352,8 +351,8 @@ const steps = [
               <div class="feed-sheet">
                 <div class="feed-head">
                   <div>
-                    <span class="mini-kicker">Flux d&apos;alertes</span>
-                    <h2>Push, WhatsApp, support</h2>
+                    <span class="mini-kicker">Alertes et messages</span>
+                    <h2>Être averti sans devoir surveiller tout le temps</h2>
                   </div>
                   <span class="mini-pill mini-pill-alert">Temps réel</span>
                 </div>
@@ -362,7 +361,7 @@ const steps = [
                   <li>
                     <span class="feed-accent feed-accent-blue"></span>
                     <div>
-                      <strong>Entrée geofence</strong>
+                      <strong>Entrée dans une zone</strong>
                       <span>Camion-01, Bureau Central, il y a 12 s</span>
                     </div>
                   </li>
@@ -376,18 +375,18 @@ const steps = [
                   <li>
                     <span class="feed-accent feed-accent-amber"></span>
                     <div>
-                      <strong>Vitesse excessive</strong>
-                      <span>Voiture-02, 124 km/h, épisode groupé</span>
+                      <strong>Vitesse élevée</strong>
+                      <span>Voiture-02, 124 km/h, message envoyé</span>
                     </div>
                   </li>
                 </ul>
 
                 <div class="feed-footer">
                   <div>
-                    <span class="mini-kicker">Rapport de la semaine</span>
-                    <strong>1 234 km parcourus, 4 trajets reconstitués</strong>
+                    <span class="mini-kicker">Cette semaine</span>
+                    <strong>1 234 km parcourus, trajets revus en un coup d&apos;oeil</strong>
                   </div>
-                  <span class="mini-pill">CSV prêt</span>
+                  <span class="mini-pill">Historique clair</span>
                 </div>
               </div>
 
@@ -396,7 +395,7 @@ const steps = [
                   <div class="phone-screen">
                     <div class="phone-head">
                       <div>
-                        <span class="mini-kicker">PWA mobile</span>
+                        <span class="mini-kicker">Sur mobile</span>
                         <strong>Mes véhicules</strong>
                       </div>
                       <span class="phone-badge">3 actifs</span>
@@ -425,9 +424,9 @@ const steps = [
                     </div>
 
                     <div class="phone-settings">
-                      <span class="mini-kicker">Réglages d&apos;alerte</span>
+                      <span class="mini-kicker">Mes alertes</span>
                       <div class="toggle-line">
-                        <span>Push</span>
+                        <span>Messages</span>
                         <span class="toggle on"></span>
                       </div>
                       <div class="toggle-line">
@@ -447,28 +446,27 @@ const steps = [
 
           <div class="hero-slip hero-slip-bottom">
             <span class="slip-dot slip-dot-mint"></span>
-            <span>Rapports, devices, abonnements et support lisent les mêmes données</span>
+            <span>Vos véhicules, vos trajets et vos alertes restent au même endroit</span>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="shell signal-bar" aria-label="Résumé des modules Trackeo">
+    <section class="shell signal-bar" aria-label="Résumé des fonctions Trackeo">
       <div class="signal-card">
         <p>Déjà en service</p>
         <div class="signal-list">
-          <span>live tracking</span>
-          <span>historique brut</span>
-          <span>trip log</span>
-          <span>idle time</span>
-          <span>vitesse excessive</span>
-          <span>geofences</span>
-          <span>alertes push</span>
+          <span>suivi en direct</span>
+          <span>historique des trajets</span>
+          <span>temps d&apos;arrêt</span>
+          <span>vitesse élevée</span>
+          <span>zones de sécurité</span>
+          <span>alertes utiles</span>
           <span>WhatsApp</span>
-          <span>PWA</span>
-          <span>admin Next.js</span>
-          <span>abonnements</span>
-          <span>compatibilité multi-protocoles</span>
+          <span>application mobile</span>
+          <span>liste de véhicules</span>
+          <span>espace de gestion</span>
+          <span>ouverture progressive</span>
         </div>
       </div>
     </section>
@@ -477,11 +475,10 @@ const steps = [
       <div class="shell">
         <div class="section-head">
           <p class="eyebrow">La plateforme aujourd&apos;hui</p>
-          <h2>Ce que la landing promet doit déjà exister dans le produit.</h2>
+          <h2>Ce que vous voyez ici correspond à ce que Trackeo sait déjà faire.</h2>
           <p>
-            La page parle du produit réel, pas d&apos;une vision décorative. Chaque bloc
-            ci-dessous s&apos;appuie sur des modules présents dans le monorepo et sur une
-            progression honnête vers la suite.
+            Le but n&apos;est pas de montrer des mots compliqués, mais de faire comprendre
+            rapidement ce que vous pourrez voir, recevoir et vérifier dans l&apos;application.
           </p>
         </div>
 
@@ -523,11 +520,11 @@ const steps = [
                       </div>
                       <div class="sheet-line">
                         <span class="tone-dot tone-dot-blue"></span>
-                        <span>Voiture-02 arrêtée, connectée</span>
+                        <span>Voiture-02 arrêtée, toujours visible</span>
                       </div>
                       <div class="sheet-line">
                         <span class="tone-dot tone-dot-red"></span>
-                        <span>Bus-03 hors ligne, dernière position reçue</span>
+                        <span>Bus-03 ne répond plus, dernière position gardée</span>
                       </div>
                     </div>
                   </>
@@ -551,8 +548,8 @@ const steps = [
                       <div class="history-bar" style="--h: 96%"></div>
                     </div>
                     <div class="history-caption">
-                      <strong>Distance, idle, vitesse, geofences</strong>
-                      <span>Lecture flotte et lecture admin sur la même base</span>
+                      <strong>Distance, pauses et trajets</strong>
+                      <span>Pour revoir la journée sans se perdre dans les détails</span>
                     </div>
                   </>
                 )}
@@ -560,22 +557,22 @@ const steps = [
                 {feature.slug === 'alerts' && (
                   <>
                     <div class="bubble bubble-blue">
-                      <strong>Entrée zone</strong>
+                      <strong>Entrée dans une zone</strong>
                       <span>Camion-01, Bureau Central</span>
                     </div>
                     <div class="bubble bubble-red">
                       <strong>Batterie faible</strong>
-                      <span>Moto-04, 18%, push et WhatsApp</span>
+                      <span>Moto-04, 18%, message envoyé</span>
                     </div>
                     <div class="bubble bubble-amber">
-                      <strong>Vitesse excessive</strong>
-                      <span>Seuil 120 km/h, épisode groupé</span>
+                      <strong>Vitesse élevée</strong>
+                      <span>Voiture-02, vitesse au-dessus du niveau attendu</span>
                     </div>
                     <div class="settings-grid">
-                      <span class="mini-pill">push</span>
+                      <span class="mini-pill">messages</span>
                       <span class="mini-pill">WhatsApp</span>
-                      <span class="mini-pill">battery</span>
-                      <span class="mini-pill">speed</span>
+                      <span class="mini-pill">batterie</span>
+                      <span class="mini-pill">vitesse</span>
                     </div>
                   </>
                 )}
@@ -584,26 +581,26 @@ const steps = [
                   <>
                     <div class="admin-board">
                       <div>
-                        <span>Users</span>
-                        <strong>liste, détail, désactivation</strong>
+                        <span>Véhicules</span>
+                        <strong>tout retrouver en un seul endroit</strong>
                       </div>
                       <div>
-                        <span>Devices</span>
-                        <strong>assignation et statut</strong>
+                        <span>Personnes</span>
+                        <strong>partager plus facilement les mêmes infos</strong>
                       </div>
                       <div>
-                        <span>Alerts</span>
-                        <strong>ack, filtres, monitoring</strong>
+                        <span>Alertes</span>
+                        <strong>voir vite ce qui demande votre attention</strong>
                       </div>
                       <div>
-                        <span>Plans</span>
-                        <strong>free, basic, premium</strong>
+                        <span>Aide</span>
+                        <strong>garder un suivi plus simple au quotidien</strong>
                       </div>
                     </div>
                     <div class="ops-footer">
-                      <span>Reports</span>
-                      <span>Geofences</span>
-                      <span>Settings</span>
+                      <span>Historique</span>
+                      <span>Zones</span>
+                      <span>Réglages</span>
                     </div>
                   </>
                 )}
@@ -611,14 +608,14 @@ const steps = [
                 {feature.slug === 'reach' && (
                   <>
                     <div class="reach-cloud">
-                      <span>Flutter Web</span>
-                      <span>Traccar</span>
-                      <span>NestJS</span>
-                      <span>Next.js admin</span>
-                      <span>TimescaleDB</span>
-                      <span>Teltonika</span>
-                      <span>Coban</span>
-                      <span>GT06</span>
+                      <span>Téléphone</span>
+                      <span>Tablette</span>
+                      <span>Ordinateur</span>
+                      <span>Camion</span>
+                      <span>Voiture</span>
+                      <span>Moto</span>
+                      <span>Bus</span>
+                      <span>Suivi partagé</span>
                     </div>
                     <div class="reach-devices">
                       <div class="device desktop"></div>
@@ -637,7 +634,7 @@ const steps = [
       <div class="shell">
         <div class="section-head section-head-narrow">
           <p class="eyebrow">Mise en route</p>
-          <h2>Le démarrage doit rester simple, même quand la stack est sérieuse.</h2>
+          <h2>Le démarrage doit rester simple, même si vous suivez plusieurs véhicules.</h2>
         </div>
 
         <div class="steps-grid">
@@ -656,10 +653,10 @@ const steps = [
       <div class="shell">
         <div class="section-head">
           <p class="eyebrow">Cap produit</p>
-          <h2>Ce qui est déjà prêt, ce qui arrive ensuite, ce qui étend la plateforme.</h2>
+          <h2>Ce qui est déjà là, ce qui arrive bientôt, ce qui viendra plus tard.</h2>
           <p>
-            La page différencie le présent du futur. Cela rend Trackeo plus crédible,
-            surtout pour un produit qui parle sécurité, exploitation et confiance.
+            Nous préférons montrer clairement ce qui existe déjà et ce qui arrive ensuite,
+            pour garder une promesse simple et crédible.
           </p>
         </div>
 
@@ -680,19 +677,19 @@ const steps = [
       </div>
     </section>
 
-    <section class="section pricing-section" id="pricing">
+    <section class="section pricing-section" id="coming-soon">
       <div class="shell">
         <div class="section-head">
-          <p class="eyebrow">Tarifs</p>
-          <h2>Une structure simple pour démarrer vite, puis monter proprement.</h2>
+          <p class="eyebrow">Bientôt</p>
+          <h2>Trackeo s&apos;ouvre petit à petit.</h2>
           <p>
-            Les plans reflètent le projet actuel: entrée légère, petite flotte équipée,
-            puis accompagnement B2B pour les opérations plus larges.
+            Nous avançons par étapes pour bien accompagner les premiers utilisateurs.
+            L&apos;ouverture plus large arrive ensuite, avec une prise en main toujours simple.
           </p>
         </div>
 
         <div class="pricing-grid">
-          {plans.map((plan) => (
+          {launchCards.map((plan) => (
             <article class={`plan-card plan-${plan.tone}`}>
               <div class="plan-head">
                 <span>{plan.name}</span>
@@ -708,9 +705,9 @@ const steps = [
                 ))}
               </ul>
 
-              <a href="https://trackeo.zenkai.mg" class={`button ${plan.tone === 'mint' ? 'button-brand' : plan.tone === 'ink' ? 'button-dark' : 'button-ghost'} button-plan`}>
-                {plan.name === 'Premium' ? 'Parler au support' : 'Commencer'}
-              </a>
+              <span class={`button ${plan.tone === 'mint' ? 'button-brand' : plan.tone === 'ink' ? 'button-dark' : 'button-ghost'} button-plan button-static`}>
+                {plan.price}
+              </span>
             </article>
           ))}
         </div>
@@ -721,17 +718,17 @@ const steps = [
       <div class="shell">
         <div class="cta-panel">
           <div class="cta-copy">
-            <p class="eyebrow eyebrow-light">Prêt à suivre votre flotte avec une interface qui reste claire en mouvement ?</p>
-            <h2>Trackeo relie les véhicules, le support, les alertes et l&apos;admin dans un seul rythme.</h2>
+            <p class="eyebrow eyebrow-light">Ouverture progressive</p>
+            <h2>Trackeo arrive bientôt pour ses premiers utilisateurs.</h2>
             <p>
-              Ouvrez la PWA, testez le parcours, puis faites évoluer la flotte sans
-              changer de base technique ni de langage visuel.
+              Nous ouvrons petit à petit pour garder une expérience claire, utile
+              et facile à prendre en main. Revenez bientôt pour suivre l&apos;ouverture.
             </p>
           </div>
 
           <div class="cta-actions">
-            <a href="https://trackeo.zenkai.mg" class="button button-brand">Lancer Trackeo</a>
-            <span>Pas d&apos;App Store requis, pensée mobile first, compatible terrain</span>
+            <a href="#coming-soon" class="button button-brand">Voir l&apos;ouverture</a>
+            <span>Une application pensée pour les personnes qui veulent aller à l&apos;essentiel.</span>
           </div>
         </div>
       </div>
@@ -742,13 +739,13 @@ const steps = [
     <div class="shell footer-row">
       <div>
         <strong>Trackeo</strong>
-        <p>Suivi GPS temps réel, alertes et administration de flotte pour Madagascar.</p>
+        <p>Suivi GPS simple, alertes utiles et trajets plus faciles à revoir à Madagascar.</p>
       </div>
 
       <div class="footer-links">
         <a href="#plateforme">Plateforme</a>
         <a href="#roadmap">Cap produit</a>
-        <a href="#pricing">Tarifs</a>
+        <a href="#coming-soon">Bientôt</a>
         <a href="https://trackeo.zenkai.mg">Connexion</a>
       </div>
     </div>
@@ -762,7 +759,7 @@ const steps = [
   }
 
   .section {
-    padding: clamp(4.5rem, 9vw, 8rem) 0;
+    padding: clamp(3.8rem, 7vw, 6.5rem) 0;
   }
 
   .site-header {
@@ -774,7 +771,7 @@ const steps = [
   }
 
   .header-row {
-    min-height: 84px;
+    min-height: 78px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -886,19 +883,23 @@ const steps = [
     margin-top: auto;
   }
 
+  .button-static {
+    pointer-events: none;
+  }
+
   .hero {
-    padding: clamp(3.4rem, 8vw, 6rem) 0 clamp(2.5rem, 6vw, 4rem);
+    padding: clamp(2.4rem, 5vw, 4.5rem) 0 clamp(2rem, 5vw, 3.2rem);
   }
 
   .hero-grid {
     display: grid;
     grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
-    gap: clamp(2.2rem, 5vw, 4.5rem);
+    gap: clamp(1.6rem, 3vw, 3.2rem);
     align-items: center;
   }
 
   .hero-copy {
-    max-width: 41rem;
+    max-width: 44rem;
   }
 
   .eyebrow {
@@ -917,12 +918,12 @@ const steps = [
   h3 {
     font-family: var(--font-display);
     letter-spacing: 0.01em;
-    line-height: 0.96;
+    line-height: 1;
   }
 
   h1 {
-    font-size: clamp(4.2rem, 9vw, 7.8rem);
-    max-width: 10ch;
+    font-size: clamp(3.35rem, 6.6vw, 5.7rem);
+    max-width: 12.5ch;
     text-wrap: balance;
   }
 
@@ -941,20 +942,21 @@ const steps = [
   }
 
   .hero-body {
-    margin-top: 1.5rem;
+    margin-top: 1.1rem;
+    max-width: 58ch;
   }
 
   .hero-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.9rem;
-    margin: 2rem 0;
+    margin: 1.6rem 0 1.35rem;
   }
 
   .hero-proof {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.85rem 1rem;
+    gap: 0.75rem 0.9rem;
     list-style: none;
   }
 
@@ -966,8 +968,8 @@ const steps = [
     border-radius: 1.2rem;
     background: color-mix(in oklab, white 86%, var(--brand-soft));
     border: 1px solid color-mix(in oklab, var(--brand-soft) 64%, var(--line));
-    font-size: 0.94rem;
-    line-height: 1.45;
+    font-size: 0.9rem;
+    line-height: 1.4;
   }
 
   .proof-dot,
@@ -1220,7 +1222,7 @@ const steps = [
   }
 
   .feed-sheet h2 {
-    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-size: clamp(1.75rem, 3vw, 2.35rem);
   }
 
   .feed-list {
@@ -1435,13 +1437,13 @@ const steps = [
   .section-head {
     display: grid;
     gap: 1rem;
-    margin-bottom: 2.8rem;
+    margin-bottom: 2.35rem;
   }
 
   .section-head h2,
   .cta-copy h2 {
-    font-size: clamp(2.8rem, 6vw, 5rem);
-    max-width: 11ch;
+    font-size: clamp(2.2rem, 4.2vw, 3.7rem);
+    max-width: 13ch;
     text-wrap: balance;
   }
 
@@ -1492,8 +1494,8 @@ const steps = [
   }
 
   .story-copy h3 {
-    font-size: clamp(2.4rem, 4vw, 3.6rem);
-    max-width: 10.5ch;
+    font-size: clamp(1.95rem, 3vw, 2.75rem);
+    max-width: 12ch;
   }
 
   .story-points,
@@ -1534,7 +1536,7 @@ const steps = [
   }
 
   .story-meta strong {
-    font-size: clamp(2.1rem, 4vw, 3.6rem);
+    font-size: clamp(1.8rem, 3.2vw, 2.8rem);
     line-height: 0.9;
   }
 
@@ -1930,7 +1932,7 @@ const steps = [
   .step-number,
   .plan-head strong {
     font-family: var(--font-display);
-    font-size: clamp(2.5rem, 5vw, 4.1rem);
+    font-size: clamp(2.1rem, 4vw, 3.2rem);
     line-height: 0.9;
   }
 
@@ -1941,7 +1943,7 @@ const steps = [
   }
 
   .step-panel h3 {
-    font-size: clamp(2rem, 3vw, 2.7rem);
+    font-size: clamp(1.75rem, 2.4vw, 2.3rem);
     max-width: 12ch;
     margin-bottom: 0.9rem;
   }
@@ -1959,7 +1961,7 @@ const steps = [
   }
 
   .phase-card h3 {
-    font-size: clamp(2.1rem, 4vw, 3rem);
+    font-size: clamp(1.85rem, 2.8vw, 2.45rem);
   }
 
   .phase-mint {
@@ -2144,11 +2146,12 @@ const steps = [
     }
 
     .header-row {
-      min-height: 76px;
+      min-height: 72px;
     }
 
     h1 {
-      font-size: clamp(3.2rem, 17vw, 5.2rem);
+      font-size: clamp(2.5rem, 10vw, 3.8rem);
+      max-width: 13ch;
     }
 
     .section-head h2,
@@ -2199,6 +2202,14 @@ const steps = [
     .map-tag {
       position: static;
       margin-top: 0.7rem;
+      max-width: none;
+    }
+
+    .hero {
+      padding-top: 1.8rem;
+    }
+
+    .hero-body {
       max-width: none;
     }
   }
