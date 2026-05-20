@@ -1,0 +1,29 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" rx="36" fill="#F4F5F7"/>
+  <rect x="44" y="44" width="1112" height="542" rx="32" fill="url(#panel)"/>
+  <rect x="104" y="112" width="136" height="136" rx="36" fill="url(#mark)"/>
+  <path d="M172 148C145.49 148 124 169.49 124 196C124 230 172 276 172 276C172 276 220 230 220 196C220 169.49 198.51 148 172 148ZM172 217C160.402 217 151 207.598 151 196C151 184.402 160.402 175 172 175C183.598 175 193 184.402 193 196C193 207.598 183.598 217 172 217Z" fill="#333549"/>
+  <text x="286" y="190" fill="#333549" font-family="Outfit, Be Vietnam Pro, Arial, sans-serif" font-size="86" font-weight="700" letter-spacing="-2">Trackeo</text>
+  <text x="286" y="262" fill="#6B7280" font-family="Be Vietnam Pro, Arial, sans-serif" font-size="32">Suivi GPS simple, clair et pensé pour Madagascar.</text>
+  <rect x="286" y="330" width="594" height="166" rx="28" fill="#FFFFFF" stroke="#E5E7EB"/>
+  <path d="M338 436H810" stroke="#D7E6FF" stroke-width="18" stroke-linecap="round"/>
+  <path d="M338 436C420 436 470 374 558 374H668C744 374 762 330 832 330" stroke="#4ECB8D" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="832" cy="330" r="24" fill="#4ECB8D"/>
+  <circle cx="668" cy="374" r="16" fill="#5B8DEF"/>
+  <circle cx="558" cy="374" r="16" fill="#F59E0B"/>
+  <circle cx="338" cy="436" r="16" fill="#EF4444"/>
+  <rect x="914" y="330" width="174" height="62" rx="18" fill="#E8F8F2"/>
+  <text x="946" y="368" fill="#333549" font-family="Be Vietnam Pro, Arial, sans-serif" font-size="24" font-weight="600">Alertes utiles</text>
+  <rect x="914" y="412" width="174" height="62" rx="18" fill="#EBF2FD"/>
+  <text x="949" y="450" fill="#333549" font-family="Be Vietnam Pro, Arial, sans-serif" font-size="24" font-weight="600">Historique clair</text>
+  <defs>
+    <linearGradient id="panel" x1="132" y1="84" x2="1037" y2="566" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FBFCFD"/>
+      <stop offset="1" stop-color="#E8F8F2"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="104" y1="112" x2="240" y2="248" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8F8F2"/>
+      <stop offset="1" stop-color="#4ECB8D"/>
+    </linearGradient>
+  </defs>
+</svg>
