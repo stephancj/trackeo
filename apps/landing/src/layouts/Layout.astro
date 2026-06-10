@@ -7,7 +7,7 @@ interface Props {
 
 const { title } = Astro.props;
 const description =
-  'Trackeo aide a suivre vos vehicules, revoir leurs trajets et recevoir les alertes utiles depuis une application claire, pensee pour Madagascar.';
+  'Suivez vos véhicules en temps réel à Madagascar : carte en direct, alertes WhatsApp et push (zone, vitesse, batterie, SOS) et historique des trajets. Simple, sans installation.';
 const siteUrl = 'https://trackeo.zenkai.mg';
 const canonical = new URL(Astro.url.pathname, siteUrl).toString();
 const ogImage = `${siteUrl}/og-card.svg`;
@@ -38,7 +38,7 @@ const ogImage = `${siteUrl}/og-card.svg`;
     <title>{title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   </head>
   <body>
     <a class="skip-link" href="#content">Aller au contenu</a>

@@ -1,2339 +1,1341 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
-const heroSignals = [
-  'Voir vos véhicules bouger en direct sur la carte',
-  'Revoir les trajets et les pauses quand il le faut',
-  'Recevoir une alerte utile sur l’application ou WhatsApp',
-  'Ouvrir facilement Trackeo sur téléphone, tablette ou ordinateur',
-];
+const APP_URL = 'https://trackeo.zenkai.mg';
 
-const operationalFeatures = [
-  {
-    slug: 'live',
-    kicker: 'Suivi en direct',
-    title: 'Voir la flotte telle qu\'elle roule vraiment',
-    description:
-      'Trackeo montre sur la carte la position, la vitesse, la batterie, le signal et le statut de chaque véhicule sans bruit visuel inutile.',
-    bullets: [
-      'Voir tous vos véhicules sur une seule carte',
-      'Savoir s\'il roule, s\'il est arrêté ou s\'il ne répond plus',
-      'Retrouver vite un véhicule par nom ou par plaque',
-    ],
-    stat: '10 s',
-    note: 'mise à jour régulière pour garder le bon rythme',
-    tone: 'mint',
-  },
-  {
-    slug: 'history',
-    kicker: 'Historique et rapports',
-    title: 'Comprendre le trajet, pas seulement le point GPS',
-    description:
-      'L\'historique vous aide à revoir où le véhicule est passé, combien de temps il a roulé, quand il s\'est arrêté et quelle distance il a parcourue.',
-    bullets: [
-      'Revoir facilement les trajets de la journée',
-      'Retrouver distance, durée et vitesse la plus élevée',
-      'Comprendre les arrêts sans devoir tout reconstituer soi-même',
-    ],
-    stat: '30 jours',
-    note: 'pour revoir les derniers déplacements plus sereinement',
-    tone: 'amber',
-  },
-  {
-    slug: 'alerts',
-    kicker: 'Zones et alertes',
-    title: 'Recevoir le bon signal avant l\'appel du chauffeur',
-    description:
-      'Vous choisissez une zone à surveiller et Trackeo vous prévient quand un véhicule entre, sort, roule trop vite ou commence à manquer de batterie.',
-    bullets: [
-      'Créer une zone de sécurité directement sur la carte',
-      'Recevoir les messages sur l\'application ou WhatsApp',
-      'Choisir simplement les alertes que vous voulez garder',
-    ],
-    stat: 'quelques secondes',
-    note: 'pour réagir vite quand quelque chose change',
-    tone: 'blue',
-  },
-  {
-    slug: 'ops',
-    kicker: 'Pour vous et votre équipe',
-    title: 'Tout le monde garde les mêmes repères',
-    description:
-      'Quand plusieurs personnes suivent les mêmes véhicules, Trackeo garde les informations au même endroit pour éviter les appels inutiles et les oublis.',
-    bullets: [
-      'Le propriétaire voit ses véhicules en un coup d\'oeil',
-      'La personne qui aide retrouve plus vite les bonnes infos',
-      'Les véhicules, les alertes et l\'historique restent bien rangés',
-    ],
-    stat: '1 seul espace',
-    note: 'pour parler de la même chose au bon moment',
-    tone: 'ink',
-  },
-  {
-    slug: 'reach',
-    kicker: 'Accès facile',
-    title: 'Ouvrir Trackeo sur l\'écran que vous avez déjà',
-    description:
-      'Trackeo est pensé pour être ouvert simplement sur téléphone, tablette ou ordinateur, sans vous compliquer la vie au moment de consulter vos véhicules.',
-    bullets: [
-      'Pratique sur téléphone quand vous êtes dehors',
-      'Confortable sur ordinateur pour revoir l\'ensemble',
-      'Toujours la même lecture simple d\'un écran à l\'autre',
-    ],
-    stat: '3 écrans',
-    note: 'téléphone, tablette ou ordinateur',
-    tone: 'paper',
-  },
-];
-
-const roadmapPhases = [
-  {
-    label: 'En service',
-    title: 'Le coeur du produit est déjà en ligne',
-    copy:
-      'Les bases utiles sont déjà là pour suivre un véhicule, revoir ses trajets et recevoir les alertes qui comptent.',
-    items: [
-      'Suivi en direct avec vitesse, batterie et état du véhicule',
-      'Historique des trajets, des pauses et des dernières alertes',
-      'Messages sur l\'application et sur WhatsApp',
-      'Un espace de gestion pour garder les véhicules bien organisés',
-    ],
-    tone: 'mint',
-  },
-  {
-    label: 'Prochaine vague',
-    title: 'Rendre l\'activation et la réaction encore plus fluides',
-    copy:
-      'La suite vise surtout à rendre le démarrage plus simple et l\'accompagnement plus rassurant pour les premiers utilisateurs.',
-    items: [
-      'Ajouter un véhicule plus rapidement',
-      'Partager plus facilement le suivi quand il le faut',
-      'Mieux accompagner en cas d\'alerte ou de doute',
-      'Guider pas à pas les premières mises en route',
-    ],
-    tone: 'blue',
-  },
-  {
-    label: 'Extension',
-    title: 'Passer de la flotte suivie à la flotte opérée',
-    copy:
-      'Plus tard, Trackeo pourra aller plus loin autour du véhicule sans perdre cette même logique simple et claire.',
-    items: [
-      'Plus de suivi autour des trajets et de l\'usage du véhicule',
-      'Davantage d\'aide pour les familles et les petites flottes',
-      'Des services pensés aussi pour les équipes qui grandissent',
-      'Une ouverture plus large sur mobile et sur le terrain',
-    ],
-    tone: 'amber',
-  },
-];
-
-const launchCards = [
-  {
-    name: 'Accès pilote',
-    status: 'En petit groupe',
-    detail: 'pour les premiers utilisateurs',
-    description: 'Nous ouvrons Trackeo petit à petit pour bien accompagner les premiers utilisateurs.',
-    features: [
-      'Découvrir la carte en direct',
-      'Recevoir les premières alertes utiles',
-      'Revoir les trajets sans difficulté',
-      'Prendre en main l\'application simplement',
-    ],
-    badge: 'Accès en préparation',
-    note: 'Le produit s’ouvre d’abord à un petit nombre de véhicules pour garder un démarrage clair.',
-    tone: 'paper',
-  },
-  {
-    name: 'Liste d\'attente',
-    status: 'Ouverture à venir',
-    detail: 'nous prévenons avant l’ouverture',
-    description: 'Une ouverture plus large arrive. Vous pourrez bientôt faire partie des prochains utilisateurs.',
-    features: [
-      'Un accès plus simple pour démarrer',
-      'Une découverte guidée étape par étape',
-      'Pensé pour particuliers et petites flottes',
-      'Des nouvelles dès l\'ouverture plus large',
-    ],
-    badge: 'Vous serez prévenu',
-    note: 'L’annonce de l’ouverture sera partagée dès que la prochaine vague sera prête.',
-    tone: 'mint',
-  },
-  {
-    name: 'Déploiement plus large',
-    status: 'Ensuite',
-    detail: 'quand le parcours sera bien calé',
-    description: 'Trackeo est pensé pour s\'ouvrir ensuite à davantage de véhicules et à des usages plus larges.',
-    features: [
-      'Plus de véhicules à suivre',
-      'Plus de partage quand c\'est utile',
-      'Plus d\'aide pour les alertes importantes',
-      'Toujours une interface claire à utiliser',
-    ],
-    badge: 'Progressif',
-    note: 'Nous gardons la même simplicité quand le nombre de véhicules augmente.',
-    tone: 'ink',
-  },
+const stats = [
+  { value: '10 s', label: 'entre chaque position' },
+  { value: '4 alertes', label: 'zone · vitesse · batterie · SOS' },
+  { value: '30 jours', label: "d'historique et de rapports" },
+  { value: '0 installation', label: "s'ouvre dans le navigateur" },
 ];
 
 const steps = [
   {
     number: '01',
-    title: 'Brancher le boîtier dans le véhicule',
-    text:
-      'Une fois le boîtier en place, Trackeo peut commencer à recevoir les positions du véhicule.',
+    title: 'Branchez le boîtier',
+    text: 'Le traceur GPS s’installe dans le véhicule et envoie sa position par le réseau mobile.',
   },
   {
     number: '02',
-    title: 'Ajouter le véhicule à votre espace',
-    text:
-      'Le véhicule apparaît dans votre espace pour que vous puissiez le retrouver facilement ensuite.',
+    title: 'Retrouvez votre véhicule',
+    text: 'Il apparaît dans votre espace Trackeo, avec son nom, sa plaque et son état en couleur.',
   },
   {
     number: '03',
-    title: 'Suivre, recevoir, réagir',
-    text:
-      'Vous voyez les trajets, vous recevez les alertes et vous gardez une lecture simple de la situation.',
+    title: 'Suivez, l’esprit libre',
+    text: 'Carte en direct, alertes et historique : tout est au même endroit, sur tous vos écrans.',
   },
 ];
 ---
 
-<Layout title="Trackeo | Tracking GPS clair, rapide et local pour les flottes">
+<Layout title="Trackeo — Suivi GPS de véhicules en temps réel à Madagascar">
   <header class="site-header">
     <div class="shell header-row">
-      <a href="/" class="brand-lockup">
+      <a href="/" class="brand">
         <span class="brand-mark">
-          <img src="/favicon.png" alt="Trackeo" width="22" height="22" />
+          <img src="/favicon.png" alt="" width="20" height="20" />
         </span>
-        <span class="brand-copy">
-          <strong>Trackeo</strong>
-          <span>application GPS pensée pour Madagascar</span>
-        </span>
+        <span class="brand-name">Trackeo</span>
       </a>
 
       <nav class="site-nav" aria-label="Navigation principale">
-        <a href="#plateforme">Plateforme</a>
-        <a href="#mise-en-route">Démarrage</a>
-        <a href="#roadmap">Cap produit</a>
-        <a href="#coming-soon">Bientôt</a>
+        <a href="#fonctions">Fonctions</a>
+        <a href="#demarrage">Comment ça marche</a>
       </nav>
 
-      <a href="https://trackeo.zenkai.mg" class="button button-dark">Découvrir Trackeo</a>
+      <a href={APP_URL} class="btn btn-dark btn-compact">Ouvrir l&apos;app</a>
     </div>
   </header>
 
   <main id="content">
-    <section class="hero">
-      <div class="shell hero-grid">
-        <div class="hero-copy reveal">
-          <p class="eyebrow">Pour garder un oeil sur vos véhicules sans passer la journée à appeler.</p>
-          <h1>
-            Quand vos véhicules sont dehors, vous gardez l&apos;esprit plus tranquille.
+    <!-- ============ HERO ============ -->
+    <section class="hero shell">
+      <div class="hero-slab">
+        <div class="hero-copy">
+          <p class="live-badge hero-fx"><span class="live-dot" aria-hidden="true"></span> En direct — Antananarivo</p>
+
+          <h1 class="hero-fx hero-fx-1">
+            Vos véhicules, <em class="hl">en&nbsp;direct</em>, où que vous soyez.
           </h1>
-          <p class="hero-body">
-            Trackeo vous montre où ils sont, où ils sont passés et vous prévient
-            quand quelque chose mérite votre attention. Tout reste simple à lire,
-            même depuis un téléphone.
+
+          <p class="hero-sub hero-fx hero-fx-2">
+            Trackeo affiche chaque véhicule sur la carte, vous prévient quand ça
+            compte — sortie de zone, excès de vitesse, batterie faible — et garde
+            l&apos;historique de chaque trajet.
           </p>
 
-          <div class="hero-actions">
-            <a href="https://trackeo.zenkai.mg" class="button button-brand">Découvrir l&apos;application</a>
-            <a href="#coming-soon" class="button button-ghost">Voir l&apos;ouverture</a>
+          <div class="hero-actions hero-fx hero-fx-3">
+            <a href={APP_URL} class="btn btn-mint">Ouvrir Trackeo</a>
+            <a href="#fonctions" class="btn btn-ghost">Voir les fonctions</a>
           </div>
 
-          <ul class="hero-proof">
-            {heroSignals.map((signal) => (
-              <li>
-                <span class="proof-dot" aria-hidden="true"></span>
-                <span>{signal}</span>
-              </li>
-            ))}
-          </ul>
+          <p class="hero-trust mono hero-fx hero-fx-4">
+            Position toutes les 10 s · Alertes WhatsApp + push · Aucune installation
+          </p>
         </div>
 
-        <div class="hero-scene reveal reveal-delay-2">
-          <div class="hero-slip hero-slip-top">
-            <span class="slip-dot slip-dot-blue"></span>
-            <span>Le véhicule vient d&apos;entrer dans la zone surveillée, message envoyé</span>
+        <div class="hero-map hero-fx hero-fx-map" aria-hidden="true">
+          <svg class="map-scene" viewBox="0 0 640 470" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="route-grad" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stop-color="#35b978" />
+                <stop offset="100%" stop-color="#4ecb8d" />
+              </linearGradient>
+            </defs>
+
+            <!-- city blocks -->
+            <g fill="rgba(255,255,255,0.028)">
+              <rect x="96" y="86" width="70" height="50" rx="6" />
+              <rect x="196" y="246" width="88" height="68" rx="6" />
+              <rect x="318" y="246" width="70" height="48" rx="6" />
+              <rect x="96" y="346" width="68" height="56" rx="6" />
+              <rect x="430" y="306" width="96" height="64" rx="6" />
+              <rect x="318" y="60" width="60" height="74" rx="6" />
+            </g>
+            <!-- park -->
+            <rect x="520" y="250" width="120" height="110" rx="10" fill="rgba(78,203,141,0.06)" />
+
+            <!-- streets -->
+            <g stroke="rgba(255,255,255,0.06)" stroke-width="1.5">
+              <line x1="0" y1="70" x2="640" y2="70" />
+              <line x1="0" y1="230" x2="640" y2="230" />
+              <line x1="0" y1="390" x2="640" y2="390" />
+              <line x1="180" y1="0" x2="180" y2="470" />
+              <line x1="300" y1="0" x2="300" y2="470" />
+              <line x1="540" y1="0" x2="540" y2="470" />
+            </g>
+            <g stroke="rgba(255,255,255,0.1)" stroke-width="3">
+              <line x1="0" y1="150" x2="640" y2="150" />
+              <line x1="60" y1="0" x2="60" y2="470" />
+              <line x1="420" y1="0" x2="420" y2="470" />
+            </g>
+            <path d="M 0 360 L 640 200" stroke="rgba(255,255,255,0.07)" stroke-width="5" />
+
+            <!-- geofence -->
+            <circle cx="470" cy="150" r="84" fill="rgba(91,141,239,0.09)" />
+            <circle cx="470" cy="150" r="84" fill="none" stroke="rgba(91,141,239,0.55)" stroke-width="2" stroke-dasharray="4 8" stroke-linecap="round" />
+
+            <!-- trip -->
+            <path
+              class="route-path"
+              d="M 60 416 L 60 330 L 180 330 L 180 230 L 300 230 L 300 150 L 470 150"
+              fill="none"
+              stroke="url(#route-grad)"
+              stroke-width="5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-dasharray="700"
+              stroke-dashoffset="700"
+            />
+
+            <!-- departure -->
+            <circle cx="60" cy="416" r="6" fill="#f59e0b" />
+            <circle cx="60" cy="416" r="11" fill="none" stroke="rgba(245,158,11,0.35)" stroke-width="2" />
+
+            <!-- live vehicle -->
+            <circle class="pulse pulse-a" cx="470" cy="150" r="22" fill="rgba(78,203,141,0.35)" />
+            <circle class="pulse pulse-b" cx="470" cy="150" r="22" fill="rgba(78,203,141,0.35)" />
+            <circle cx="470" cy="150" r="9.5" fill="#4ecb8d" />
+            <circle cx="470" cy="150" r="3.5" fill="#272838" />
+          </svg>
+
+          <div class="chip chip-alert">
+            <span class="chip-icon chip-icon-zone"></span>
+            <span class="chip-body">
+              <strong>Entrée de zone — Dépôt</strong>
+              <span class="mono">WhatsApp envoyé · il y a 8 s</span>
+            </span>
           </div>
 
-          <div class="hero-board">
-            <div class="hero-top-grid">
-              <div class="map-sheet">
-                <div class="map-meta">
-                  <span class="mini-kicker">Suivi en direct</span>
-                  <span class="mini-pill">Antananarivo centre</span>
-                </div>
+          <div class="chip chip-vehicle">
+            <span class="chip-icon chip-icon-live"></span>
+            <span class="chip-body">
+              <strong>Camion-01 · 72 km/h</strong>
+              <span class="mono">En mouvement · batterie 84 %</span>
+            </span>
+          </div>
 
-                <svg viewBox="0 0 640 360" class="route-scene" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="mint-route" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stop-color="var(--brand-strong)" />
-                      <stop offset="100%" stop-color="var(--blue)" />
-                    </linearGradient>
-                  </defs>
+          <div class="telemetry mono">
+            <span>-18.8792° S&nbsp;&nbsp;47.5079° E</span>
+            <span class="telemetry-mid">Antananarivo</span>
+            <span class="telemetry-live"><span class="live-dot" aria-hidden="true"></span> Maj 10 s — live</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
-                  <g stroke="color-mix(in oklab, var(--ink) 10%, transparent)" stroke-width="1">
-                    <line x1="0" y1="90" x2="640" y2="90" />
-                    <line x1="0" y1="180" x2="640" y2="180" />
-                    <line x1="0" y1="270" x2="640" y2="270" />
-                    <line x1="106" y1="0" x2="106" y2="360" />
-                    <line x1="228" y1="0" x2="228" y2="360" />
-                    <line x1="365" y1="0" x2="365" y2="360" />
-                    <line x1="520" y1="0" x2="520" y2="360" />
-                  </g>
+    <!-- ============ STATS ============ -->
+    <section class="shell" aria-label="Trackeo en chiffres">
+      <div class="stat-strip" data-fx>
+        {stats.map((s) => (
+          <div class="stat">
+            <strong>{s.value}</strong>
+            <span class="mono">{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
 
-                  <circle cx="472" cy="110" r="72" fill="color-mix(in oklab, var(--blue) 12%, transparent)" />
-                  <circle cx="472" cy="110" r="56" fill="none" stroke="color-mix(in oklab, var(--blue) 50%, white)" stroke-dasharray="5 8" stroke-width="3" />
+    <!-- ============ FEATURES ============ -->
+    <section class="section shell" id="fonctions">
+      <div class="section-head" data-fx>
+        <p class="kicker mono">Ce que fait Trackeo</p>
+        <h2>Trois choses, faites correctement.</h2>
+        <p class="section-sub">
+          Pas un tableau de bord de plus. Juste ce qu&apos;il faut pour savoir,
+          être prévenu et vérifier.
+        </p>
+      </div>
 
-                  <path
-                    d="M 42 286 L 158 286 L 158 210 L 255 210 L 255 160 L 382 160 L 382 110 L 472 110"
-                    fill="none"
-                    stroke="url(#mint-route)"
-                    stroke-width="10"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-dasharray="520"
-                    stroke-dashoffset="520"
-                    class="route-path"
-                  />
-
-                  <circle cx="472" cy="110" r="18" fill="var(--brand-strong)" />
-                  <circle cx="472" cy="110" r="38" fill="color-mix(in oklab, var(--brand) 18%, transparent)" class="pulse-ring" />
-                  <circle cx="255" cy="210" r="14" fill="var(--blue)" />
-                  <circle cx="158" cy="286" r="12" fill="var(--amber)" />
-                  <circle cx="42" cy="286" r="10" fill="var(--red)" />
-                </svg>
-
-                <div class="map-tag map-tag-main">
-                  <strong>Camion-01</strong>
-                  <span>72 km/h, batterie 84%</span>
-                </div>
-                <div class="map-tag map-tag-fence">
-                  <strong>Zone surveillée</strong>
-                  <span>Bureau, entrée confirmée</span>
-                </div>
-              </div>
-
-              <div class="status-rail">
-                <div class="status-sheet">
-                  <span class="mini-kicker">Statuts</span>
-                  <div class="status-line">
-                    <span class="tone-dot tone-dot-mint"></span>
-                    <div>
-                      <strong>3 véhicules actifs</strong>
-                      <span>camion, voiture, moto</span>
-                    </div>
-                  </div>
-                  <div class="status-line">
-                    <span class="tone-dot tone-dot-blue"></span>
-                    <div>
-                      <strong>2 en attente</strong>
-                      <span>arrêtés mais connectés</span>
-                    </div>
-                  </div>
-                  <div class="status-line">
-                    <span class="tone-dot tone-dot-red"></span>
-                    <div>
-                      <strong>1 batterie faible</strong>
-                      <span>message envoyé pour prévenir rapidement</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="status-sheet status-sheet-contrast">
-                  <span class="mini-kicker">Simple à ouvrir</span>
-                  <p>
-                    Consultez Trackeo facilement sur téléphone, tablette ou ordinateur,
-                    selon l&apos;écran que vous avez sous la main.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div class="hero-bottom-grid">
-              <div class="feed-sheet">
-                <div class="feed-head">
-                  <div>
-                    <span class="mini-kicker">Alertes et messages</span>
-                    <h2>Être averti sans devoir surveiller tout le temps</h2>
-                  </div>
-                  <span class="mini-pill mini-pill-alert">Temps réel</span>
-                </div>
-
-                <ul class="feed-list">
-                  <li>
-                    <span class="feed-accent feed-accent-blue"></span>
-                    <div>
-                      <strong>Entrée dans une zone</strong>
-                      <span>Camion-01, Bureau Central, il y a 12 s</span>
-                    </div>
-                  </li>
-                  <li>
-                    <span class="feed-accent feed-accent-red"></span>
-                    <div>
-                      <strong>Batterie faible</strong>
-                      <span>Moto-04, 18%, notification envoyée</span>
-                    </div>
-                  </li>
-                  <li>
-                    <span class="feed-accent feed-accent-amber"></span>
-                    <div>
-                      <strong>Vitesse élevée</strong>
-                      <span>Voiture-02, 124 km/h, message envoyé</span>
-                    </div>
-                  </li>
-                </ul>
-
-                <div class="feed-footer">
-                  <div>
-                    <span class="mini-kicker">Cette semaine</span>
-                    <strong>1 234 km parcourus, trajets revus en un coup d&apos;oeil</strong>
-                  </div>
-                  <span class="mini-pill">Historique clair</span>
-                </div>
-              </div>
-
-              <div class="phone-sheet">
-                <div class="phone-frame">
-                  <div class="phone-screen">
-                    <div class="phone-head">
-                      <div>
-                        <span class="mini-kicker">Sur mobile</span>
-                        <strong>Mes véhicules</strong>
-                      </div>
-                      <span class="phone-badge">3 actifs</span>
-                    </div>
-
-                    <div class="phone-card">
-                      <div class="phone-row">
-                        <div class="phone-icon phone-icon-green"></div>
-                        <div>
-                          <strong>Camion-01</strong>
-                          <span>Analakely, en route</span>
-                        </div>
-                        <em>72 km/h</em>
-                      </div>
-                    </div>
-
-                    <div class="phone-card phone-card-secondary">
-                      <div class="phone-row">
-                        <div class="phone-icon phone-icon-blue"></div>
-                        <div>
-                          <strong>Voiture-02</strong>
-                          <span>Gare routière, arrêtée</span>
-                        </div>
-                        <em>il y a 2 min</em>
-                      </div>
-                    </div>
-
-                    <div class="phone-settings">
-                      <span class="mini-kicker">Mes alertes</span>
-                      <div class="toggle-line">
-                        <span>Messages</span>
-                        <span class="toggle on"></span>
-                      </div>
-                      <div class="toggle-line">
-                        <span>WhatsApp</span>
-                        <span class="toggle on"></span>
-                      </div>
-                      <div class="toggle-line">
-                        <span>Vitesse</span>
-                        <span class="toggle off"></span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <div class="feature-grid">
+        <!-- 01 — live map -->
+        <article class="feature-card" data-fx>
+          <p class="feature-no mono">01 — Carte en direct</p>
+          <h3>Toute la flotte sur une carte, avec son état réel.</h3>
+          <p class="feature-text">
+            Chaque véhicule porte une couleur : il roule, il est à l&apos;arrêt,
+            ou il ne répond plus. Position, vitesse et batterie se mettent à jour
+            toutes seules.
+          </p>
+          <div class="feature-visual visual-live" aria-hidden="true">
+            <span class="vdot vdot-mint"></span>
+            <span class="vdot vdot-blue"></span>
+            <span class="vdot vdot-gray"></span>
+            <div class="legend">
+              <span class="legend-pill"><i class="dot dot-mint"></i>En mouvement</span>
+              <span class="legend-pill"><i class="dot dot-blue"></i>À l&apos;arrêt</span>
+              <span class="legend-pill"><i class="dot dot-gray"></i>Hors ligne</span>
             </div>
           </div>
+        </article>
 
-          <div class="hero-slip hero-slip-bottom">
-            <span class="slip-dot slip-dot-mint"></span>
-            <span>Vos véhicules, vos trajets et vos alertes restent au même endroit</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="shell signal-bar" aria-label="Résumé des fonctions Trackeo">
-      <div class="signal-card">
-        <p>Déjà en service</p>
-        <div class="signal-list">
-          <span>suivi en direct</span>
-          <span>historique des trajets</span>
-          <span>temps d&apos;arrêt</span>
-          <span>vitesse élevée</span>
-          <span>zones de sécurité</span>
-          <span>alertes utiles</span>
-          <span>WhatsApp</span>
-          <span>application mobile</span>
-          <span>liste de véhicules</span>
-          <span>espace de gestion</span>
-          <span>ouverture progressive</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="plateforme">
-      <div class="shell">
-        <div class="section-head">
-          <p class="eyebrow">La plateforme aujourd&apos;hui</p>
-          <h2>Ce que vous voyez ici correspond à ce que Trackeo sait déjà faire.</h2>
-          <p>
-            Le but n&apos;est pas de montrer des mots compliqués, mais de faire comprendre
-            rapidement ce que vous pourrez voir, recevoir et vérifier dans l&apos;application.
+        <!-- 02 — zones & alerts -->
+        <article class="feature-card" data-fx>
+          <p class="feature-no mono">02 — Zones &amp; alertes</p>
+          <h3>Dessinez une zone, Trackeo monte la garde.</h3>
+          <p class="feature-text">
+            Un cercle autour du dépôt, de la maison ou du chantier. Un véhicule
+            entre ou sort&nbsp;? Le message part sur l&apos;application et sur
+            WhatsApp.
           </p>
-        </div>
-
-        <div class="story-stack">
-          {operationalFeatures.map((feature, index) => (
-            <article class={`story-card tone-${feature.tone} ${index % 2 === 1 ? 'story-reversed' : ''}`}>
-              <div class="story-copy">
-                <p class="story-kicker">{feature.kicker}</p>
-                <h3>{feature.title}</h3>
-                <p class="story-description">{feature.description}</p>
-
-                <ul class="story-points">
-                  {feature.bullets.map((bullet) => (
-                    <li>{bullet}</li>
-                  ))}
-                </ul>
-
-                <div class="story-meta">
-                  <strong>{feature.stat}</strong>
-                  <span>{feature.note}</span>
-                </div>
-              </div>
-
-              <div class={`story-visual visual-${feature.slug}`}>
-                {feature.slug === 'live' && (
-                  <>
-                    <div class="visual-raster">
-                      <div class="visual-map-grid"></div>
-                      <div class="visual-route visual-route-a"></div>
-                      <div class="visual-route visual-route-b"></div>
-                      <div class="visual-dot visual-dot-main"></div>
-                      <div class="visual-dot visual-dot-blue"></div>
-                      <div class="visual-dot visual-dot-amber"></div>
-                    </div>
-                    <div class="visual-sheet">
-                      <div class="sheet-line">
-                        <span class="tone-dot tone-dot-mint"></span>
-                        <span>Camion-01 en route, 72 km/h</span>
-                      </div>
-                      <div class="sheet-line">
-                        <span class="tone-dot tone-dot-blue"></span>
-                        <span>Voiture-02 arrêtée, toujours visible</span>
-                      </div>
-                      <div class="sheet-line">
-                        <span class="tone-dot tone-dot-red"></span>
-                        <span>Bus-03 ne répond plus, dernière position gardée</span>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {feature.slug === 'history' && (
-                  <>
-                    <div class="history-line">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                    <div class="history-graph">
-                      <div class="history-bar" style="--h: 42%"></div>
-                      <div class="history-bar" style="--h: 68%"></div>
-                      <div class="history-bar" style="--h: 53%"></div>
-                      <div class="history-bar" style="--h: 84%"></div>
-                      <div class="history-bar" style="--h: 73%"></div>
-                      <div class="history-bar" style="--h: 96%"></div>
-                    </div>
-                    <div class="history-caption">
-                      <strong>Distance, pauses et trajets</strong>
-                      <span>Pour revoir la journée sans se perdre dans les détails</span>
-                    </div>
-                  </>
-                )}
-
-                {feature.slug === 'alerts' && (
-                  <>
-                    <div class="bubble bubble-blue">
-                      <strong>Entrée dans une zone</strong>
-                      <span>Camion-01, Bureau Central</span>
-                    </div>
-                    <div class="bubble bubble-red">
-                      <strong>Batterie faible</strong>
-                      <span>Moto-04, 18%, message envoyé</span>
-                    </div>
-                    <div class="bubble bubble-amber">
-                      <strong>Vitesse élevée</strong>
-                      <span>Voiture-02, vitesse au-dessus du niveau attendu</span>
-                    </div>
-                    <div class="settings-grid">
-                      <span class="mini-pill">messages</span>
-                      <span class="mini-pill">WhatsApp</span>
-                      <span class="mini-pill">batterie</span>
-                      <span class="mini-pill">vitesse</span>
-                    </div>
-                  </>
-                )}
-
-                {feature.slug === 'ops' && (
-                  <>
-                    <div class="admin-board">
-                      <div>
-                        <span>Véhicules</span>
-                        <strong>tout retrouver en un seul endroit</strong>
-                      </div>
-                      <div>
-                        <span>Personnes</span>
-                        <strong>partager plus facilement les mêmes infos</strong>
-                      </div>
-                      <div>
-                        <span>Alertes</span>
-                        <strong>voir vite ce qui demande votre attention</strong>
-                      </div>
-                      <div>
-                        <span>Aide</span>
-                        <strong>garder un suivi plus simple au quotidien</strong>
-                      </div>
-                    </div>
-                    <div class="ops-footer">
-                      <span>Historique</span>
-                      <span>Zones</span>
-                      <span>Réglages</span>
-                    </div>
-                  </>
-                )}
-
-                {feature.slug === 'reach' && (
-                  <>
-                    <div class="reach-cloud">
-                      <span>Téléphone</span>
-                      <span>Tablette</span>
-                      <span>Ordinateur</span>
-                      <span>Camion</span>
-                      <span>Voiture</span>
-                      <span>Moto</span>
-                      <span>Bus</span>
-                      <span>Suivi partagé</span>
-                    </div>
-                    <div class="reach-devices">
-                      <div class="device desktop"></div>
-                      <div class="device phone"></div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-steps" id="mise-en-route">
-      <div class="shell">
-        <div class="section-head section-head-narrow">
-          <p class="eyebrow">Mise en route</p>
-          <h2>Le démarrage doit rester simple, même si vous suivez plusieurs véhicules.</h2>
-        </div>
-
-        <div class="steps-grid">
-          {steps.map((step) => (
-            <article class="step-panel">
-              <span class="step-number">{step.number}</span>
-              <h3>{step.title}</h3>
-              <p>{step.text}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="roadmap">
-      <div class="shell">
-        <div class="section-head">
-          <p class="eyebrow">Cap produit</p>
-          <h2>Ce qui est déjà là, ce qui arrive bientôt, ce qui viendra plus tard.</h2>
-          <p>
-            Nous préférons montrer clairement ce qui existe déjà et ce qui arrive ensuite,
-            pour garder une promesse simple et crédible.
-          </p>
-        </div>
-
-        <div class="roadmap-grid">
-          {roadmapPhases.map((phase) => (
-            <article class={`phase-card phase-${phase.tone}`}>
-              <span class="phase-label">{phase.label}</span>
-              <h3>{phase.title}</h3>
-              <p>{phase.copy}</p>
-              <ul>
-                {phase.items.map((item) => (
-                  <li>{item}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <section class="section pricing-section" id="coming-soon">
-      <div class="shell">
-        <div class="section-head">
-          <p class="eyebrow">Bientôt</p>
-          <h2>Trackeo s&apos;ouvre petit à petit.</h2>
-          <p>
-            Nous avançons par étapes pour bien accompagner les premiers utilisateurs.
-            L&apos;ouverture plus large arrive ensuite, avec une prise en main toujours simple.
-          </p>
-        </div>
-
-        <div class="pricing-grid">
-          {launchCards.map((plan) => (
-            <article class={`plan-card plan-${plan.tone}`}>
-              <div class="plan-head">
-                <span>{plan.name}</span>
-                <strong>{plan.status}</strong>
-                <em>{plan.detail}</em>
-              </div>
-
-              <p>{plan.description}</p>
-
-              <ul>
-                {plan.features.map((feature) => (
-                  <li>{feature}</li>
-                ))}
-              </ul>
-
-              <div class="plan-tail">
-                <strong>{plan.badge}</strong>
-                <span>{plan.note}</span>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    <section class="section cta-section">
-      <div class="shell">
-        <div class="cta-panel">
-          <div class="cta-copy">
-            <p class="eyebrow eyebrow-light">Ouverture progressive</p>
-            <h2>Trackeo arrive bientôt pour ses premiers utilisateurs.</h2>
-            <p>
-              Nous ouvrons petit à petit pour garder une expérience claire, utile
-              et facile à prendre en main. Revenez bientôt pour suivre l&apos;ouverture.
-            </p>
+          <div class="feature-visual visual-zone" aria-hidden="true">
+            <div class="zone-ring">
+              <span class="zone-pin"></span>
+            </div>
+            <div class="alert-stack">
+              <span class="alert-tag tag-blue">Sortie de zone</span>
+              <span class="alert-tag tag-amber">Vitesse &gt; 120 km/h</span>
+              <span class="alert-tag tag-red">Batterie &lt; 20 %</span>
+              <span class="alert-tag tag-ink">SOS</span>
+            </div>
+            <p class="visual-note mono">Push + WhatsApp</p>
           </div>
+        </article>
 
-          <div class="cta-actions">
-            <a href="#coming-soon" class="button button-brand">Voir l&apos;ouverture</a>
-            <span>Une application pensée pour les personnes qui veulent aller à l&apos;essentiel.</span>
+        <!-- 03 — history & reports -->
+        <article class="feature-card" data-fx>
+          <p class="feature-no mono">03 — Historique &amp; rapports</p>
+          <h3>Chaque trajet se rejoue, chaque journée se résume.</h3>
+          <p class="feature-text">
+            Distance, temps de conduite, arrêts, vitesse max — par véhicule, sur
+            la journée, 7 jours ou 30 jours. Le trajet se redessine sur la carte.
+          </p>
+          <div class="feature-visual visual-report" aria-hidden="true">
+            <div class="period-row mono">
+              <span>Jour</span>
+              <span class="period-active">7 j</span>
+              <span>30 j</span>
+            </div>
+            <div class="bars">
+              <span style="--h: 34%"></span>
+              <span style="--h: 58%"></span>
+              <span style="--h: 44%"></span>
+              <span style="--h: 78%"></span>
+              <span style="--h: 52%"></span>
+              <span class="bar-max" style="--h: 96%"></span>
+              <span style="--h: 64%"></span>
+            </div>
+            <p class="visual-note mono">284 km · 12 trajets · 96 km/h max</p>
           </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ STEPS ============ -->
+    <section class="section shell section-steps" id="demarrage">
+      <div class="section-head" data-fx>
+        <p class="kicker mono">Mise en route</p>
+        <h2>En route en trois gestes.</h2>
+      </div>
+
+      <ol class="steps">
+        {steps.map((step) => (
+          <li class="step" data-fx>
+            <span class="step-no mono">{step.number}</span>
+            <h3>{step.title}</h3>
+            <p>{step.text}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <!-- ============ FINAL CTA ============ -->
+    <section class="section shell">
+      <div class="cta-slab" data-fx>
+        <span class="cta-cross cta-cross-tl mono" aria-hidden="true">+</span>
+        <span class="cta-cross cta-cross-br mono" aria-hidden="true">+</span>
+
+        <p class="live-badge"><span class="live-dot" aria-hidden="true"></span> Accès pilote — ouverture progressive</p>
+        <h2>Vous n&apos;avez plus à deviner.</h2>
+        <p class="cta-sub">
+          Trackeo s&apos;ouvre petit à petit à Madagascar. L&apos;application est
+          en ligne — jetez un œil.
+        </p>
+        <div class="cta-actions">
+          <a href={APP_URL} class="btn btn-mint">Ouvrir Trackeo</a>
         </div>
+        <p class="cta-note mono">trackeo.zenkai.mg — sur téléphone, tablette et ordinateur</p>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="shell footer-row">
-      <div>
+      <div class="footer-brand">
         <strong>Trackeo</strong>
-        <p>Suivi GPS simple, alertes utiles et trajets plus faciles à revoir à Madagascar.</p>
+        <p>Suivi GPS simple pour vos véhicules, pensé pour Madagascar.</p>
       </div>
 
-      <div class="footer-links">
-        <a href="#plateforme">Plateforme</a>
-        <a href="#roadmap">Cap produit</a>
-        <a href="#coming-soon">Bientôt</a>
+      <nav class="footer-links" aria-label="Liens de pied de page">
+        <a href="#fonctions">Fonctions</a>
+        <a href="#demarrage">Comment ça marche</a>
         <a href="/privacy">Confidentialité</a>
         <a href="/terms">Conditions</a>
-        <a href="https://trackeo.zenkai.mg">Connexion</a>
-      </div>
+        <a href={APP_URL}>Connexion</a>
+      </nav>
+
+      <p class="footer-geo mono">Antananarivo · -18.8792, 47.5079</p>
     </div>
   </footer>
 </Layout>
 
 <style>
+  /* ============ layout primitives ============ */
   .shell {
-    width: min(1220px, calc(100% - 40px));
+    width: min(1180px, calc(100% - 40px));
     margin: 0 auto;
   }
 
   .section {
-    padding: clamp(4rem, 7vw, 6.25rem) 0 clamp(4.5rem, 7.6vw, 7rem);
+    padding-top: clamp(4.5rem, 9vw, 7.5rem);
   }
 
-  .site-header {
-    position: sticky;
-    top: 0;
-    z-index: 30;
-    background:
-      linear-gradient(180deg, color-mix(in oklab, white 90%, var(--mist)), color-mix(in oklab, white 72%, var(--mist)));
-    border-bottom: 1px solid color-mix(in oklab, var(--line) 80%, white);
-    backdrop-filter: blur(18px);
-  }
-
-  .header-row {
-    min-height: 78px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .brand-lockup {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.9rem;
-    text-decoration: none;
-  }
-
-  .brand-mark {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 1rem;
-    display: grid;
-    place-items: center;
-    background: linear-gradient(145deg, color-mix(in oklab, var(--brand) 30%, white), color-mix(in oklab, var(--ink) 8%, white));
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--brand) 20%, white);
-  }
-
-  .brand-copy {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.05;
-  }
-
-  .brand-copy strong {
-    font-family: var(--font-display);
-    font-size: 1.2rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-
-  .brand-copy span {
-    font-size: 0.79rem;
-    color: var(--ink-2);
-  }
-
-  .site-nav {
-    display: flex;
-    gap: 1.3rem;
-    font-size: 0.92rem;
-    color: var(--ink-2);
-  }
-
-  .site-nav a {
-    text-decoration: none;
-    position: relative;
-    padding-bottom: 0.15rem;
-    transition: color 220ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .site-nav a::after,
-  .footer-links a::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -0.1rem;
-    height: 1.5px;
-    background: currentColor;
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .site-nav a:hover,
-  .footer-links a:hover {
-    color: var(--ink);
-  }
-
-  .site-nav a:hover::after,
-  .site-nav a:focus-visible::after,
-  .footer-links a:hover::after,
-  .footer-links a:focus-visible::after {
-    transform: scaleX(1);
-  }
-
-  .button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 3.25rem;
-    padding: 0.85rem 1.35rem;
-    border-radius: 1rem;
-    text-decoration: none;
-    border: 1px solid transparent;
-    transition:
-      background-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
-      color 220ms cubic-bezier(0.22, 1, 0.36, 1),
-      border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
-      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .button:hover {
-    transform: translateY(-2px);
-  }
-
-  .button:active {
-    transform: translateY(0) scale(0.985);
-  }
-
-  .button-brand {
-    background: var(--brand);
-    color: var(--ink);
-    box-shadow: 0 14px 30px color-mix(in oklab, var(--brand) 32%, transparent);
-  }
-
-  .button-brand:hover {
-    background: var(--brand-strong);
-  }
-
-  .button-dark {
-    background: var(--ink);
-    color: var(--paper);
-    box-shadow: 0 14px 30px color-mix(in oklab, var(--ink) 18%, transparent);
-  }
-
-  .button-dark:hover {
-    background: color-mix(in oklab, var(--ink) 88%, var(--brand-soft));
-  }
-
-  .button-ghost {
-    background: color-mix(in oklab, white 82%, var(--paper));
-    border-color: var(--line-strong);
-    color: var(--ink);
-  }
-
-  .button-ghost:hover {
-    background: color-mix(in oklab, var(--brand-soft) 48%, white);
-  }
-
-  .hero {
-    padding: clamp(2.4rem, 5vw, 4.5rem) 0 clamp(2rem, 5vw, 3.2rem);
-  }
-
-  .hero-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
-    gap: clamp(1.6rem, 3vw, 3.2rem);
-    align-items: center;
-  }
-
-  .hero-copy {
-    max-width: 42rem;
-  }
-
-  .eyebrow {
-    font-size: 0.84rem;
-    font-weight: 600;
-    color: var(--ink-2);
-    margin-bottom: 0.8rem;
-    letter-spacing: 0.02em;
-  }
-
-  .eyebrow-light {
-    color: color-mix(in oklab, white 75%, var(--brand-soft));
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
   }
 
   h1,
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.03em;
-    line-height: 0.96;
+    letter-spacing: -0.025em;
+    line-height: 1.02;
+    font-weight: 700;
+  }
+
+  /* ============ buttons ============ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.2rem;
+    padding: 0.85rem 1.6rem;
+    border-radius: 0.9rem;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.97rem;
+    border: 1px solid transparent;
+    transition:
+      transform 240ms var(--ease),
+      background-color 240ms var(--ease),
+      border-color 240ms var(--ease),
+      box-shadow 240ms var(--ease);
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .btn:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .btn-mint {
+    background: var(--brand);
+    color: var(--ink-deep);
+    box-shadow: 0 14px 32px color-mix(in srgb, var(--brand) 38%, transparent);
+  }
+
+  .btn-mint:hover {
+    background: var(--brand-strong);
+  }
+
+  .btn-dark {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .btn-dark:hover {
+    background: var(--ink-deep);
+  }
+
+  .btn-ghost {
+    border-color: rgba(255, 255, 255, 0.22);
+    color: var(--paper);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-compact {
+    min-height: 2.7rem;
+    padding: 0.55rem 1.15rem;
+    font-size: 0.9rem;
+  }
+
+  /* ============ header ============ */
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: color-mix(in srgb, var(--mist) 78%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  }
+
+  .header-row {
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.2rem;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    text-decoration: none;
+  }
+
+  .brand-mark {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.75rem;
+    display: grid;
+    place-items: center;
+    background: var(--brand-soft);
+    border: 1px solid color-mix(in srgb, var(--brand) 28%, white);
+  }
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.18rem;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .site-nav {
+    display: flex;
+    gap: 1.6rem;
+    font-size: 0.93rem;
+    font-weight: 500;
+    color: var(--ink-2);
+  }
+
+  .site-nav a {
+    text-decoration: none;
+    transition: color 200ms var(--ease);
+  }
+
+  .site-nav a:hover {
+    color: var(--ink);
+  }
+
+  /* ============ hero ============ */
+  .hero {
+    padding-top: clamp(1rem, 3vw, 2rem);
+  }
+
+  .hero-slab {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+    border-radius: 1.75rem;
+    overflow: hidden;
+    background:
+      radial-gradient(115% 140% at 88% 8%, color-mix(in srgb, var(--brand) 14%, transparent), transparent 46%),
+      linear-gradient(158deg, #3a3c54 0%, var(--ink) 52%, var(--ink-deep) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: var(--shadow-hard);
+  }
+
+  .hero-slab::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  }
+
+  .hero-copy {
+    padding: clamp(2rem, 4.5vw, 4rem) clamp(1.4rem, 3.5vw, 3.4rem) clamp(2.2rem, 4.5vw, 4rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.3rem;
+    color: var(--paper);
+    position: relative;
+    z-index: 2;
+  }
+
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    align-self: flex-start;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.05);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--paper) 82%, var(--brand));
+  }
+
+  .live-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--brand);
+    box-shadow: 0 0 12px var(--brand);
+    animation: blink 1.6s ease-in-out infinite;
   }
 
   h1 {
-    font-size: clamp(2.45rem, 4.6vw, 4.15rem);
-    max-width: 11.5ch;
+    font-size: clamp(2.5rem, 5vw, 4.1rem);
+    max-width: 13ch;
+    font-weight: 800;
   }
 
-  .hero-body,
-  .section-head p,
-  .story-description,
-  .step-panel p,
-  .phase-card p,
-  .plan-card p,
-  .cta-copy p,
-  .site-footer p {
-    font-size: 0.98rem;
-    line-height: 1.66;
-    color: var(--ink-2);
-    max-width: 68ch;
+  .hl {
+    font-style: normal;
+    color: var(--brand);
+    text-shadow: 0 0 28px color-mix(in srgb, var(--brand) 45%, transparent);
   }
 
-  .hero-body {
-    margin-top: 1rem;
-    max-width: 50ch;
+  .hero-sub {
+    font-size: 1.02rem;
+    line-height: 1.7;
+    max-width: 46ch;
+    color: color-mix(in srgb, var(--paper) 72%, var(--ink-3));
   }
 
   .hero-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.9rem;
-    margin: 1.25rem 0 1rem;
+    gap: 0.8rem;
+    margin-top: 0.2rem;
   }
 
-  .hero-proof {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem 0.9rem;
-    list-style: none;
+  .hero-trust {
+    color: color-mix(in srgb, var(--paper) 48%, var(--ink-3));
+    letter-spacing: 0.11em;
+    line-height: 1.9;
   }
 
-  .hero-proof li {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    padding: 0.82rem 0.92rem;
-    border-radius: 1rem;
-    background: color-mix(in oklab, white 86%, var(--brand-soft));
-    border: 1px solid color-mix(in oklab, var(--brand-soft) 64%, var(--line));
-    font-size: 0.85rem;
-    line-height: 1.35;
+  /* hero entry animation */
+  .hero-fx {
+    opacity: 0;
+    animation: fade-up 780ms var(--ease) forwards;
   }
 
-  .proof-dot,
-  .tone-dot,
-  .feed-accent,
-  .slip-dot {
-    flex-shrink: 0;
-  }
+  .hero-fx-1 { animation-delay: 90ms; }
+  .hero-fx-2 { animation-delay: 180ms; }
+  .hero-fx-3 { animation-delay: 270ms; }
+  .hero-fx-4 { animation-delay: 360ms; }
+  .hero-fx-map { animation-delay: 240ms; }
 
-  .proof-dot {
-    width: 0.7rem;
-    height: 0.7rem;
-    border-radius: 999px;
-    background: var(--brand-strong);
-    margin-top: 0.28rem;
-  }
-
-  .hero-scene {
+  /* ============ hero map ============ */
+  .hero-map {
     position: relative;
+    min-height: 30rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .hero-slip {
+  .map-scene {
     position: absolute;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.7rem;
-    padding: 0.9rem 1rem;
-    border-radius: 999px;
-    background: color-mix(in oklab, white 92%, var(--paper));
-    border: 1px solid var(--line);
-    box-shadow: var(--shadow-soft);
-    font-size: 0.9rem;
-    line-height: 1.35;
-  }
-
-  .hero-slip-top {
-    top: -0.8rem;
-    left: 2rem;
-  }
-
-  .hero-slip-bottom {
-    right: 1.4rem;
-    bottom: -1.2rem;
-  }
-
-  .slip-dot,
-  .tone-dot {
-    width: 0.75rem;
-    height: 0.75rem;
-    border-radius: 999px;
-  }
-
-  .slip-dot-mint,
-  .tone-dot-mint {
-    background: var(--brand-strong);
-  }
-
-  .slip-dot-blue,
-  .tone-dot-blue {
-    background: var(--blue);
-  }
-
-  .tone-dot-red {
-    background: var(--red);
-  }
-
-  .tone-dot-amber {
-    background: var(--amber);
-  }
-
-  .hero-board {
-    position: relative;
-    border-radius: 2rem;
-    padding: 1rem;
-    background: linear-gradient(180deg, color-mix(in oklab, white 90%, var(--paper)), color-mix(in oklab, var(--brand-soft) 24%, white));
-    border: 1px solid var(--line-strong);
-    box-shadow: var(--shadow-hard);
-  }
-
-  .hero-top-grid,
-  .hero-bottom-grid {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .hero-top-grid {
-    grid-template-columns: minmax(0, 1.55fr) minmax(17rem, 0.8fr);
-    margin-bottom: 1rem;
-  }
-
-  .hero-bottom-grid {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  }
-
-  .map-sheet,
-  .status-sheet,
-  .feed-sheet,
-  .phone-frame {
-    border-radius: 1.6rem;
-    background: color-mix(in oklab, white 86%, var(--surface));
-    border: 1px solid var(--line);
-  }
-
-  .status-rail {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .map-sheet {
-    position: relative;
-    overflow: hidden;
-    min-height: 21rem;
-    padding: 1rem;
-    background:
-      linear-gradient(180deg, color-mix(in oklab, var(--blue-soft) 50%, white), color-mix(in oklab, var(--brand-soft) 42%, white));
-  }
-
-  .map-meta,
-  .feed-head,
-  .phone-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .mini-kicker {
-    display: block;
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: var(--ink-2);
-    margin-bottom: 0.35rem;
-  }
-
-  .mini-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 1.95rem;
-    padding: 0.15rem 0.75rem;
-    border-radius: 0.85rem;
-    background: color-mix(in oklab, white 74%, var(--paper));
-    border: 1px solid var(--line);
-    font-size: 0.82rem;
-  }
-
-  .mini-pill-alert {
-    background: color-mix(in oklab, var(--blue-soft) 55%, white);
-  }
-
-  .route-scene {
-    position: absolute;
-    inset: 3.6rem 0 0;
+    inset: 0;
     width: 100%;
-    height: calc(100% - 3.6rem);
+    height: 100%;
   }
 
   .route-path {
-    animation: route-run 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards;
+    animation: route-run 2s var(--ease) 600ms forwards;
   }
 
-  .pulse-ring {
-    animation: pulse-ring 2.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  .pulse {
+    transform-box: fill-box;
     transform-origin: center;
+    animation: pulse-ring 2.4s var(--ease) infinite;
   }
 
-  .map-tag {
+  .pulse-b {
+    animation-delay: 1.2s;
+  }
+
+  .chip {
     position: absolute;
     display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    max-width: 15rem;
-    padding: 0.9rem 1rem;
-    border-radius: 1.1rem;
-    background: color-mix(in oklab, white 90%, var(--surface));
-    border: 1px solid var(--line);
-    box-shadow: var(--shadow-soft);
-  }
-
-  .map-tag strong {
-    font-size: 0.96rem;
-  }
-
-  .map-tag span {
-    font-size: 0.82rem;
-    color: var(--ink-2);
-    line-height: 1.45;
-  }
-
-  .map-tag-main {
-    left: 1rem;
-    bottom: 1rem;
-  }
-
-  .map-tag-fence {
-    right: 1rem;
-    top: 4.4rem;
-  }
-
-  .status-sheet,
-  .feed-sheet,
-  .phone-screen {
-    padding: 1.15rem;
-  }
-
-  .status-sheet {
-    min-height: 10.1rem;
-  }
-
-  .status-sheet-contrast {
-    background: var(--ink);
-    color: color-mix(in oklab, white 92%, var(--paper));
-    min-height: auto;
-  }
-
-  .status-sheet-contrast .mini-kicker,
-  .status-sheet-contrast p {
-    color: color-mix(in oklab, white 74%, var(--brand-soft));
-  }
-
-  .status-line {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.8rem;
-    align-items: center;
-    padding-top: 0.9rem;
-  }
-
-  .status-line strong,
-  .sheet-line span:last-child,
-  .feed-list strong,
-  .feed-footer strong,
-  .phone-row strong,
-  .story-meta strong,
-  .phase-card h3,
-  .plan-head strong,
-  .step-panel h3,
-  .cta-copy h2 {
-    display: block;
-  }
-
-  .status-line strong {
-    font-size: 0.96rem;
-  }
-
-  .status-line span:last-child {
-    font-size: 0.82rem;
-    color: var(--ink-2);
-  }
-
-  .feed-sheet h2 {
-    font-size: clamp(1.75rem, 3vw, 2.35rem);
-  }
-
-  .feed-list {
-    list-style: none;
-    display: grid;
-    gap: 0.8rem;
-    margin: 1.1rem 0 1rem;
-  }
-
-  .feed-list li {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.8rem;
-    align-items: start;
-    padding: 0.9rem 0;
-    border-top: 1px solid color-mix(in oklab, var(--line) 78%, white);
-  }
-
-  .feed-accent {
-    width: 0.45rem;
-    min-height: 100%;
-    border-radius: 999px;
-    background: var(--brand-strong);
-  }
-
-  .feed-accent-blue {
-    background: var(--blue);
-  }
-
-  .feed-accent-red {
-    background: var(--red);
-  }
-
-  .feed-accent-amber {
-    background: var(--amber);
-  }
-
-  .feed-list strong,
-  .feed-footer strong {
-    font-size: 0.96rem;
-    line-height: 1.3;
-  }
-
-  .feed-list span,
-  .feed-footer span,
-  .phone-row span,
-  .story-meta span,
-  .phase-card li,
-  .plan-card li,
-  .step-panel p,
-  .footer-links a {
-    font-size: 0.87rem;
-    line-height: 1.5;
-    color: var(--ink-2);
-  }
-
-  .feed-footer {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: end;
-    padding-top: 1rem;
-    border-top: 1px solid color-mix(in oklab, var(--line) 78%, white);
-  }
-
-  .phone-sheet {
-    display: grid;
-    place-items: center;
-  }
-
-  .phone-frame {
-    width: min(100%, 20rem);
-    padding: 0.65rem;
-    background: linear-gradient(180deg, color-mix(in oklab, var(--ink) 14%, white), color-mix(in oklab, var(--brand-soft) 25%, white));
-    box-shadow: var(--shadow-soft);
-  }
-
-  .phone-screen {
-    border-radius: 1.25rem;
-    background: var(--paper);
-  }
-
-  .phone-head strong {
-    font-size: 1.1rem;
-  }
-
-  .phone-badge {
-    align-self: center;
-    padding: 0.35rem 0.65rem;
-    border-radius: 999px;
-    background: color-mix(in oklab, var(--brand-soft) 60%, white);
-    color: var(--brand-strong);
-    font-size: 0.8rem;
-    font-weight: 700;
-  }
-
-  .phone-card,
-  .phone-settings {
-    margin-top: 1rem;
-    padding: 0.9rem;
-    border-radius: 1rem;
-    background: color-mix(in oklab, white 76%, var(--surface));
-    border: 1px solid var(--line);
-  }
-
-  .phone-card-secondary {
-    background: color-mix(in oklab, var(--blue-soft) 35%, white);
-  }
-
-  .phone-row {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 0.75rem;
-    align-items: center;
-  }
-
-  .phone-icon {
-    width: 2.1rem;
-    height: 2.1rem;
-    border-radius: 999px;
-  }
-
-  .phone-icon-green {
-    background: color-mix(in oklab, var(--brand) 24%, white);
-  }
-
-  .phone-icon-blue {
-    background: color-mix(in oklab, var(--blue) 22%, white);
-  }
-
-  .phone-row em,
-  .plan-head em {
-    font-style: normal;
-    color: var(--ink-2);
-    font-size: 0.82rem;
-  }
-
-  .toggle-line {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-top: 0.85rem;
-    font-size: 0.88rem;
-  }
-
-  .toggle {
-    position: relative;
-    width: 2.8rem;
-    height: 1.6rem;
-    border-radius: 999px;
-    background: color-mix(in oklab, var(--ink) 10%, white);
-  }
-
-  .toggle::after {
-    content: '';
-    position: absolute;
-    top: 0.19rem;
-    left: 0.2rem;
-    width: 1.22rem;
-    height: 1.22rem;
-    border-radius: 999px;
-    background: white;
-    box-shadow: 0 4px 10px color-mix(in oklab, var(--ink) 10%, transparent);
-  }
-
-  .toggle.on {
-    background: color-mix(in oklab, var(--brand) 55%, white);
-  }
-
-  .toggle.on::after {
-    left: 1.38rem;
-  }
-
-  .signal-bar {
-    padding-bottom: 1.5rem;
-  }
-
-  .signal-card {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 1rem 1.4rem;
-    align-items: center;
-    padding: 1.2rem 1.35rem;
-    border-radius: 1.6rem;
-    background: color-mix(in oklab, white 86%, var(--surface));
-    border: 1px solid var(--line);
-    box-shadow: var(--shadow-soft);
-  }
-
-  .signal-card > p {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--ink);
-    white-space: nowrap;
-  }
-
-  .signal-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem 0;
-  }
-
-  .signal-list span {
-    position: relative;
-    padding-right: 1rem;
-    margin-right: 0.95rem;
-    font-size: 0.84rem;
-    color: var(--ink);
-  }
-
-  .signal-list span::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    right: 0;
-    width: 0.28rem;
-    height: 0.28rem;
-    border-radius: 999px;
-    background: color-mix(in oklab, var(--brand) 70%, var(--ink));
-    transform: translateY(-50%);
-  }
-
-  .signal-list span:last-child {
-    margin-right: 0;
-    padding-right: 0;
-  }
-
-  .signal-list span:last-child::after {
-    display: none;
-  }
-
-  .section-head {
-    display: grid;
-    gap: 1rem;
-    margin-bottom: 2.6rem;
-  }
-
-  .section-head h2,
-  .cta-copy h2 {
-    font-size: clamp(1.8rem, 3vw, 2.7rem);
-    max-width: 15ch;
-  }
-
-  .section-head-narrow h2 {
-    max-width: 13ch;
-  }
-
-  .story-stack {
-    display: grid;
-    gap: 1.35rem;
-  }
-
-  .story-card {
-    display: grid;
-    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-    overflow: hidden;
-    border-radius: 2rem;
-    border: 1px solid var(--line);
-    background: color-mix(in oklab, white 84%, var(--surface));
-    box-shadow: var(--shadow-soft);
-  }
-
-  .story-reversed {
-    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-  }
-
-  .story-copy,
-  .story-visual,
-  .phase-card,
-  .plan-card,
-  .step-panel {
-    padding: clamp(1.3rem, 3vw, 2.2rem);
-  }
-
-  .story-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    justify-content: center;
-  }
-
-  .story-kicker,
-  .phase-label {
-    font-size: 0.82rem;
-    letter-spacing: 0.03em;
-    font-weight: 600;
-  }
-
-  .story-copy h3 {
-    font-size: clamp(1.45rem, 2.15vw, 2rem);
-    max-width: 13ch;
-  }
-
-  .story-points,
-  .phase-card ul,
-  .plan-card ul {
-    display: grid;
+    align-items: flex-start;
     gap: 0.65rem;
-    list-style: none;
+    max-width: min(76%, 19rem);
+    padding: 0.75rem 0.95rem;
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--ink-deep) 82%, black);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--paper);
+    animation: drift 5.5s ease-in-out infinite;
   }
 
-  .story-points li,
-  .phase-card li,
-  .plan-card li {
-    position: relative;
-    padding-left: 1.15rem;
+  .chip-alert {
+    top: 7%;
+    right: 5.5%;
   }
 
-  .story-points li::before,
-  .phase-card li::before,
-  .plan-card li::before {
-    content: '';
+  .chip-vehicle {
+    bottom: 17%;
+    left: 6%;
+    animation-delay: 2.2s;
+  }
+
+  .chip-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .chip-body strong {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .chip-body .mono {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--brand);
+  }
+
+  .chip-icon {
+    flex-shrink: 0;
+    width: 0.95rem;
+    height: 0.95rem;
+    margin-top: 0.15rem;
+    border-radius: 999px;
+  }
+
+  .chip-icon-zone {
+    background: var(--blue);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue) 25%, transparent);
+  }
+
+  .chip-icon-live {
+    background: var(--brand);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 25%, transparent);
+  }
+
+  .telemetry {
     position: absolute;
     left: 0;
-    top: 0.52rem;
-    width: 0.45rem;
-    height: 0.45rem;
-    border-radius: 999px;
-    background: currentColor;
-    opacity: 0.65;
-  }
-
-  .story-meta {
-    margin-top: 0.6rem;
+    right: 0;
+    bottom: 0;
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 1rem;
-    align-items: end;
-    flex-wrap: wrap;
+    padding: 0.75rem 1.2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(20, 21, 30, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: rgba(244, 245, 247, 0.55);
+    font-size: 0.64rem;
   }
 
-  .story-meta strong {
-    font-size: clamp(1.55rem, 2.4vw, 2.2rem);
-    line-height: 0.9;
-    font-variant-numeric: tabular-nums;
+  .telemetry-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--brand);
   }
 
-  .story-visual {
-    min-height: 21rem;
-    position: relative;
+  /* ============ stat strip ============ */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin-top: clamp(1.4rem, 3vw, 2.2rem);
+    border-radius: 1.4rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-soft);
     overflow: hidden;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 1.4rem 1.5rem;
+  }
+
+  .stat + .stat {
+    border-left: 1px solid var(--line);
+  }
+
+  .stat strong {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 2.4vw, 1.95rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .stat .mono {
+    color: var(--ink-2);
+    font-size: 0.66rem;
+  }
+
+  /* ============ sections ============ */
+  .section-head {
+    display: grid;
+    gap: 0.9rem;
+    margin-bottom: clamp(2.2rem, 4.5vw, 3.4rem);
+  }
+
+  .kicker {
+    color: var(--brand-strong);
+  }
+
+  h2 {
+    font-size: clamp(1.95rem, 3.6vw, 3rem);
+    color: var(--ink);
+    max-width: 22ch;
+  }
+
+  .section-sub {
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--ink-2);
+    max-width: 52ch;
+  }
+
+  /* ============ features ============ */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.1rem;
+  }
+
+  .feature-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1.6rem 1.6rem 1.4rem;
+    border-radius: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    transition:
+      transform 300ms var(--ease),
+      border-color 300ms var(--ease),
+      box-shadow 300ms var(--ease);
+  }
+
+  .feature-card:hover {
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
+    box-shadow: var(--shadow-soft);
+  }
+
+  .feature-no {
+    color: var(--brand-strong);
+  }
+
+  .feature-card h3 {
+    font-size: 1.35rem;
+    line-height: 1.15;
+    color: var(--ink);
+    max-width: 20ch;
+  }
+
+  .feature-text {
+    font-size: 0.93rem;
+    line-height: 1.65;
+    color: var(--ink-2);
+    flex-grow: 1;
+  }
+
+  .feature-visual {
+    position: relative;
+    height: 13rem;
+    border-radius: 1.1rem;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    margin-top: 0.4rem;
+  }
+
+  .visual-note {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.85rem;
+    text-align: center;
+    color: var(--ink-2);
+    font-size: 0.62rem;
+  }
+
+  /* 01 — live */
+  .visual-live {
+    background:
+      linear-gradient(0deg, color-mix(in srgb, var(--brand-soft) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--brand-soft) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(170deg, var(--paper), color-mix(in srgb, var(--blue-soft) 35%, white));
+    background-size: 2.6rem 2.6rem, 2.6rem 2.6rem, auto;
+  }
+
+  .vdot {
+    position: absolute;
+    width: 0.95rem;
+    height: 0.95rem;
+    border-radius: 999px;
+    border: 2.5px solid white;
+    box-shadow: 0 4px 12px rgba(31, 41, 55, 0.2);
+  }
+
+  .vdot-mint {
+    left: 30%;
+    top: 34%;
+    background: var(--brand);
+  }
+
+  .vdot-mint::after {
+    content: '';
+    position: absolute;
+    inset: -0.85rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--brand) 28%, transparent);
+    animation: pulse-ring 2.2s var(--ease) infinite;
+    z-index: -1;
+  }
+
+  .vdot-blue {
+    left: 64%;
+    top: 22%;
+    background: var(--blue);
+  }
+
+  .vdot-gray {
+    left: 48%;
+    top: 56%;
+    background: var(--ink-3);
+  }
+
+  .legend {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.85rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    padding: 0 0.6rem;
+  }
+
+  .legend-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    background: white;
+    border: 1px solid var(--line);
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+  }
+
+  .dot-mint { background: var(--brand); }
+  .dot-blue { background: var(--blue); }
+  .dot-gray { background: var(--ink-3); }
+
+  /* 02 — zone */
+  .visual-zone {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1.1rem 1.1rem 2.4rem;
+    background: linear-gradient(170deg, color-mix(in srgb, var(--blue-soft) 42%, white), var(--paper));
+  }
+
+  .zone-ring {
+    width: 8.2rem;
+    height: 8.2rem;
+    border-radius: 999px;
+    border: 2px dashed color-mix(in srgb, var(--blue) 55%, white);
+    background: color-mix(in srgb, var(--blue) 9%, transparent);
     display: grid;
     place-items: center;
   }
 
-  .tone-mint {
-    background: linear-gradient(180deg, color-mix(in oklab, var(--brand-soft) 38%, white), color-mix(in oklab, var(--paper) 75%, white));
-  }
-
-  .tone-mint .story-kicker,
-  .tone-mint .story-meta strong,
-  .tone-mint .story-points li {
-    color: var(--brand-strong);
-  }
-
-  .tone-amber {
-    background: linear-gradient(180deg, color-mix(in oklab, var(--amber-soft) 48%, white), color-mix(in oklab, var(--paper) 75%, white));
-  }
-
-  .tone-amber .story-kicker,
-  .tone-amber .story-meta strong,
-  .tone-amber .story-points li {
-    color: color-mix(in oklab, var(--amber) 74%, var(--ink));
-  }
-
-  .tone-blue {
-    background: linear-gradient(180deg, color-mix(in oklab, var(--blue-soft) 50%, white), color-mix(in oklab, var(--paper) 78%, white));
-  }
-
-  .tone-blue .story-kicker,
-  .tone-blue .story-meta strong,
-  .tone-blue .story-points li {
-    color: var(--blue);
-  }
-
-  .tone-paper {
-    background: linear-gradient(180deg, color-mix(in oklab, white 92%, var(--paper)), color-mix(in oklab, var(--brand-soft) 24%, white));
-  }
-
-  .tone-paper .story-kicker,
-  .tone-paper .story-meta strong,
-  .tone-paper .story-points li {
-    color: var(--ink);
-  }
-
-  .tone-ink {
-    background: linear-gradient(180deg, color-mix(in oklab, var(--ink) 96%, black), color-mix(in oklab, var(--ink) 86%, var(--brand-soft)));
-    color: var(--paper);
-  }
-
-  .tone-ink .story-description,
-  .tone-ink .story-meta span {
-    color: color-mix(in oklab, white 78%, var(--brand-soft));
-  }
-
-  .tone-ink .story-kicker,
-  .tone-ink .story-meta strong,
-  .tone-ink .story-points li {
-    color: color-mix(in oklab, white 88%, var(--brand-soft));
-  }
-
-  .visual-live,
-  .visual-history,
-  .visual-alerts,
-  .visual-ops,
-  .visual-reach {
-    height: 100%;
-    width: 100%;
-  }
-
-  .visual-live {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-  }
-
-  .visual-raster {
+  .zone-pin {
     position: relative;
-    min-height: 15rem;
-    background:
-      linear-gradient(0deg, color-mix(in oklab, var(--brand-soft) 36%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in oklab, var(--brand-soft) 36%, transparent) 1px, transparent 1px),
-      linear-gradient(180deg, color-mix(in oklab, white 70%, var(--blue-soft)), color-mix(in oklab, white 84%, var(--brand-soft)));
-    background-size: 3.3rem 3.3rem, 3.3rem 3.3rem, auto;
-  }
-
-  .visual-route {
-    position: absolute;
-    border-top: 0.45rem solid var(--brand-strong);
-    border-right: 0.45rem solid var(--brand-strong);
-    border-radius: 0 2rem 0 0;
-  }
-
-  .visual-route-a {
-    width: 14rem;
-    height: 8rem;
-    left: 2rem;
-    bottom: 2.8rem;
-  }
-
-  .visual-route-b {
-    width: 10rem;
-    height: 6rem;
-    right: 2.5rem;
-    top: 3.8rem;
-    border-color: var(--blue);
-    transform: scaleX(-1);
-  }
-
-  .visual-dot {
-    position: absolute;
-    width: 1rem;
-    height: 1rem;
+    width: 1.05rem;
+    height: 1.05rem;
     border-radius: 999px;
+    background: var(--brand);
+    border: 2.5px solid white;
+    box-shadow: 0 4px 12px rgba(31, 41, 55, 0.25);
   }
 
-  .visual-dot-main {
-    right: 5rem;
-    top: 7.1rem;
-    background: var(--brand-strong);
-    box-shadow: 0 0 0 0.7rem color-mix(in oklab, var(--brand) 18%, transparent);
-  }
-
-  .visual-dot-blue {
-    left: 14rem;
-    top: 10.8rem;
-    background: var(--blue);
-  }
-
-  .visual-dot-amber {
-    left: 5.5rem;
-    bottom: 4rem;
-    background: var(--amber);
-  }
-
-  .visual-sheet {
-    display: grid;
-    gap: 0.65rem;
-    padding: 1.1rem 1.25rem 1.25rem;
-  }
-
-  .sheet-line {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.8rem 0.9rem;
-    background: color-mix(in oklab, white 78%, var(--surface));
-    border: 1px solid var(--line);
-    border-radius: 1rem;
-  }
-
-  .visual-history {
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    gap: 1.25rem;
-    padding: 1.4rem;
-    background: color-mix(in oklab, white 78%, var(--surface));
-  }
-
-  .history-line {
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    min-height: 5rem;
-  }
-
-  .history-line::before {
+  .zone-pin::after {
     content: '';
     position: absolute;
-    left: 0.6rem;
-    right: 0.6rem;
-    top: 50%;
-    height: 0.24rem;
+    inset: -0.8rem;
     border-radius: 999px;
-    background: linear-gradient(90deg, color-mix(in oklab, var(--amber) 48%, white), color-mix(in oklab, var(--amber) 82%, white));
+    background: color-mix(in srgb, var(--brand) 26%, transparent);
+    animation: pulse-ring 2.4s var(--ease) infinite;
+    z-index: -1;
   }
 
-  .history-line span {
-    position: relative;
-    width: 1rem;
-    height: 1rem;
-    border-radius: 999px;
-    background: white;
-    border: 0.35rem solid color-mix(in oklab, var(--amber) 65%, white);
-    z-index: 1;
-  }
-
-  .history-graph {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 0.7rem;
-    align-items: end;
-    min-height: 12rem;
-  }
-
-  .history-bar {
-    height: var(--h);
-    min-height: 3.2rem;
-    border-radius: 999px 999px 0.85rem 0.85rem;
-    background: linear-gradient(180deg, color-mix(in oklab, var(--amber) 95%, white), color-mix(in oklab, var(--amber-soft) 55%, white));
-  }
-
-  .history-caption {
-    display: grid;
-    gap: 0.35rem;
-  }
-
-  .history-caption strong {
-    font-size: 1rem;
-  }
-
-  .history-caption span {
-    font-size: 0.88rem;
-    color: var(--ink-2);
-  }
-
-  .visual-alerts {
-    display: grid;
-    align-content: center;
-    gap: 0.9rem;
-    padding: 1.6rem;
-  }
-
-  .bubble {
-    padding: 1rem 1.1rem;
-    border-radius: 1.15rem;
-    border: 1px solid var(--line);
-    background: color-mix(in oklab, white 78%, var(--surface));
-    box-shadow: var(--shadow-soft);
-  }
-
-  .bubble strong,
-  .admin-board strong {
-    font-size: 1rem;
-  }
-
-  .bubble span,
-  .admin-board span,
-  .ops-footer span,
-  .reach-cloud span {
-    font-size: 0.86rem;
-    line-height: 1.5;
-    color: var(--ink-2);
-  }
-
-  .bubble-blue {
-    background: color-mix(in oklab, var(--blue-soft) 55%, white);
-  }
-
-  .bubble-red {
-    background: color-mix(in oklab, var(--red-soft) 55%, white);
-  }
-
-  .bubble-amber {
-    background: color-mix(in oklab, var(--amber-soft) 55%, white);
-  }
-
-  .settings-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-  }
-
-  .visual-ops {
-    display: grid;
-    gap: 1rem;
-    align-content: center;
-    padding: 1.6rem;
-  }
-
-  .admin-board {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.9rem;
-  }
-
-  .admin-board div,
-  .ops-footer {
-    padding: 1rem;
-    border-radius: 1.25rem;
-    background: color-mix(in oklab, white 12%, transparent);
-    border: 1px solid color-mix(in oklab, white 14%, transparent);
-  }
-
-  .admin-board span,
-  .ops-footer span {
-    color: color-mix(in oklab, white 78%, var(--brand-soft));
-  }
-
-  .ops-footer {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.8rem;
-  }
-
-  .visual-reach {
-    display: grid;
-    gap: 1.2rem;
-    align-content: center;
-    padding: 1.5rem;
-  }
-
-  .reach-cloud {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.7rem;
-  }
-
-  .reach-cloud span {
-    padding: 0.55rem 0.8rem;
-    border-radius: 999px;
-    background: color-mix(in oklab, white 88%, var(--surface));
-    border: 1px solid var(--line);
-    color: var(--ink);
-  }
-
-  .reach-devices {
-    position: relative;
-    min-height: 14rem;
-  }
-
-  .device {
-    position: absolute;
-    border-radius: 1.5rem;
-    border: 1px solid var(--line);
-    background:
-      linear-gradient(180deg, color-mix(in oklab, white 88%, var(--brand-soft)), color-mix(in oklab, white 76%, var(--blue-soft)));
-    box-shadow: var(--shadow-soft);
-  }
-
-  .device.desktop {
-    inset: 0 0 1.5rem 0;
-  }
-
-  .device.desktop::before {
-    content: '';
-    position: absolute;
-    inset: 1rem;
-    border-radius: 1rem;
-    background:
-      linear-gradient(0deg, color-mix(in oklab, var(--brand-soft) 36%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in oklab, var(--brand-soft) 36%, transparent) 1px, transparent 1px),
-      white;
-    background-size: 2.8rem 2.8rem;
-  }
-
-  .device.phone {
-    width: 7.2rem;
-    height: 13rem;
-    right: 1.4rem;
-    bottom: 0;
-    border-radius: 2rem;
-    border-color: color-mix(in oklab, var(--ink) 10%, white);
-  }
-
-  .device.phone::before {
-    content: '';
-    position: absolute;
-    inset: 0.6rem;
-    border-radius: 1.4rem;
-    background: white;
-  }
-
-  .section-steps {
-    background: color-mix(in oklab, white 85%, var(--brand-soft));
-    border-block: 1px solid color-mix(in oklab, var(--line) 82%, white);
-  }
-
-  .steps-grid,
-  .roadmap-grid,
-  .pricing-grid {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 1rem;
-    align-items: start;
-  }
-
-  .steps-grid .step-panel:nth-child(1) {
-    grid-column: 1 / span 4;
-    margin-top: 0.9rem;
-  }
-
-  .steps-grid .step-panel:nth-child(2) {
-    grid-column: 5 / span 3;
-  }
-
-  .steps-grid .step-panel:nth-child(3) {
-    grid-column: 8 / -1;
-    margin-top: 1.9rem;
-  }
-
-  .step-panel {
-    border-radius: 1.55rem;
-    background: color-mix(in oklab, white 88%, var(--surface));
-    border: 1px solid var(--line);
-    box-shadow: var(--shadow-soft);
-  }
-
-  .step-number,
-  .plan-head strong {
-    font-family: var(--font-display);
-    font-size: clamp(1.8rem, 3.1vw, 2.6rem);
-    line-height: 0.9;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .step-number {
-    color: var(--brand-strong);
-    display: inline-block;
-    margin-bottom: 1rem;
-  }
-
-  .step-panel h3 {
-    font-size: clamp(1.5rem, 2vw, 1.95rem);
-    max-width: 12ch;
-    margin-bottom: 0.9rem;
-  }
-
-  .roadmap-grid .phase-card:nth-child(1) {
-    grid-column: 1 / span 5;
-  }
-
-  .roadmap-grid .phase-card:nth-child(2) {
-    grid-column: 6 / span 3;
-    margin-top: 1.55rem;
-  }
-
-  .roadmap-grid .phase-card:nth-child(3) {
-    grid-column: 9 / -1;
-    margin-top: 0.35rem;
-  }
-
-  .phase-card {
-    display: grid;
-    gap: 1rem;
-    border-radius: 1.65rem;
-    border: 1px solid var(--line);
-    box-shadow: var(--shadow-soft);
-  }
-
-  .phase-card h3 {
-    font-size: clamp(1.45rem, 2vw, 1.9rem);
-  }
-
-  .phase-mint {
-    background: color-mix(in oklab, var(--brand-soft) 46%, white);
-  }
-
-  .phase-mint .phase-label,
-  .phase-mint li {
-    color: var(--brand-strong);
-  }
-
-  .phase-blue {
-    background: color-mix(in oklab, var(--blue-soft) 44%, white);
-  }
-
-  .phase-blue .phase-label,
-  .phase-blue li {
-    color: var(--blue);
-  }
-
-  .phase-amber {
-    background: color-mix(in oklab, var(--amber-soft) 44%, white);
-  }
-
-  .phase-amber .phase-label,
-  .phase-amber li {
-    color: color-mix(in oklab, var(--amber) 76%, var(--ink));
-  }
-
-  .pricing-section {
-    background: color-mix(in oklab, white 88%, var(--paper));
-  }
-
-  .pricing-grid .plan-card:nth-child(1) {
-    grid-column: 1 / span 4;
-    margin-top: 1rem;
-  }
-
-  .pricing-grid .plan-card:nth-child(2) {
-    grid-column: 5 / span 4;
-  }
-
-  .pricing-grid .plan-card:nth-child(3) {
-    grid-column: 9 / -1;
-    margin-top: 1.9rem;
-  }
-
-  .plan-card {
+  .alert-stack {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    min-height: 100%;
-    border-radius: 1.65rem;
-    border: 1px solid var(--line);
-    box-shadow: var(--shadow-soft);
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 
-  .plan-paper {
-    background: color-mix(in oklab, white 92%, var(--paper));
+  .alert-tag {
+    padding: 0.38rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    border: 1px solid transparent;
   }
 
-  .plan-mint {
-    background: linear-gradient(180deg, color-mix(in oklab, var(--brand-soft) 54%, white), color-mix(in oklab, white 90%, var(--surface)));
-    border-color: color-mix(in oklab, var(--brand) 24%, var(--line));
+  .tag-blue {
+    background: var(--blue-soft);
+    color: color-mix(in srgb, var(--blue) 80%, var(--ink));
+    border-color: color-mix(in srgb, var(--blue) 22%, white);
   }
 
-  .plan-ink {
+  .tag-amber {
+    background: var(--amber-soft);
+    color: color-mix(in srgb, var(--amber) 72%, var(--ink));
+    border-color: color-mix(in srgb, var(--amber) 26%, white);
+  }
+
+  .tag-red {
+    background: var(--red-soft);
+    color: color-mix(in srgb, var(--red) 76%, var(--ink));
+    border-color: color-mix(in srgb, var(--red) 22%, white);
+  }
+
+  .tag-ink {
     background: var(--ink);
     color: var(--paper);
-    border-color: color-mix(in oklab, white 12%, transparent);
   }
 
-  .plan-ink p,
-  .plan-ink li,
-  .plan-ink em {
-    color: color-mix(in oklab, white 76%, var(--brand-soft));
-  }
-
-  .plan-head {
+  /* 03 — report */
+  .visual-report {
     display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 0.6rem;
+    padding: 0.95rem 1.1rem 2.4rem;
+    background: linear-gradient(170deg, color-mix(in srgb, var(--brand-soft) 45%, white), var(--paper));
+  }
+
+  .period-row {
+    display: flex;
+    justify-content: flex-end;
     gap: 0.35rem;
+    font-size: 0.6rem;
+    color: var(--ink-3);
   }
 
-  .plan-head span {
-    font-size: 0.92rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+  .period-row span {
+    padding: 0.28rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: white;
   }
 
-  .plan-tail {
-    margin-top: auto;
-    display: grid;
-    gap: 0.35rem;
-    padding: 0.95rem 1rem;
-    border-radius: 1rem;
-    background: color-mix(in oklab, white 75%, var(--surface));
-    border: 1px solid color-mix(in oklab, var(--line) 80%, white);
-  }
-
-  .plan-tail strong {
-    font-size: 0.9rem;
-  }
-
-  .plan-tail span {
-    font-size: 0.84rem;
-    line-height: 1.5;
-    color: var(--ink-2);
-  }
-
-  .plan-ink .plan-tail {
-    background: color-mix(in oklab, white 10%, transparent);
-    border-color: color-mix(in oklab, white 12%, transparent);
-  }
-
-  .plan-ink .plan-tail span {
-    color: color-mix(in oklab, white 76%, var(--brand-soft));
-  }
-
-  .cta-section {
-    padding-top: 0;
-  }
-
-  .cta-panel {
-    display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.72fr);
-    gap: 2rem;
-    align-items: end;
-    padding: clamp(1.5rem, 4vw, 2.4rem);
-    border-radius: 2rem;
-    background:
-      radial-gradient(circle at top left, color-mix(in oklab, var(--brand) 16%, transparent), transparent 34%),
-      radial-gradient(circle at right 18%, color-mix(in oklab, var(--blue) 14%, transparent), transparent 30%),
-      linear-gradient(180deg, color-mix(in oklab, var(--ink) 96%, black), color-mix(in oklab, var(--ink) 88%, var(--brand-soft)));
-    box-shadow: var(--shadow-hard);
-  }
-
-  .cta-copy h2,
-  .cta-copy p {
+  .period-row .period-active {
+    background: var(--ink);
     color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  .bars {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.55rem;
+    align-items: end;
+    padding-bottom: 0.4rem;
+  }
+
+  .bars span {
+    height: var(--h);
+    min-height: 1rem;
+    border-radius: 0.5rem 0.5rem 0.25rem 0.25rem;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 80%, white), color-mix(in srgb, var(--brand-soft) 70%, white));
+  }
+
+  .bars .bar-max {
+    background: linear-gradient(180deg, var(--brand-strong), var(--brand));
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--brand) 40%, transparent);
+  }
+
+  /* ============ steps ============ */
+  .section-steps {
+    position: relative;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.1rem;
+    list-style: none;
+    counter-reset: none;
+    position: relative;
+  }
+
+  .steps::before {
+    content: '';
+    position: absolute;
+    top: 1.55rem;
+    left: 8%;
+    right: 8%;
+    border-top: 2px dashed color-mix(in srgb, var(--brand) 35%, var(--line));
+    z-index: 0;
+  }
+
+  .step {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 0.7rem;
+    padding: 0 1.4rem 0 0;
+  }
+
+  .step-no {
+    display: grid;
+    place-items: center;
+    width: 3.1rem;
+    height: 3.1rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    border: 1px solid color-mix(in srgb, var(--brand) 35%, white);
+    color: var(--brand-strong);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    box-shadow: 0 0 0 6px var(--mist);
+  }
+
+  .step h3 {
+    font-size: 1.25rem;
+    color: var(--ink);
+  }
+
+  .step p {
+    font-size: 0.93rem;
+    line-height: 1.65;
+    color: var(--ink-2);
+    max-width: 34ch;
+  }
+
+  /* ============ final CTA ============ */
+  .cta-slab {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: 1.1rem;
+    padding: clamp(2.6rem, 6vw, 4.2rem) clamp(1.4rem, 4vw, 3rem);
+    border-radius: 1.75rem;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 150% at 50% -20%, color-mix(in srgb, var(--brand) 16%, transparent), transparent 52%),
+      linear-gradient(158deg, #3a3c54 0%, var(--ink) 55%, var(--ink-deep) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: var(--shadow-hard);
+    color: var(--paper);
+  }
+
+  .cta-slab::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  }
+
+  .cta-slab h2 {
+    color: var(--paper);
+    font-size: clamp(2.1rem, 4.4vw, 3.4rem);
+  }
+
+  .cta-sub {
+    font-size: 1rem;
+    line-height: 1.7;
+    max-width: 44ch;
+    color: color-mix(in srgb, var(--paper) 72%, var(--ink-3));
   }
 
   .cta-actions {
-    display: grid;
-    gap: 1rem;
-    align-content: end;
+    margin-top: 0.4rem;
   }
 
-  .cta-actions span {
-    font-size: 0.92rem;
-    line-height: 1.55;
-    color: color-mix(in oklab, white 76%, var(--brand-soft));
+  .cta-note {
+    color: color-mix(in srgb, var(--paper) 45%, var(--ink-3));
+    font-size: 0.64rem;
   }
 
+  .cta-cross {
+    position: absolute;
+    font-size: 1.1rem;
+    color: color-mix(in srgb, var(--brand) 60%, transparent);
+  }
+
+  .cta-cross-tl {
+    top: 1.2rem;
+    left: 1.5rem;
+  }
+
+  .cta-cross-br {
+    bottom: 1rem;
+    right: 1.5rem;
+  }
+
+  /* ============ footer ============ */
   .site-footer {
-    padding: 2rem 0 3rem;
+    padding: clamp(3rem, 6vw, 4.5rem) 0 2.4rem;
   }
 
   .footer-row {
     display: flex;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 2rem;
-    align-items: start;
+    gap: 1.6rem;
+    flex-wrap: wrap;
     border-top: 1px solid var(--line);
-    padding-top: 1.6rem;
+    padding-top: 1.8rem;
   }
 
-  .footer-row strong {
-    font-size: 1.05rem;
+  .footer-brand strong {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--ink);
+  }
+
+  .footer-brand p {
+    margin-top: 0.4rem;
+    font-size: 0.88rem;
+    color: var(--ink-2);
+    max-width: 34ch;
   }
 
   .footer-links {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem 1.2rem;
-    justify-content: flex-end;
+    gap: 0.9rem 1.3rem;
+    font-size: 0.88rem;
+    color: var(--ink-2);
   }
 
   .footer-links a {
     text-decoration: none;
-    position: relative;
+    transition: color 200ms var(--ease);
   }
 
-  .reveal {
+  .footer-links a:hover {
+    color: var(--ink);
+  }
+
+  .footer-geo {
+    color: var(--ink-3);
+    font-size: 0.62rem;
+  }
+
+  /* ============ scroll reveal ============ */
+  .fx-init {
     opacity: 0;
-    animation: fade-up 760ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    transform: translateY(22px);
+    transition:
+      opacity 700ms var(--ease),
+      transform 700ms var(--ease);
   }
 
-  .reveal-delay-2 {
-    animation-delay: 140ms;
+  .fx-in {
+    opacity: 1;
+    transform: none;
   }
 
-  @media (max-width: 1080px) {
+  /* ============ responsive ============ */
+  @media (max-width: 1024px) {
     .site-nav {
       display: none;
     }
 
-    .hero-grid,
-    .story-card,
-    .story-reversed,
-    .cta-panel {
+    .hero-slab {
       grid-template-columns: 1fr;
     }
 
-    .hero-top-grid,
-    .hero-bottom-grid,
-    .roadmap-grid,
-    .pricing-grid,
-    .steps-grid {
+    .hero-map {
+      min-height: 26rem;
+      border-left: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .stat-strip {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat:nth-child(3) {
+      border-left: none;
+    }
+
+    .stat:nth-child(n + 3) {
+      border-top: 1px solid var(--line);
+    }
+
+    .feature-grid {
       grid-template-columns: 1fr;
     }
 
-    .steps-grid .step-panel,
-    .roadmap-grid .phase-card,
-    .pricing-grid .plan-card {
-      grid-column: auto;
-      margin-top: 0;
-    }
-
-    .hero-proof {
+    .steps {
       grid-template-columns: 1fr;
+      gap: 2rem;
     }
 
-    .hero-slip {
-      position: static;
-      margin-bottom: 1rem;
+    .steps::before {
+      display: none;
     }
   }
 
-  @media (max-width: 760px) {
+  @media (max-width: 720px) {
     .shell {
-      width: min(100% - 24px, 1220px);
-    }
-
-    .header-row {
-      min-height: 72px;
+      width: calc(100% - 28px);
     }
 
     h1 {
-      font-size: clamp(2rem, 7vw, 2.85rem);
-      max-width: 13ch;
+      font-size: clamp(2.1rem, 8.5vw, 2.8rem);
     }
 
-    .section-head h2,
-    .cta-copy h2,
-    .story-copy h3,
-    .phase-card h3,
-    .step-panel h3 {
-      max-width: none;
+    .hero-copy {
+      padding: 1.8rem 1.3rem 2rem;
     }
 
-    .signal-card {
+    .hero-map {
+      min-height: 22rem;
+    }
+
+    .chip {
+      max-width: 82%;
+      padding: 0.6rem 0.75rem;
+    }
+
+    .chip-body strong {
+      font-size: 0.78rem;
+    }
+
+    .telemetry {
+      font-size: 0.56rem;
+      padding: 0.6rem 0.8rem;
+    }
+
+    .telemetry-mid {
+      display: none;
+    }
+
+    .stat-strip {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .visual-zone {
       grid-template-columns: 1fr;
-      align-items: start;
+      justify-items: center;
+      height: auto;
+      gap: 1rem;
+      padding-bottom: 3.4rem;
     }
 
-    .feed-footer,
-    .footer-row,
-    .phone-row {
-      align-items: start;
+    .zone-ring {
+      width: 6.6rem;
+      height: 6.6rem;
     }
 
-    .feed-footer,
+    .alert-stack {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
     .footer-row {
       flex-direction: column;
     }
-
-    .admin-board {
-      grid-template-columns: 1fr;
-    }
-
-    .ops-footer {
-      flex-wrap: wrap;
-    }
-
-    .hero-board {
-      padding: 0.8rem;
-    }
-
-    .map-sheet {
-      min-height: 18rem;
-    }
-
-    .route-scene {
-      inset: 4.4rem 0 0;
-      height: calc(100% - 4.4rem);
-    }
-
-    .map-tag {
-      position: static;
-      margin-top: 0.7rem;
-      max-width: none;
-    }
-
-    .hero {
-      padding-top: 1.8rem;
-    }
-
-    .hero-body {
-      max-width: none;
-    }
   }
 </style>
+
+<script>
+  const els = document.querySelectorAll('[data-fx]');
+  els.forEach((el) => el.classList.add('fx-init'));
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('fx-in');
+          io.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+  );
+
+  els.forEach((el) => io.observe(el));
+</script>
