@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
-const APP_URL = 'https://trackeo.zenkai.mg';
+const APP_URL = 'https://app.trackeo.zenkai.mg';
 
 const stats = [
   { value: '10 s', label: 'entre chaque position' },
@@ -44,7 +44,7 @@ const steps = [
         <a href="#demarrage">Comment ça marche</a>
       </nav>
 
-      <a href={APP_URL} class="btn btn-dark btn-compact">Ouvrir l&apos;app</a>
+      <a href="#acces" class="btn btn-dark btn-compact">Accès pilote</a>
     </div>
   </header>
 
@@ -53,7 +53,7 @@ const steps = [
     <section class="hero shell">
       <div class="hero-slab">
         <div class="hero-copy">
-          <p class="live-badge hero-fx"><span class="live-dot" aria-hidden="true"></span> En direct — Antananarivo</p>
+          <p class="live-badge hero-fx"><span class="live-dot" aria-hidden="true"></span> Lancement bientôt — Antananarivo</p>
 
           <h1 class="hero-fx hero-fx-1">
             Vos véhicules, <em class="hl">en&nbsp;direct</em>, où que vous soyez.
@@ -66,12 +66,12 @@ const steps = [
           </p>
 
           <div class="hero-actions hero-fx hero-fx-3">
-            <a href={APP_URL} class="btn btn-mint">Ouvrir Trackeo</a>
-            <a href="#fonctions" class="btn btn-ghost">Voir les fonctions</a>
+            <a href="#fonctions" class="btn btn-mint">Voir les fonctions</a>
+            <a href="#acces" class="btn btn-ghost">L&apos;accès pilote</a>
           </div>
 
           <p class="hero-trust mono hero-fx hero-fx-4">
-            Position toutes les 10 s · Alertes WhatsApp + push · Aucune installation
+            Position toutes les 10 s · Alertes WhatsApp + push · Ouverture progressive
           </p>
         </div>
 
@@ -281,21 +281,22 @@ const steps = [
     </section>
 
     <!-- ============ FINAL CTA ============ -->
-    <section class="section shell">
+    <section class="section shell" id="acces">
       <div class="cta-slab" data-fx>
         <span class="cta-cross cta-cross-tl mono" aria-hidden="true">+</span>
         <span class="cta-cross cta-cross-br mono" aria-hidden="true">+</span>
 
         <p class="live-badge"><span class="live-dot" aria-hidden="true"></span> Accès pilote — ouverture progressive</p>
-        <h2>Vous n&apos;avez plus à deviner.</h2>
+        <h2>Bientôt, vous n&apos;aurez plus à deviner.</h2>
         <p class="cta-sub">
-          Trackeo s&apos;ouvre petit à petit à Madagascar. L&apos;application est
-          en ligne — jetez un œil.
+          Trackeo s&apos;ouvre d&apos;abord à un petit groupe de véhicules à
+          Antananarivo, pour soigner le démarrage. L&apos;ouverture plus large
+          suivra — et sera annoncée ici.
         </p>
         <div class="cta-actions">
-          <a href={APP_URL} class="btn btn-mint">Ouvrir Trackeo</a>
+          <a href={APP_URL} class="btn btn-ghost">Déjà pilote&nbsp;? Se connecter</a>
         </div>
-        <p class="cta-note mono">trackeo.zenkai.mg — sur téléphone, tablette et ordinateur</p>
+        <p class="cta-note mono">trackeo.zenkai.mg — l&apos;ouverture sera annoncée sur cette page</p>
       </div>
     </section>
   </main>

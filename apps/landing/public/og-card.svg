@@ -24,6 +24,10 @@
   <circle cx="970" cy="210" r="17" fill="#4ECB8D"/>
   <circle cx="970" cy="210" r="6" fill="#272838"/>
 
+  <!-- coming soon -->
+  <rect x="956" y="96" width="140" height="46" rx="23" fill="#4ECB8D"/>
+  <text x="978" y="126" fill="#272838" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" letter-spacing="1">BIENTÔT</text>
+
   <!-- brand -->
   <rect x="104" y="104" width="84" height="84" rx="24" fill="#E8F8F2"/>
   <path d="M146 122c-16.57 0-30 13.43-30 30 0 21.25 30 50 30 50s30-28.75 30-50c0-16.57-13.43-30-30-30Zm0 43.13a13.12 13.12 0 1 1 0-26.25 13.12 13.12 0 0 1 0 26.25Z" fill="#333549"/>
