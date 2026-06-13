@@ -2,10 +2,86 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+/// Résultat de recherche de lieu (geocoding avant : nom → coordonnées).
+class PlaceResult {
+  final String displayName;
+  final double lat;
+  final double lon;
+
+  const PlaceResult({
+    required this.displayName,
+    required this.lat,
+    required this.lon,
+  });
+
+  factory PlaceResult.fromJson(Map<String, dynamic> json) => PlaceResult(
+        displayName: json['display_name'] as String? ?? '',
+        lat: double.tryParse('${json['lat']}') ?? 0,
+        lon: double.tryParse('${json['lon']}') ?? 0,
+      );
+
+  List<String> get _parts => displayName
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+
+  /// Libellé court : les 2 premiers segments du nom complet.
+  String get shortName {
+    final parts = _parts;
+    if (parts.isEmpty) return displayName;
+    return parts.take(2).join(', ');
+  }
+
+  /// Contexte (reste de l'adresse) pour le sous-titre.
+  String get context {
+    final parts = _parts;
+    if (parts.length <= 2) return '';
+    return parts.skip(2).join(', ');
+  }
+}
+
 /// Un provider mis en cache localement via keepAlive() pour éviter de
 /// flooder Nominatim à chaque reconstruction ou navigation.
 class NominatimCache {
   static final Map<String, String> _cache = {};
+
+  /// Recherche de lieux (geocoding avant : nom → coordonnées).
+  /// Biaisé sur Madagascar (`countrycodes=mg`). Renvoie [] si < 3 caractères.
+  static Future<List<PlaceResult>> searchPlaces(String query) async {
+    final q = query.trim();
+    if (q.length < 3) return [];
+
+    try {
+      final dio = Dio(
+        BaseOptions(
+          headers: {
+            'User-Agent': 'Trackeo Mobile App / contact@projettrackeo.mg',
+          },
+        ),
+      );
+
+      final response = await dio.get(
+        'https://nominatim.openstreetmap.org/search',
+        queryParameters: {
+          'format': 'json',
+          'q': q,
+          'limit': 6,
+          'addressdetails': 1,
+          'countrycodes': 'mg',
+        },
+      );
+
+      if (response.statusCode == 200 && response.data is List) {
+        return (response.data as List)
+            .map((e) => PlaceResult.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {
+      // Silencieux : on renvoie une liste vide en cas d'échec réseau.
+    }
+    return [];
+  }
 
   static Future<String?> reverseGeocode(double lat, double lon) async {
     // Arrondi à 4 décimales (~11 mètres de précision) pour augmenter le hit cache

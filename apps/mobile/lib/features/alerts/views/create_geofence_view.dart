@@ -1,10 +1,13 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:math' as math;
+import 'package:geolocator/geolocator.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/providers/geocoding_provider.dart';
 import '../providers/geofences_provider.dart';
 import '../models/geofence_model.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
@@ -30,6 +33,17 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
   bool _isDragging = false;
   final Set<int> _selectedVehicleIds = {};
   late final TextEditingController _nameController;
+
+  // Recherche de lieu (geocoding avant)
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+  List<PlaceResult> _searchResults = [];
+  bool _searching = false;
+  Timer? _searchDebounce;
+
+  // Localisation utilisateur (GPS) + adresse de l'épingle (reverse geocoding)
+  bool _locating = false;
+  String? _centerAddress;
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -62,13 +76,115 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     _pulseAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    _updateAddress(); // adresse initiale de l'épingle
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _searchController.dispose();
+    _searchFocus.dispose();
+    _searchDebounce?.cancel();
     _pulseController.dispose();
     super.dispose();
+  }
+
+  // ── Recherche de lieu (geocoding avant) ──────────────────────────────────
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    if (value.trim().length < 3) {
+      setState(() {
+        _searchResults = [];
+        _searching = false;
+      });
+      return;
+    }
+    setState(() => _searching = true);
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 450),
+      () => _runSearch(value),
+    );
+  }
+
+  Future<void> _runSearch(String query) async {
+    final results = await NominatimCache.searchPlaces(query);
+    if (!mounted) return;
+    setState(() {
+      _searchResults = results;
+      _searching = false;
+    });
+  }
+
+  void _selectPlace(PlaceResult place) {
+    FocusScope.of(context).unfocus();
+    HapticFeedback.selectionClick();
+    setState(() {
+      _center = LatLng(place.lat, place.lon);
+      _searchResults = [];
+      _searchController.text = place.shortName;
+      _centerAddress = place.shortName;
+    });
+    _mapController.move(_center, 15);
+    _ensureCircleVisible();
+    _updateAddress();
+  }
+
+  // ── Ma position (GPS navigateur / appareil) ──────────────────────────────
+  Future<void> _goToMyLocation() async {
+    if (_locating) return;
+    setState(() => _locating = true);
+    try {
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        _showSnack(
+          'Autorisez la localisation pour utiliser cette fonction.',
+          Colors.orange.shade700,
+        );
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition();
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
+      setState(() {
+        _center = LatLng(pos.latitude, pos.longitude);
+        _searchResults = [];
+      });
+      _mapController.move(_center, 16);
+      _ensureCircleVisible();
+      _updateAddress();
+    } catch (_) {
+      _showSnack('Position indisponible.', Colors.red.shade700);
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
+  // ── Adresse de l'épingle (reverse geocoding) ─────────────────────────────
+  Future<void> _updateAddress() async {
+    final target = _center;
+    final addr = await NominatimCache.reverseGeocode(
+      target.latitude,
+      target.longitude,
+    );
+    if (!mounted) return;
+    // N'écrase pas si l'épingle a bougé entre-temps.
+    if (target == _center) setState(() => _centerAddress = addr);
+  }
+
+  void _showSnack(String message, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   void _centerOnMarker() {
@@ -94,10 +210,13 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
 
   void _onMapTap(TapPosition tapPosition, LatLng point) {
     HapticFeedback.selectionClick();
+    FocusScope.of(context).unfocus();
     setState(() {
       _center = point;
+      _searchResults = [];
     });
     _ensureCircleVisible();
+    _updateAddress();
   }
 
   void _ensureCircleVisible() {
@@ -291,6 +410,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                       onPanEnd: (_) {
                         HapticFeedback.lightImpact();
                         setState(() => _isDragging = false);
+                        _updateAddress();
                       },
                       child: AnimatedBuilder(
                         animation: _pulseAnimation,
@@ -382,50 +502,60 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
               ),
             ),
 
-          // ── TOP BAR ─────────────────────────────────────────────────────
+          // ── TOP BAR + RECHERCHE DE LIEU ──────────────────────────────────
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,
                 vertical: 8.0,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  _buildCircleButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      _isEditing ? 'Modifier la zone' : 'Nouvelle zone',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.3,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildCircleButton(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        onTap: () => Navigator.pop(context),
                       ),
-                    ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          _isEditing ? 'Modifier la zone' : 'Nouvelle zone',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                      _buildCircleButton(
+                        icon: Icons.close_rounded,
+                        onTap: () => Navigator.pop(context),
+                      ),
+                    ],
                   ),
-                  _buildCircleButton(
-                    icon: Icons.close_rounded,
-                    onTap: () => Navigator.pop(context),
-                  ),
+                  const SizedBox(height: 10),
+                  _buildSearchBar(),
+                  if (_searchResults.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _buildSearchResults(),
+                  ],
                 ],
               ),
             ),
@@ -437,12 +567,20 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
             bottom: bottomPanelHeight + 20,
             child: Column(
               children: [
-                // Center/locate button — moves camera back to the pin
+                // Ma position — déplace l'épingle vers la position GPS de l'user
                 _buildMapFabButton(
                   icon: Icons.my_location_rounded,
+                  onTap: _goToMyLocation,
+                  tooltip: 'Ma position',
+                  isPrimary: true,
+                  loading: _locating,
+                ),
+                const SizedBox(height: 8),
+                // Recentre la caméra sur l'épingle
+                _buildMapFabButton(
+                  icon: Icons.filter_center_focus_rounded,
                   onTap: _centerOnMarker,
                   tooltip: 'Centrer sur l\'épingle',
-                  isPrimary: true,
                 ),
                 const SizedBox(height: 8),
                 // Zoom in
@@ -466,42 +604,64 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
             ),
           ),
 
-          // ── COORDS CHIP ──────────────────────────────────────────────────
+          // ── ADRESSE / COORDONNÉES (reverse geocoding) ────────────────────
           Positioned(
             left: 16,
             bottom: bottomPanelHeight + 20,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                  ),
-                ],
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.5,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${_center.latitude.toStringAsFixed(5)}°',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 8,
                     ),
-                  ),
-                  Text(
-                    '${_center.longitude.toStringAsFixed(5)}°',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.location_on_rounded,
+                          size: 13,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            _centerAddress ?? 'Localisation…',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                              height: 1.25,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 3),
+                    Text(
+                      '${_center.latitude.toStringAsFixed(5)}°, ${_center.longitude.toStringAsFixed(5)}°',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textHint,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -933,16 +1093,175 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     );
   }
 
+  Widget _buildSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 14),
+          const Icon(Icons.search_rounded, color: AppColors.textHint, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              focusNode: _searchFocus,
+              textInputAction: TextInputAction.search,
+              onChanged: _onSearchChanged,
+              onSubmitted: (v) => _runSearch(v),
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
+              decoration: const InputDecoration(
+                isDense: true,
+                hintText: 'Rechercher un lieu, une adresse…',
+                hintStyle: TextStyle(color: AppColors.textHint, fontSize: 14),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+          if (_searching)
+            const Padding(
+              padding: EdgeInsets.only(right: 14, left: 4),
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
+            )
+          else if (_searchController.text.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                _searchController.clear();
+                _searchDebounce?.cancel();
+                setState(() {
+                  _searchResults = [];
+                  _searching = false;
+                });
+                FocusScope.of(context).unfocus();
+              },
+              behavior: HitTestBehavior.opaque,
+              child: const Padding(
+                padding: EdgeInsets.only(right: 12, left: 4),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: AppColors.textHint,
+                  size: 18,
+                ),
+              ),
+            )
+          else
+            const SizedBox(width: 14),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 264),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: ListView.separated(
+        shrinkWrap: true,
+        padding: EdgeInsets.zero,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        itemCount: _searchResults.length,
+        separatorBuilder: (_, __) => Divider(
+          height: 1,
+          thickness: 1,
+          color: AppColors.divider.withValues(alpha: 0.6),
+        ),
+        itemBuilder: (_, i) {
+          final p = _searchResults[i];
+          return GestureDetector(
+            onTap: () => _selectPlace(p),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.place_outlined,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          p.shortName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        if (p.context.isNotEmpty) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            p.context,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textHint,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildMapFabButton({
     required IconData icon,
     required VoidCallback onTap,
     bool isPrimary = false,
+    bool loading = false,
     String? tooltip,
   }) {
     return Tooltip(
       message: tooltip ?? '',
       child: GestureDetector(
-        onTap: onTap,
+        onTap: loading ? null : onTap,
         child: Container(
           width: 42,
           height: 42,
@@ -957,11 +1276,24 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
               ),
             ],
           ),
-          child: Icon(
-            icon,
-            color: isPrimary ? Colors.white : AppColors.textPrimary,
-            size: 20,
-          ),
+          child: loading
+              ? Center(
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isPrimary ? Colors.white : AppColors.primary,
+                      ),
+                    ),
+                  ),
+                )
+              : Icon(
+                  icon,
+                  color: isPrimary ? Colors.white : AppColors.textPrimary,
+                  size: 20,
+                ),
         ),
       ),
     );
