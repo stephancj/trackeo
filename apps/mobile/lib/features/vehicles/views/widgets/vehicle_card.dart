@@ -32,7 +32,7 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
       reverseDuration: const Duration(milliseconds: 220),
     );
     _scale = Tween<double>(begin: 1.0, end: 0.967).animate(
-      CurvedAnimation(parent: _press, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _press, curve: AppMotion.quint),
     );
   }
 

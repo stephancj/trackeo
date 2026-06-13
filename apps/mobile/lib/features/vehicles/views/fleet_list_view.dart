@@ -2,12 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/navigation/app_shell.dart';
 import '../models/vehicle_model.dart';
 import '../providers/vehicles_provider.dart';
 import 'widgets/vehicle_card.dart';
 import 'widgets/vehicle_card_skeleton.dart';
 import 'vehicle_details_view.dart';
+import '../../history/views/history_view.dart';
+import '../../reports/views/reports_view.dart';
 import '../../../../core/navigation/trackeo_route.dart';
 
 class FleetListView extends ConsumerStatefulWidget {
@@ -21,6 +25,16 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
   @override
   Widget build(BuildContext context) {
     final vehiclesAsync = ref.watch(vehiclesProvider);
+    final allVehicles = vehiclesAsync.valueOrNull ?? const <Vehicle>[];
+
+    // Un seul véhicule → pas de recherche ni de filtres : écran épuré et premium.
+    if (vehiclesAsync.hasValue && allVehicles.length == 1) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(child: _SingleVehicleScreen(vehicle: allVehicles.first)),
+      );
+    }
+
     final filteredAsync = ref.watch(filteredVehiclesProvider);
     final filter = ref.watch(vehicleFilterProvider);
 
@@ -338,6 +352,7 @@ class _SlideInCardState extends State<_SlideInCard>
   late final AnimationController _ctrl;
   late final Animation<Offset> _slide;
   late final Animation<double> _fade;
+  bool _started = false;
 
   @override
   void initState() {
@@ -349,14 +364,25 @@ class _SlideInCardState extends State<_SlideInCard>
     _slide = Tween<Offset>(
       begin: const Offset(0, 0.25),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    ).animate(CurvedAnimation(parent: _ctrl, curve: AppMotion.quint));
     _fade = Tween<double>(begin: 0.0, end: 1.0)
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+  }
 
-    final delay = Duration(milliseconds: (widget.index * 55).clamp(0, 330));
-    Future.delayed(delay, () {
-      if (mounted) _ctrl.forward();
-    });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    // Pas de stagger si l'utilisateur a demandé de réduire les animations.
+    if (AppMotion.reduce(context)) {
+      _ctrl.value = 1.0;
+    } else {
+      final delay = Duration(milliseconds: (widget.index * 55).clamp(0, 330));
+      Future.delayed(delay, () {
+        if (mounted) _ctrl.forward();
+      });
+    }
   }
 
   @override
@@ -397,6 +423,266 @@ class _ErrorState extends StatelessWidget {
             child: const Text('Réessayer'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Écran véhicule unique ───────────────────────────────────────────────────
+// Quand l'utilisateur n'a qu'un seul véhicule : aucune barre de recherche ni
+// filtre. À la place, une carte mise en avant + des raccourcis premium qui
+// remplissent l'espace utilement plutôt que de laisser un écran vide.
+
+class _SingleVehicleScreen extends ConsumerWidget {
+  final Vehicle vehicle;
+
+  const _SingleVehicleScreen({required this.vehicle});
+
+  String get _statusLine {
+    switch (vehicle.status) {
+      case VehicleStatus.online:
+        final spd = vehicle.position?.speedKmh.toInt() ?? 0;
+        return 'En mouvement · $spd km/h';
+      case VehicleStatus.idle:
+        return vehicle.lastUpdate != null
+            ? 'Arrêté ${timeago.format(vehicle.lastUpdate!, locale: 'fr')}'
+            : 'Arrêté';
+      case VehicleStatus.offline:
+        return vehicle.lastUpdate != null
+            ? 'Hors ligne ${timeago.format(vehicle.lastUpdate!, locale: 'fr')}'
+            : 'Hors ligne';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () async => ref.invalidate(vehiclesProvider),
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 28),
+        children: [
+          // En-tête adaptatif
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Mon véhicule',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _statusLine,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Carte véhicule (mise en avant)
+          _SlideInCard(
+            index: 0,
+            child: VehicleCard(
+              vehicle: vehicle,
+              onTap: () {
+                ref.read(selectedVehicleIdProvider.notifier).state = vehicle.id;
+                Navigator.push(
+                  context,
+                  TrackeoRoute(
+                    builder: (context) => VehicleDetailsView(vehicle: vehicle),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // Raccourcis
+          _SlideInCard(
+            index: 1,
+            child: const Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 10),
+              child: Text('RACCOURCIS', style: AppTextStyles.caps),
+            ),
+          ),
+          _SlideInCard(
+            index: 2,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _QuickActionTile(
+                          icon: Icons.map_outlined,
+                          label: 'Carte',
+                          bg: AppColors.pastelGreen,
+                          color: AppColors.primary,
+                          onTap: () {
+                            ref
+                                .read(selectedVehicleIdProvider.notifier)
+                                .state = vehicle.id;
+                            ref.read(activeTabProvider.notifier).state = 1;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _QuickActionTile(
+                          icon: Icons.route_outlined,
+                          label: 'Historique',
+                          bg: AppColors.pastelBlue,
+                          color: AppColors.statusIdle,
+                          onTap: () => Navigator.push(
+                            context,
+                            TrackeoRoute(
+                              builder: (_) => HistoryView(
+                                vehicleId: vehicle.id,
+                                vehicleName: vehicle.name,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _QuickActionTile(
+                          icon: Icons.insights_outlined,
+                          label: 'Rapports',
+                          bg: AppColors.pastelPurple,
+                          color: const Color(0xFF8B5CF6),
+                          onTap: () => Navigator.push(
+                            context,
+                            TrackeoRoute(builder: (_) => const ReportsView()),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _QuickActionTile(
+                          icon: Icons.notifications_outlined,
+                          label: 'Alertes',
+                          bg: AppColors.pastelOrange,
+                          color: const Color(0xFFF97316),
+                          onTap: () =>
+                              ref.read(activeTabProvider.notifier).state = 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionTile extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final Color bg;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionTile({
+    required this.icon,
+    required this.label,
+    required this.bg,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_QuickActionTile> createState() => _QuickActionTileState();
+}
+
+class _QuickActionTileState extends State<_QuickActionTile>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _press;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _press = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 80),
+      reverseDuration: const Duration(milliseconds: 220),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _press, curve: AppMotion.quint),
+    );
+  }
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => _press.forward(),
+      onTapUp: (_) => _press.reverse(),
+      onTapCancel: () => _press.reverse(),
+      child: AnimatedBuilder(
+        animation: _scale,
+        builder: (_, child) =>
+            Transform.scale(scale: _scale.value, child: child),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(color: widget.bg, shape: BoxShape.circle),
+                child: Icon(widget.icon, color: widget.color, size: 22),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

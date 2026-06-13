@@ -68,7 +68,7 @@ class _TrackeoBottomNav extends StatelessWidget {
                 pageIndex: 0,
                 icon: Icons.list_alt_outlined,
                 activeIcon: Icons.list_alt,
-                label: 'Flotte',
+                label: 'Véhicules',
                 activeTab: activeTab,
                 onTap: () => onTabChanged(0),
               ),
@@ -143,10 +143,10 @@ class _AnimatedFabState extends State<_AnimatedFab>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 80),
-      reverseDuration: const Duration(milliseconds: 200),
+      reverseDuration: const Duration(milliseconds: 220),
     );
     _scale = Tween<double>(begin: 1.0, end: 0.88).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _ctrl, curve: AppMotion.quint),
     );
   }
 
@@ -222,17 +222,18 @@ class _NavItemState extends State<_NavItem>
     super.initState();
     _bounce = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: AppMotion.base,
     );
+    // Pop-and-settle franc, sans rebond élastique (aligné sur la landing).
     _scale = TweenSequence<double>([
       TweenSequenceItem(
-          tween: Tween<double>(begin: 1.0, end: 1.25)
-              .chain(CurveTween(curve: Curves.easeOut)),
-          weight: 50),
+          tween: Tween<double>(begin: 1.0, end: 1.18)
+              .chain(CurveTween(curve: AppMotion.quint)),
+          weight: 42),
       TweenSequenceItem(
-          tween: Tween<double>(begin: 1.25, end: 1.0)
-              .chain(CurveTween(curve: Curves.elasticOut)),
-          weight: 50),
+          tween: Tween<double>(begin: 1.18, end: 1.0)
+              .chain(CurveTween(curve: AppMotion.quint)),
+          weight: 58),
     ]).animate(_bounce);
   }
 
@@ -240,7 +241,11 @@ class _NavItemState extends State<_NavItem>
   void didUpdateWidget(_NavItem oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (isActive && oldWidget.activeTab != widget.pageIndex) {
-      _bounce.forward(from: 0);
+      if (AppMotion.reduce(context)) {
+        _bounce.value = _bounce.upperBound; // pas de pop si motion réduit
+      } else {
+        _bounce.forward(from: 0);
+      }
     }
   }
 

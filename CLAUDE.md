@@ -402,6 +402,7 @@ TOTAL_POINTS=30
 | `GET` | `/api/vehicles/:id/position` | Dernière position d'un véhicule (polling 10s) |
 | `PATCH` | `/api/vehicles/:id` | Mise à jour complète (nom, plaque, IMEI, photo) |
 | `GET` | `/api/vehicles/:id/history` | Positions entre `from` et `to` (historique trajet) |
+| `GET` | `/api/vehicles/:id/history/active-days?from=&to=` | Activité jour par jour (distance, nb points) — calendrier d'activité |
 | `POST` | `/api/geofences` | Créer une geofence (cercle) |
 | `GET` | `/api/geofences` | Liste des geofences de l'utilisateur |
 | `PATCH` | `/api/geofences/:id` | Mettre à jour une geofence (ex : activer/désactiver) |

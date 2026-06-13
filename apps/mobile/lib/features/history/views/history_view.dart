@@ -6,7 +6,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../vehicles/models/vehicle_model.dart';
 import '../../../core/providers/geocoding_provider.dart';
 import '../models/trip_stats_model.dart';
+import '../models/day_activity_model.dart';
 import '../providers/history_provider.dart';
+import 'widgets/activity_calendar_sheet.dart';
 
 class HistoryView extends ConsumerStatefulWidget {
   final int vehicleId;
@@ -140,7 +142,12 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                 ),
                 const SizedBox(width: 10),
                 // Sélecteur de date
-                Expanded(child: _DateSelector(date: date)),
+                Expanded(
+                  child: _DateSelector(
+                    date: date,
+                    vehicleId: widget.vehicleId,
+                  ),
+                ),
               ],
             ),
           ),
@@ -319,11 +326,17 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
 
 class _DateSelector extends ConsumerWidget {
   final DateTime date;
-  const _DateSelector({required this.date});
+  final int vehicleId;
+  const _DateSelector({required this.date, required this.vehicleId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isToday = _isToday(date);
+    // Jours actifs du mois courant — alimente les flèches "jour actif suivant".
+    final monthDays = ref
+            .watch(activeDaysProvider((vehicleId, date.year, date.month)))
+            .valueOrNull ??
+        const <DayActivity>[];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
@@ -340,9 +353,9 @@ class _DateSelector extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          // Jour précédent
+          // Jour actif précédent
           GestureDetector(
-            onTap: () => _shift(ref, -1),
+            onTap: () => _stepToActive(ref, monthDays, -1),
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 4),
               child: Icon(
@@ -352,30 +365,10 @@ class _DateSelector extends ConsumerWidget {
               ),
             ),
           ),
-          // Date centrale — tap pour ouvrir le sélecteur natif
+          // Date centrale — tap pour ouvrir le calendrier d'activité
           Expanded(
             child: GestureDetector(
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: date,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                  builder: (context, child) => Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: ColorScheme.light(
-                        primary: AppColors.primary,
-                        onPrimary: Colors.white,
-                        surface: AppColors.surface,
-                      ),
-                    ),
-                    child: child!,
-                  ),
-                );
-                if (picked != null) {
-                  ref.read(historyDateProvider.notifier).state = picked;
-                }
-              },
+              onTap: () => _openCalendar(context, ref),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -416,9 +409,9 @@ class _DateSelector extends ConsumerWidget {
               ),
             ),
           ),
-          // Jour suivant (désactivé si aujourd'hui)
+          // Jour actif suivant (désactivé si aujourd'hui)
           GestureDetector(
-            onTap: isToday ? null : () => _shift(ref, 1),
+            onTap: isToday ? null : () => _stepToActive(ref, monthDays, 1),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Icon(
@@ -433,10 +426,58 @@ class _DateSelector extends ConsumerWidget {
     );
   }
 
-  void _shift(WidgetRef ref, int days) {
-    ref.read(historyDateProvider.notifier).state = date.add(
-      Duration(days: days),
+  Future<void> _openCalendar(BuildContext context, WidgetRef ref) async {
+    final picked = await showModalBottomSheet<DateTime>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => ActivityCalendarSheet(
+        vehicleId: vehicleId,
+        selectedDate: date,
+      ),
     );
+    if (picked != null) {
+      ref.read(historyDateProvider.notifier).state =
+          DateTime(picked.year, picked.month, picked.day);
+    }
+  }
+
+  /// Saute au jour actif le plus proche dans la direction [dir] (-1 / +1).
+  /// Repli sur ±1 jour calendaire si aucun jour actif dans ce mois.
+  void _stepToActive(WidgetRef ref, List<DayActivity> monthDays, int dir) {
+    final cur = DateTime(date.year, date.month, date.day);
+    final now = DateTime.now();
+    final todayD = DateTime(now.year, now.month, now.day);
+
+    final active = monthDays
+        .where((d) => d.hasMovement)
+        .map((d) => DateTime(d.date.year, d.date.month, d.date.day))
+        .toList()
+      ..sort();
+
+    DateTime? target;
+    if (dir < 0) {
+      for (final d in active.reversed) {
+        if (d.isBefore(cur)) {
+          target = d;
+          break;
+        }
+      }
+    } else {
+      for (final d in active) {
+        if (d.isAfter(cur)) {
+          target = d;
+          break;
+        }
+      }
+    }
+
+    target ??= cur.add(Duration(days: dir));
+    if (target.isAfter(todayD)) return;
+    ref.read(historyDateProvider.notifier).state = target;
   }
 
   bool _isToday(DateTime d) {

@@ -30,15 +30,26 @@ class _StatusBadgeState extends State<StatusBadge>
     _opacity = Tween<double>(begin: 0.55, end: 0.0).animate(
       CurvedAnimation(parent: _pulse, curve: Curves.easeOut),
     );
-    if (widget.status == VehicleStatus.online) {
-      _pulse.repeat();
-    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncPulse(); // (re)lit la préférence motion réduit après le 1er layout
   }
 
   @override
   void didUpdateWidget(StatusBadge oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.status == VehicleStatus.online) {
+    _syncPulse();
+  }
+
+  /// Anime le halo uniquement si le véhicule est "online" ET que l'utilisateur
+  /// n'a pas demandé de réduire les animations (WCAG).
+  void _syncPulse() {
+    final shouldPulse =
+        widget.status == VehicleStatus.online && !AppMotion.reduce(context);
+    if (shouldPulse) {
       if (!_pulse.isAnimating) _pulse.repeat();
     } else {
       _pulse.stop();

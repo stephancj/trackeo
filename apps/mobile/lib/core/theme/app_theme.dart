@@ -119,6 +119,32 @@ class AppRadius {
   static const double pill = 24.0;  // chips, pills
 }
 
+/// Tokens de mouvement — une seule signature de courbe pour toute l'app,
+/// alignée sur la landing web (`--ease: cubic-bezier(0.22, 1, 0.36, 1)`).
+/// Objectif : une voix de motion cohérente, premium, jamais "rebond élastique".
+class AppMotion {
+  AppMotion._();
+
+  // ── Courbes ────────────────────────────────────────────────────────────────
+  /// Décélération douce — la courbe signature (ease-out-quint). Défaut partout.
+  static const Cubic quint = Cubic(0.22, 1, 0.36, 1);
+
+  /// Décélération franche — déplacements amples (ease-out-expo).
+  static const Cubic expo = Cubic(0.16, 1, 0.3, 1);
+
+  // ── Durées ─────────────────────────────────────────────────────────────────
+  static const Duration instant = Duration(milliseconds: 120); // feedback tactile
+  static const Duration fast = Duration(milliseconds: 180);    // hover, chips
+  static const Duration base = Duration(milliseconds: 240);    // changements d'état
+  static const Duration enter = Duration(milliseconds: 420);   // entrées de contenu
+  static const Duration pulse = Duration(milliseconds: 2200);  // beacon "live"
+
+  /// Respecte la préférence système « réduire les animations » (WCAG / PRODUCT.md).
+  /// Les boucles décoratives doivent se désactiver quand ceci renvoie `true`.
+  static bool reduce(BuildContext context) =>
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+}
+
 /// URLs des tuiles cartographiques.
 ///
 /// CartoDB Dark Matter — map principale (fleet tracking, markers pop)

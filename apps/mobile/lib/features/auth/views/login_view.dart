@@ -18,6 +18,7 @@ class _LoginViewState extends ConsumerState<LoginView>
   bool _obscure = true;
 
   late final AnimationController _entrance;
+  bool _entranceStarted = false;
   late final Animation<double> _logoFade;
   late final Animation<Offset> _logoSlide;
   late final Animation<double> _titleFade;
@@ -42,7 +43,7 @@ class _LoginViewState extends ConsumerState<LoginView>
       end: Offset.zero,
     ).animate(CurvedAnimation(
         parent: _entrance,
-        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic)));
+        curve: const Interval(0.0, 0.55, curve: AppMotion.quint)));
 
     _titleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -53,7 +54,7 @@ class _LoginViewState extends ConsumerState<LoginView>
       end: Offset.zero,
     ).animate(CurvedAnimation(
         parent: _entrance,
-        curve: const Interval(0.25, 0.65, curve: Curves.easeOutCubic)));
+        curve: const Interval(0.25, 0.65, curve: AppMotion.quint)));
 
     _formFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -64,9 +65,20 @@ class _LoginViewState extends ConsumerState<LoginView>
       end: Offset.zero,
     ).animate(CurvedAnimation(
         parent: _entrance,
-        curve: const Interval(0.45, 1.0, curve: Curves.easeOutCubic)));
+        curve: const Interval(0.45, 1.0, curve: AppMotion.quint)));
+  }
 
-    _entrance.forward();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_entranceStarted) return;
+    _entranceStarted = true;
+    // Saute l'entrée chorégraphiée si l'utilisateur réduit les animations.
+    if (AppMotion.reduce(context)) {
+      _entrance.value = 1.0;
+    } else {
+      _entrance.forward();
+    }
   }
 
   @override
@@ -128,7 +140,7 @@ class _LoginViewState extends ConsumerState<LoginView>
                       ),
                       SizedBox(height: 6),
                       Text(
-                        'Accédez à votre flotte GPS',
+                        'Suivez vos véhicules en temps réel',
                         style: TextStyle(
                             fontSize: 15, color: AppColors.textSecondary),
                       ),

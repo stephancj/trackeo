@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/day_activity_model.dart';
 import '../../vehicles/models/vehicle_model.dart';
 import '../../vehicles/repositories/vehicle_repository.dart';
 
@@ -7,6 +8,23 @@ final historyDateProvider = StateProvider<DateTime>((ref) {
   final now = DateTime.now();
   return DateTime(now.year, now.month, now.day);
 });
+
+/// Clé du calendrier d'activité : (véhicule, année, mois).
+typedef ActivityMonthKey = (int vehicleId, int year, int month);
+
+/// Activité jour par jour d'un mois donné — alimente le calendrier heatmap et
+/// le saut "jour actif suivant/précédent". autoDispose : libéré à la fermeture.
+final activeDaysProvider =
+    FutureProvider.autoDispose.family<List<DayActivity>, ActivityMonthKey>(
+  (ref, key) async {
+    final (vehicleId, year, month) = key;
+    final from = DateTime(year, month, 1);
+    final to = DateTime(year, month + 1, 0, 23, 59, 59); // dernier jour du mois
+    return ref
+        .read(vehicleRepositoryProvider)
+        .getActiveDays(vehicleId, from, to);
+  },
+);
 
 /// Positions GPS pour un véhicule [vehicleId] à la date de [historyDateProvider].
 /// Utilise autoDispose + family : chaque vehicleId a son propre cache,

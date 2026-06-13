@@ -106,6 +106,72 @@ export class PositionsService {
     };
   }
 
+  /**
+   * Activité jour par jour sur une période (calendrier d'activité historique).
+   *
+   * Agrège directement en SQL : renvoie une seule ligne par jour ayant des
+   * positions (~30 lignes/mois) au lieu de charger toutes les positions.
+   * Distance calculée via fenêtre LAG (haversine), sauts > 5 km ignorés.
+   * Le regroupement se fait sur le jour de `devicetime` (cohérent avec
+   * getHistory qui fenêtre par jour) ; les bords de minuit peuvent varier de
+   * quelques heures selon le fuseau, sans impact visible sur le heatmap.
+   */
+  async getActiveDays(
+    deviceId: number,
+    from: Date,
+    to: Date,
+  ): Promise<Array<{ date: string; distanceKm: number; points: number }>> {
+    const rows: Array<{ day: string; points: number; distance_km: string }> =
+      await this.positionRepo.query(
+        `
+        WITH pts AS (
+          SELECT
+            date_trunc('day', devicetime) AS day,
+            latitude AS lat,
+            longitude AS lon,
+            LAG(latitude) OVER (
+              PARTITION BY date_trunc('day', devicetime) ORDER BY devicetime
+            ) AS plat,
+            LAG(longitude) OVER (
+              PARTITION BY date_trunc('day', devicetime) ORDER BY devicetime
+            ) AS plon
+          FROM tc_positions
+          WHERE deviceid = $1
+            AND devicetime >= $2
+            AND devicetime <= $3
+            AND valid = true
+        ),
+        seg AS (
+          SELECT
+            day,
+            CASE
+              WHEN plat IS NULL THEN 0
+              ELSE 6371 * acos(LEAST(1, GREATEST(-1,
+                cos(radians(plat)) * cos(radians(lat)) *
+                  cos(radians(lon) - radians(plon)) +
+                sin(radians(plat)) * sin(radians(lat))
+              )))
+            END AS seg_km
+          FROM pts
+        )
+        SELECT
+          to_char(day, 'YYYY-MM-DD') AS day,
+          COUNT(*)::int AS points,
+          COALESCE(SUM(seg_km) FILTER (WHERE seg_km < 5), 0) AS distance_km
+        FROM seg
+        GROUP BY day
+        ORDER BY day
+        `,
+        [deviceId, from, to],
+      );
+
+    return rows.map((r) => ({
+      date: r.day,
+      points: Number(r.points),
+      distanceKm: Math.round(Number(r.distance_km) * 10) / 10,
+    }));
+  }
+
   // ── Detailed vehicle reports ─────────────────────────────────────────────
 
   /**

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 /// Transition premium : slide vers le haut + fade (iOS-style épuré).
 /// Usage : Navigator.push(context, TrackeoRoute(builder: (_) => MyPage()));
@@ -15,7 +16,7 @@ class TrackeoRoute<T> extends PageRouteBuilder<T> {
               end: Offset.zero,
             ).animate(CurvedAnimation(
               parent: animation,
-              curve: Curves.easeOutCubic,
+              curve: AppMotion.quint,
             ));
 
             final fade = Tween<double>(begin: 0.0, end: 1.0).animate(

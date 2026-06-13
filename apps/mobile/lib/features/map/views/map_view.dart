@@ -9,6 +9,7 @@ import '../../history/views/history_view.dart';
 import '../../../core/navigation/trackeo_route.dart';
 import '../../vehicles/models/vehicle_model.dart';
 import '../../vehicles/views/vehicle_details_view.dart';
+import '../../vehicles/views/widgets/status_badge.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
 import '../../../core/providers/geocoding_provider.dart';
 
@@ -44,8 +45,36 @@ class _MapViewState extends ConsumerState<MapView>
   // ── Tracking mode ("always-center" on selected vehicle) ───────────────
   bool _trackingMode = false;
 
+  // One-shot : recadre une seule fois sur l'unique véhicule au 1er chargement.
+  bool _didInitialFit = false;
+
+  // ── Beacon "live" — un seul controller partagé, anime le halo du véhicule
+  // sélectionné (motif signature de la landing). Coupé si motion réduit.
+  late final AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: AppMotion.pulse,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduce(context)) {
+      _pulseController.stop();
+      _pulseController.value = 0;
+    } else if (!_pulseController.isAnimating) {
+      _pulseController.repeat();
+    }
+  }
+
   @override
   void dispose() {
+    _pulseController.dispose();
     for (final ctrl in _animControllers.values) {
       ctrl.dispose();
     }
@@ -155,6 +184,34 @@ class _MapViewState extends ConsumerState<MapView>
       _animatedPositions.remove(id);
       _animatedCourses.remove(id);
     }
+
+    // Premium mono-véhicule : recadrage initial unique sur l'unique véhicule.
+    if (!_didInitialFit) {
+      final withPos = vehicles.where((v) => v.position != null).toList();
+      if (withPos.length == 1) {
+        _didInitialFit = true;
+        final v = withPos.first;
+        final p = _animatedPositions[v.id] ??
+            LatLng(v.position!.lat, v.position!.lon);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          try {
+            _moveToTarget(p, 14);
+          } catch (_) {
+            // Carte pas encore prête : l'utilisateur peut recadrer manuellement.
+          }
+        });
+      }
+    }
+  }
+
+  /// Sélectionne et recadre l'unique véhicule (tap sur la pastille du haut).
+  void _focusSingleVehicle(Vehicle v) {
+    if (v.position == null) return;
+    final p = _animatedPositions[v.id] ?? LatLng(v.position!.lat, v.position!.lon);
+    ref.read(selectedVehicleIdProvider.notifier).state = v.id;
+    setState(() => _trackingMode = true);
+    _moveToTarget(p, 15, cardShowing: true);
   }
 
   @override
@@ -174,6 +231,7 @@ class _MapViewState extends ConsumerState<MapView>
     final vehiclesAsync = ref.watch(vehiclesProvider);
     final mapFilter = ref.watch(mapFilterProvider);
     final allVehicles = vehiclesAsync.valueOrNull ?? [];
+    final isSingle = allVehicles.length == 1;
     final vehicles = switch (mapFilter) {
       VehicleFilter.moving =>
         allVehicles.where((v) => v.status == VehicleStatus.online).toList(),
@@ -218,7 +276,7 @@ class _MapViewState extends ConsumerState<MapView>
                 userAgentPackageName: 'mg.trackeo.app',
               ),
               MarkerLayer(
-                markers: vehicles
+                markers: (isSingle ? allVehicles : vehicles)
                     .where((v) => v.position != null)
                     .map((v) => _buildMarker(v, selected))
                     .toList(),
@@ -315,25 +373,32 @@ class _MapViewState extends ConsumerState<MapView>
             ),
           ),
 
-          // ── Barre de recherche ─────────────────────────────────────────
+          // ── Barre de recherche / pastille véhicule unique ──────────────
           Positioned(
             top: topPad + 62,
             left: 16,
             right: 16,
-            child: _MapSearchBar(),
+            child: isSingle
+                ? _MapSingleVehicleBar(
+                    vehicle: allVehicles.first,
+                    onTap: () => _focusSingleVehicle(allVehicles.first),
+                  )
+                : _MapSearchBar(),
           ),
 
-          // ── Chips de filtre ────────────────────────────────────────────
-          Positioned(
-            top: topPad + 122,
-            left: 16,
-            right: 16,
-            child: vehiclesAsync.when(
-              data: (v) => _MapFilterRow(vehicles: v, allVehicles: allVehicles),
-              loading: () => const SizedBox.shrink(),
-              error: (e, st) => const SizedBox.shrink(),
+          // ── Chips de filtre (masqués si un seul véhicule) ──────────────
+          if (!isSingle)
+            Positioned(
+              top: topPad + 122,
+              left: 16,
+              right: 16,
+              child: vehiclesAsync.when(
+                data: (v) =>
+                    _MapFilterRow(vehicles: v, allVehicles: allVehicles),
+                loading: () => const SizedBox.shrink(),
+                error: (e, st) => const SizedBox.shrink(),
+              ),
             ),
-          ),
 
           // ── Boutons droite : Layers + Recenter ─────────────────────────
           Positioned(
@@ -467,12 +532,42 @@ class _MapViewState extends ConsumerState<MapView>
         _animatedPositions[vehicle.id] ?? LatLng(pos.lat, pos.lon);
     final course = _animatedCourses[vehicle.id] ?? pos.course.toDouble();
     final isSelected = selected?.id == vehicle.id;
-    final size = isSelected ? 52.0 : 42.0;
+    // Boîte élargie quand sélectionné pour contenir le halo "live".
+    final boxSize = isSelected ? 88.0 : 42.0;
+    final statusColor = switch (vehicle.status) {
+      VehicleStatus.online => AppColors.primary,
+      VehicleStatus.idle => AppColors.statusIdle,
+      VehicleStatus.offline => AppColors.statusOffline,
+    };
+
+    // Le pin tourne selon le cap ; le halo, lui, ne tourne pas.
+    final pin = Transform.rotate(
+      angle: course * (pi / 180),
+      child: Container(
+        decoration: BoxDecoration(
+          color: statusColor,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: isSelected ? 3 : 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          Icons.navigation,
+          color: Colors.white,
+          size: isSelected ? 28 : 22,
+        ),
+      ),
+    );
 
     return Marker(
       point: markerPos,
-      width: size,
-      height: size,
+      width: boxSize,
+      height: boxSize,
       child: GestureDetector(
         onTap: () {
           _markerJustTapped = true;
@@ -481,36 +576,50 @@ class _MapViewState extends ConsumerState<MapView>
           setState(() => _trackingMode = true);
           _moveToTarget(markerPos, 14, cardShowing: true);
         },
-        child: Transform.rotate(
-          angle: course * (pi / 180),
-          child: Container(
-            decoration: BoxDecoration(
-              color: switch (vehicle.status) {
-                VehicleStatus.online => AppColors.primary,
-                VehicleStatus.idle => AppColors.statusIdle,
-                VehicleStatus.offline => AppColors.statusOffline,
-              },
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white,
-                width: isSelected ? 3 : 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.navigation,
-              color: Colors.white,
-              size: isSelected ? 28 : 22,
-            ),
-          ),
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            // Beacon "live" : seulement le véhicule suivi, pour garder la carte calme.
+            if (isSelected)
+              _MarkerBeacon(controller: _pulseController, color: statusColor),
+            pin,
+          ],
         ),
       ),
+    );
+  }
+}
+
+/// Halo pulsé derrière le pin du véhicule sélectionné — disque qui s'étend
+/// et se fond (motif "pulse-ring" repris de la landing). Drivé par le
+/// controller partagé du MapView ; statique si le motion est réduit.
+class _MarkerBeacon extends StatelessWidget {
+  final Animation<double> controller; // 0..1, en boucle
+  final Color color;
+
+  const _MarkerBeacon({required this.controller, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (_, __) {
+        final t = controller.value;
+        final scale = 1.0 + t * 1.1; // 1.0 → 2.1
+        final opacity = (1.0 - t) * 0.42; // 0.42 → 0
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: opacity),
+              shape: BoxShape.circle,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -571,6 +680,66 @@ class _MapSearchBar extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Pastille véhicule unique — remplace la barre de recherche quand il n'y a
+/// qu'un seul véhicule : identité + statut live, tap pour recadrer.
+class _MapSingleVehicleBar extends StatelessWidget {
+  final Vehicle vehicle;
+  final VoidCallback onTap;
+
+  const _MapSingleVehicleBar({required this.vehicle, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 50,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: const BoxDecoration(
+                color: AppColors.pastelGreen,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.directions_car,
+                  color: AppColors.primary, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                vehicle.name,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            StatusBadge(status: vehicle.status),
+            const SizedBox(width: 4),
+          ],
+        ),
       ),
     );
   }

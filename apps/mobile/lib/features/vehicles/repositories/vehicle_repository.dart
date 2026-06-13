@@ -1,12 +1,18 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
+import '../../history/models/day_activity_model.dart';
 import '../models/vehicle_model.dart';
 
 abstract class VehicleRepository {
   Future<List<Vehicle>> getVehicles();
   Future<VehiclePosition?> getLastPosition(int vehicleId);
   Future<List<VehiclePosition>> getHistory(
+    int vehicleId,
+    DateTime from,
+    DateTime to,
+  );
+  Future<List<DayActivity>> getActiveDays(
     int vehicleId,
     DateTime from,
     DateTime to,
@@ -54,6 +60,25 @@ class RemoteVehicleRepository implements VehicleRepository {
     );
     return (response.data ?? [])
         .map((json) => VehiclePosition.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<List<DayActivity>> getActiveDays(
+    int vehicleId,
+    DateTime from,
+    DateTime to,
+  ) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/vehicles/$vehicleId/history/active-days',
+      queryParameters: {
+        'from': from.toIso8601String(),
+        'to': to.toIso8601String(),
+      },
+    );
+    final days = (response.data?['days'] as List<dynamic>?) ?? [];
+    return days
+        .map((json) => DayActivity.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 

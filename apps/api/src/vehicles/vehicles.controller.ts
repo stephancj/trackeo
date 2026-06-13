@@ -229,6 +229,31 @@ export class VehiclesController {
   // ── History ───────────────────────────────────────────────────────────────
 
   /**
+   * GET /api/vehicles/:id/history/active-days?from=ISO&to=ISO
+   * Activité jour par jour (distance + nb points) pour le calendrier d'activité.
+   * Permet à l'utilisateur de voir quels jours ont eu du mouvement avant de
+   * choisir une date. Défaut : 31 derniers jours.
+   */
+  @Get(':id/history/active-days')
+  async getActiveDays(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
+    const now = new Date();
+    const fromDate = from
+      ? new Date(from)
+      : new Date(now.getTime() - 31 * 24 * 3600 * 1000);
+    const toDate = to ? new Date(to) : now;
+    const days = await this.positionsService
+      .getActiveDays(id, fromDate, toDate)
+      .catch(() => []);
+    return { deviceId: id, from: fromDate, to: toDate, days };
+  }
+
+  /**
    * GET /api/vehicles/:id/history?from=ISO&to=ISO&limit=1000
    * Historique des positions pour tracer le trajet (polyligne Flutter).
    */
