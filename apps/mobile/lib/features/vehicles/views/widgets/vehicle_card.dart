@@ -207,7 +207,7 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                       ],
                     ),
                     BatteryIndicator(
-                        battery: widget.vehicle.position?.battery ?? 0,
+                        battery: widget.vehicle.position?.battery,
                         charging: widget.vehicle.position?.charging),
                   ],
                 ),
