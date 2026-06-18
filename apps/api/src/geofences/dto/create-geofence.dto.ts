@@ -25,6 +25,10 @@ export class CreateGeofenceDto {
   radiusM: number;
 
   @IsOptional()
+  @IsString()
+  type?: string;
+
+  @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 
@@ -62,6 +66,10 @@ export class UpdateGeofenceDto {
   @IsOptional()
   @IsNumber()
   radiusM?: number;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
 
   @IsOptional()
   @IsBoolean()

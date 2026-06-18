@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/navigation/app_shell.dart';
+import '../../../vehicles/providers/vehicles_provider.dart';
 import '../../models/alert_model.dart';
 import '../../providers/alerts_provider.dart';
 
@@ -43,6 +45,23 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
       (a) => a.id == widget.alert.id,
       orElse: () => widget.alert,
     );
+  }
+
+  /// Nom du véhicule lié à l'alerte (via deviceId), ou null si introuvable.
+  String? get _vehicleName {
+    final vehicles = ref.watch(vehiclesProvider).valueOrNull;
+    if (vehicles == null) return null;
+    for (final v in vehicles) {
+      if (v.id == _alert.deviceId) return v.name;
+    }
+    return null;
+  }
+
+  /// Ouvre la carte centrée sur le véhicule concerné et ferme les feuilles/écrans.
+  void _openOnMap() {
+    ref.read(selectedVehicleIdProvider.notifier).state = _alert.deviceId;
+    ref.read(activeTabProvider.notifier).state = 1; // onglet Carte
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Color get _color {
@@ -227,6 +246,36 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
             style: const TextStyle(fontSize: 12, color: AppColors.textHint),
           ),
 
+          if (_vehicleName != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.directions_car_rounded,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _vehicleName!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 24),
 
           // ── Message card ───────────────────────────────────────────────────
@@ -266,61 +315,75 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
             const SizedBox(height: 20),
           ],
 
-          // ── CTA ────────────────────────────────────────────────────────────
-          if (isOpen)
+          // ── Actions ────────────────────────────────────────────────────────
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: _openOnMap,
+              icon: const Icon(Icons.map_rounded, size: 20),
+              label: const Text(
+                'Voir sur la carte',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ),
+          if (isOpen) ...[
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
+              height: 48,
+              child: OutlinedButton.icon(
                 onPressed: _isAcking ? null : _ack,
                 icon: _isAcking
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
+                        width: 16,
+                        height: 16,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
+                            color: AppColors.primary, strokeWidth: 2),
                       )
-                    : const Icon(Icons.done_rounded, size: 20),
+                    : const Icon(Icons.done_rounded, size: 18),
                 label: const Text(
                   'Marquer comme lu',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  style: TextStyle(fontWeight: FontWeight.w700),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: BorderSide(
+                      color: AppColors.primary.withValues(alpha: 0.4)),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
-            )
-          else
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_outline_rounded,
-                      color: Colors.green, size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    'Lu',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
             ),
+          ] else ...[
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle_rounded,
+                    color: Colors.green.withValues(alpha: 0.8), size: 16),
+                const SizedBox(width: 6),
+                const Text(
+                  'Lu',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textHint,
+                  ),
+                ),
+              ],
+            ),
+          ],
 
           const SizedBox(height: 8),
         ],

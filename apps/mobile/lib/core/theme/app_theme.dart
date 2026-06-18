@@ -164,6 +164,11 @@ class AppMapTiles {
   static const String positron =
       'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 
+  /// Esri World Imagery — imagerie satellite, sans clé API. Pas de sous-domaines
+  /// ni de support retina ({r}) ; ordre des tuiles {z}/{y}/{x}.
+  static const String satellite =
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
   static const List<String> subdomains = ['a', 'b', 'c', 'd'];
 
   /// Attribution légale requise par CartoDB.

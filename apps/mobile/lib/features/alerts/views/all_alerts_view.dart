@@ -4,48 +4,76 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/theme/app_theme.dart';
 import '../models/alert_model.dart';
 import '../providers/alerts_provider.dart';
+import '../../vehicles/providers/vehicles_provider.dart';
 import 'widgets/alert_skeletons.dart';
 import 'widgets/alert_detail_sheet.dart';
 
-class AllAlertsView extends ConsumerWidget {
+class AllAlertsView extends ConsumerStatefulWidget {
   const AllAlertsView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AllAlertsView> createState() => _AllAlertsViewState();
+}
+
+class _AllAlertsViewState extends ConsumerState<AllAlertsView> {
+  // 'all' | 'open'
+  String _statusFilter = 'all';
+  // 'all' | 'geofence' | 'speed_limit' | 'low_battery'
+  String _typeFilter = 'all';
+
+  bool _matchesType(AlertModel a) {
+    switch (_typeFilter) {
+      case 'geofence':
+        return a.type == 'geofence_enter' || a.type == 'geofence_exit';
+      case 'speed_limit':
+        return a.type == 'speed_limit';
+      case 'low_battery':
+        return a.type == 'low_battery';
+      default:
+        return true;
+    }
+  }
+
+  String _dayLabel(DateTime dt) {
+    final d = dt.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(d.year, d.month, d.day);
+    final diff = today.difference(day).inDays;
+    if (diff == 0) return "Aujourd'hui";
+    if (diff == 1) return 'Hier';
+    const months = [
+      'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+    ];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final alertsState = ref.watch(alertsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: alertsState.whenOrNull(
-              data: (alerts) => Text(
-                'Toutes les activités (${alerts.length})',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-            ) ??
-            const Text(
-              'Toutes les activités',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
-            ),
+        title: const Text(
+          'Toutes les activités',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryDark,
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
               color: AppColors.primaryDark, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          // 3-dot menu: Marquer tout comme lu
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: AppColors.primaryDark),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             onSelected: (value) async {
               if (value == 'mark_read') {
                 await ref.read(alertsProvider.notifier).markAllRead();
@@ -86,20 +114,191 @@ class AllAlertsView extends ConsumerWidget {
         ),
         data: (alerts) {
           if (alerts.isEmpty) {
-            return const _EmptyState();
+            return const _EmptyState(
+              title: 'Aucune activité',
+              subtitle: 'Vos véhicules sont dans leurs zones.',
+            );
           }
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () => ref.read(alertsProvider.notifier).refresh(),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: alerts.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, i) => _AlertCard(alert: alerts[i]),
-            ),
+
+          final openCount = alerts.where((a) => a.status == 'open').length;
+          final filtered = alerts
+              .where((a) =>
+                  (_statusFilter == 'all' || a.status == 'open') &&
+                  _matchesType(a))
+              .toList();
+
+          return Column(
+            children: [
+              _buildFilters(openCount),
+              Expanded(
+                child: RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: () =>
+                      ref.read(alertsProvider.notifier).silentRefresh(),
+                  child: filtered.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: const [
+                            SizedBox(height: 80),
+                            _EmptyState(
+                              title: 'Aucun résultat',
+                              subtitle: 'Aucune alerte ne correspond au filtre.',
+                            ),
+                          ],
+                        )
+                      : _buildGroupedList(filtered),
+                ),
+              ),
+            ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildFilters(int openCount) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      color: AppColors.background,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _filterChip(
+                label: 'Toutes',
+                selected: _statusFilter == 'all',
+                onTap: () => setState(() => _statusFilter = 'all'),
+              ),
+              const SizedBox(width: 8),
+              _filterChip(
+                label: openCount > 0 ? 'Non lues ($openCount)' : 'Non lues',
+                selected: _statusFilter == 'open',
+                onTap: () => setState(() => _statusFilter = 'open'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _filterChip(
+                  label: 'Tous types',
+                  selected: _typeFilter == 'all',
+                  onTap: () => setState(() => _typeFilter = 'all'),
+                  subtle: true,
+                ),
+                const SizedBox(width: 8),
+                _filterChip(
+                  label: 'Zones',
+                  icon: Icons.radar_rounded,
+                  selected: _typeFilter == 'geofence',
+                  onTap: () => setState(() => _typeFilter = 'geofence'),
+                  subtle: true,
+                ),
+                const SizedBox(width: 8),
+                _filterChip(
+                  label: 'Vitesse',
+                  icon: Icons.speed_rounded,
+                  selected: _typeFilter == 'speed_limit',
+                  onTap: () => setState(() => _typeFilter = 'speed_limit'),
+                  subtle: true,
+                ),
+                const SizedBox(width: 8),
+                _filterChip(
+                  label: 'Batterie',
+                  icon: Icons.battery_alert_rounded,
+                  selected: _typeFilter == 'low_battery',
+                  onTap: () => setState(() => _typeFilter = 'low_battery'),
+                  subtle: true,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    IconData? icon,
+    bool subtle = false,
+  }) {
+    final bg = selected ? AppColors.primary : AppColors.surface;
+    final fg = selected ? Colors.white : AppColors.textSecondary;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: AppMotion.fast,
+        padding: EdgeInsets.symmetric(
+            horizontal: subtle ? 12 : 16, vertical: subtle ? 7 : 8),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: selected
+                ? AppColors.primary
+                : AppColors.divider.withValues(alpha: 0.8),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: fg),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: fg,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Construit la liste regroupée par jour (en-têtes "Aujourd'hui", "Hier"…).
+  Widget _buildGroupedList(List<AlertModel> alerts) {
+    final children = <Widget>[];
+    String? currentDay;
+    for (final alert in alerts) {
+      final label = _dayLabel(alert.createdAt);
+      if (label != currentDay) {
+        currentDay = label;
+        children.add(Padding(
+          padding: EdgeInsets.only(
+              left: 4, right: 4, top: children.isEmpty ? 0 : 18, bottom: 8),
+          child: Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textHint,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ));
+      }
+      children.add(Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: _AlertCard(alert: alert),
+      ));
+    }
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: children,
     );
   }
 }
@@ -140,10 +339,20 @@ class _AlertCard extends ConsumerWidget {
     }
   }
 
+  String? _vehicleName(WidgetRef ref) {
+    final vehicles = ref.watch(vehiclesProvider).valueOrNull;
+    if (vehicles == null) return null;
+    for (final v in vehicles) {
+      if (v.id == alert.deviceId) return v.name;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOpen = alert.status == 'open';
     final color = _dotColor(alert.type);
+    final vehicleName = _vehicleName(ref);
 
     return GestureDetector(
       onTap: () => AlertDetailSheet.show(context, ref, alert),
@@ -159,7 +368,6 @@ class _AlertCard extends ConsumerWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Dot indicator
             Container(
               margin: const EdgeInsets.only(top: 4),
               width: 9,
@@ -170,7 +378,6 @@ class _AlertCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,6 +416,28 @@ class _AlertCard extends ConsumerWidget {
                         ),
                     ],
                   ),
+                  if (vehicleName != null) ...[
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        const Icon(Icons.directions_car_rounded,
+                            size: 12, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            vehicleName,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   if (alert.message != null) ...[
                     const SizedBox(height: 3),
                     Text(
@@ -227,7 +456,6 @@ class _AlertCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 10),
-            // Timestamp
             Text(
               timeago.format(alert.createdAt),
               style: TextStyle(
@@ -247,7 +475,9 @@ class _AlertCard extends ConsumerWidget {
 // ── Empty state ───────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  final String title;
+  final String subtitle;
+  const _EmptyState({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -266,18 +496,19 @@ class _EmptyState extends StatelessWidget {
                 color: Colors.green, size: 36),
           ),
           const SizedBox(height: 18),
-          const Text(
-            'Aucune activité',
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Vos véhicules sont dans leurs zones.',
-            style: TextStyle(fontSize: 13, color: AppColors.textHint),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, color: AppColors.textHint),
           ),
         ],
       ),

@@ -29,6 +29,9 @@ export class Geofence {
   @Column({ name: 'radius_m' })
   radiusM: number;
 
+  @Column({ default: 'custom' })
+  type: string;
+
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 

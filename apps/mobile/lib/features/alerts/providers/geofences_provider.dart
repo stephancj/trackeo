@@ -25,6 +25,16 @@ class GeofencesNotifier extends StateNotifier<AsyncValue<List<Geofence>>> {
     }
   }
 
+  /// Rechargement sans flash : conserve les zones affichées pendant le fetch.
+  Future<void> silentRefresh() async {
+    try {
+      final geofences = await _repository.fetchGeofences();
+      if (mounted) state = AsyncValue.data(geofences);
+    } catch (_) {
+      // Silencieux : on garde l'état courant.
+    }
+  }
+
   Future<Geofence?> createGeofence(Map<String, dynamic> payload) async {
     try {
       final geofence = await _repository.createGeofence(payload);
@@ -75,20 +85,7 @@ class GeofencesNotifier extends StateNotifier<AsyncValue<List<Geofence>>> {
     if (state is AsyncData) {
       state = AsyncValue.data(
         state.value!
-            .map(
-              (e) => e.id == geofence.id
-                  ? Geofence(
-                      id: e.id,
-                      name: e.name,
-                      deviceIds: e.deviceIds,
-                      centerLat: e.centerLat,
-                      centerLon: e.centerLon,
-                      radiusM: e.radiusM,
-                      isActive: isActive,
-                      userId: e.userId,
-                    )
-                  : e,
-            )
+            .map((e) => e.id == geofence.id ? e.copyWith(isActive: isActive) : e)
             .toList(),
       );
     }

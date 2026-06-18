@@ -3,9 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../vehicles/models/vehicle_model.dart';
 import '../../../core/providers/geocoding_provider.dart';
-import '../models/trip_stats_model.dart';
+import '../models/trip_model.dart';
 import '../models/day_activity_model.dart';
 import '../providers/history_provider.dart';
 import 'widgets/activity_calendar_sheet.dart';
@@ -31,6 +30,22 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
   // Hauteur du panneau inférieur (~52 % de l'écran)
   static const double _panelRatio = 0.52;
 
+  // Styles de carte cyclés par le bouton calques.
+  static const _tiles = [
+    AppMapTiles.positron,
+    AppMapTiles.voyager,
+    AppMapTiles.darkMatter,
+  ];
+  static const _tileNames = ['Clair', 'Voyager', 'Sombre'];
+  int _tileIndex = 0;
+
+  // Trajet sélectionné (1-based) — met en évidence sa polyligne et zoome dessus.
+  int? _selectedTrip;
+
+  // Dernières données calculées, accessibles aux handlers (tap trajet, recentrer).
+  DayTrips _day = DayTrips.fromPositions(const []);
+  List<LatLng> _allPoints = const [];
+
   @override
   void dispose() {
     _mapController.dispose();
@@ -48,13 +63,16 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     final panelH = screenH * _panelRatio;
 
     final positions = positionsAsync.valueOrNull ?? [];
-    final stats = TripStats.fromPositions(positions);
-    final points = positions.map((p) => LatLng(p.lat, p.lon)).toList();
-    final speedPolyline = _buildGradientPolyline(positions);
+    _day = DayTrips.fromPositions(positions);
+    _allPoints = positions.map((p) => LatLng(p.lat, p.lon)).toList();
+    final polylines = _buildTripPolylines(_day, _selectedTrip);
 
-    // Ajuster la carte quand les données arrivent
+    // Ajuster la carte + réinitialiser la sélection quand de nouvelles données arrivent.
     ref.listen(historyPositionsProvider(widget.vehicleId), (_, next) {
       next.whenData((pts) {
+        if (mounted && _selectedTrip != null) {
+          setState(() => _selectedTrip = null);
+        }
         if (pts.length > 1) {
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => _fitRoute(pts.map((p) => LatLng(p.lat, p.lon)).toList()),
@@ -76,23 +94,16 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
             ),
             children: [
               TileLayer(
-                urlTemplate: AppMapTiles.positron,
+                urlTemplate: _tiles[_tileIndex],
                 subdomains: AppMapTiles.subdomains,
                 retinaMode: true,
                 userAgentPackageName: 'mg.trackeo.app',
               ),
-              // Polyligne avec dégradé de vitesse
-              if (speedPolyline != null)
-                PolylineLayer(polylines: [speedPolyline]),
-              // Marqueurs départ (vert) + arrivée (rose)
-              if (points.isNotEmpty)
-                MarkerLayer(
-                  markers: [
-                    _endpointMarker(points.first, isStart: true),
-                    if (points.length > 1)
-                      _endpointMarker(points.last, isStart: false),
-                  ],
-                ),
+              // Une polyligne (dégradé de vitesse) par trajet — pas de ligne
+              // factice à travers les arrêts.
+              if (polylines.isNotEmpty) PolylineLayer(polylines: polylines),
+              // Marqueurs départ / arrivée du jour + points d'arrêt.
+              MarkerLayer(markers: _dayMarkers(_day)),
             ],
           ),
 
@@ -152,41 +163,49 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
             ),
           ),
 
-          // ── Boutons droite (layers + recenter) ───────────────────────
+          // ── Boutons droite (calques + recenter) ──────────────────────
           Positioned(
             right: 16,
             bottom: panelH + 12,
             child: Column(
               children: [
-                // Layers
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryDark,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.layers,
-                    color: Colors.white,
-                    size: 20,
+                // Calques — cycle clair / voyager / sombre
+                GestureDetector(
+                  onTap: _cycleTiles,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryDark,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.layers,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
                 // Recentrer
                 GestureDetector(
-                  onTap: () => points.length > 1
-                      ? _fitRoute(points)
-                      : points.isNotEmpty
-                      ? _mapController.move(points.first, 14)
-                      : null,
+                  onTap: () {
+                    final sel = _tripByIndex(_selectedTrip);
+                    if (sel != null) {
+                      _fitTrip(sel);
+                    } else if (_allPoints.length > 1) {
+                      _fitRoute(_allPoints);
+                    } else if (_allPoints.isNotEmpty) {
+                      _mapController.move(_allPoints.first, 14);
+                    }
+                  },
                   child: Container(
                     width: 44,
                     height: 44,
@@ -212,7 +231,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
             ),
           ),
 
-          // ── Panneau inférieur (résumé + timeline) ────────────────────
+          // ── Panneau inférieur (résumé + trajets) ─────────────────────
           Positioned(
             bottom: 0,
             left: 0,
@@ -251,7 +270,11 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                 ),
                 data: (_) => positions.isEmpty
                     ? _EmptyState(vehicleName: widget.vehicleName, date: date)
-                    : _TripPanel(stats: stats),
+                    : _DayPanel(
+                        day: _day,
+                        selectedTrip: _selectedTrip,
+                        onTripTap: _onTripTap,
+                      ),
               ),
             ),
           ),
@@ -260,7 +283,123 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     );
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────
+  // ── Handlers ───────────────────────────────────────────────────────────
+
+  void _cycleTiles() {
+    setState(() => _tileIndex = (_tileIndex + 1) % _tiles.length);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Carte : ${_tileNames[_tileIndex]}'),
+          duration: const Duration(milliseconds: 900),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.primaryDark,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+  }
+
+  void _onTripTap(int index) {
+    final deselect = _selectedTrip == index;
+    setState(() => _selectedTrip = deselect ? null : index);
+    final target = _tripByIndex(deselect ? null : index);
+    if (target != null) {
+      _fitTrip(target);
+    } else if (_allPoints.length > 1) {
+      _fitRoute(_allPoints);
+    }
+  }
+
+  Trip? _tripByIndex(int? index) {
+    if (index == null) return null;
+    for (final t in _day.trips) {
+      if (t.index == index) return t;
+    }
+    return null;
+  }
+
+  // ── Map helpers ────────────────────────────────────────────────────────
+
+  /// Couleur correspondant à une vitesse en km/h.
+  static Color _speedColor(double kmh) {
+    if (kmh < 5) return const Color(0xFF9CA3AF); // arrêté → gris
+    if (kmh < 30) return const Color(0xFF4ECB8D); // lent   → vert
+    if (kmh < 70) return const Color(0xFF5B8DEF); // urbain → bleu
+    if (kmh < 100) return const Color(0xFFF59E0B); // route  → orange
+    return const Color(0xFFEF4444); // excès  → rouge
+  }
+
+  /// Une polyligne par trajet. Si un trajet est sélectionné, les autres sont
+  /// estompés en gris translucide pour le mettre en avant.
+  static List<Polyline> _buildTripPolylines(DayTrips day, int? selected) {
+    final polys = <Polyline>[];
+    for (final t in day.trips) {
+      if (t.points.length < 2) continue;
+      final dimmed = selected != null && selected != t.index;
+      final pts = t.points.map((p) => LatLng(p.lat, p.lon)).toList();
+      // Estompé → trait gris uni ; sinon dégradé de vitesse (les deux options
+      // de Polyline étant mutuellement exclusives).
+      polys.add(
+        dimmed
+            ? Polyline(
+                points: pts,
+                strokeWidth: 5,
+                color: const Color(0x559CA3AF),
+                strokeCap: StrokeCap.round,
+                strokeJoin: StrokeJoin.round,
+              )
+            : Polyline(
+                points: pts,
+                strokeWidth: selected == t.index ? 6 : 5,
+                gradientColors:
+                    t.points.map((p) => _speedColor(p.speedKmh)).toList(),
+                strokeCap: StrokeCap.round,
+                strokeJoin: StrokeJoin.round,
+              ),
+      );
+    }
+    return polys;
+  }
+
+  List<Marker> _dayMarkers(DayTrips day) {
+    final markers = <Marker>[];
+    final start = day.dayStart;
+    final end = day.dayEnd;
+    if (start != null) {
+      markers.add(_endpointMarker(LatLng(start.lat, start.lon), isStart: true));
+    }
+    if (end != null && day.trips.isNotEmpty) {
+      markers.add(_endpointMarker(LatLng(end.lat, end.lon), isStart: false));
+    }
+    // Points d'arrêt entre trajets.
+    for (final s in day.stops) {
+      markers.add(
+        Marker(
+          point: LatLng(s.at.lat, s.at.lon),
+          width: 14,
+          height: 14,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.textSecondary, width: 2.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return markers;
+  }
 
   Marker _endpointMarker(LatLng point, {required bool isStart}) {
     return Marker(
@@ -284,32 +423,6 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     );
   }
 
-  // ── Speed-gradient polyline ───────────────────────────────────────────────
-
-  /// Couleur correspondant à une vitesse en km/h.
-  static Color _speedColor(double kmh) {
-    if (kmh < 5)   return const Color(0xFF9CA3AF); // arrêté → gris
-    if (kmh < 30)  return const Color(0xFF4ECB8D); // lent   → vert
-    if (kmh < 70)  return const Color(0xFF5B8DEF); // urbain → bleu
-    if (kmh < 100) return const Color(0xFFF59E0B); // route  → orange
-    return const Color(0xFFEF4444);                // excès  → rouge
-  }
-
-  /// Polyligne unique avec `gradientColors` — une couleur par point.
-  /// flutter_map interpole automatiquement entre les couleurs consécutives,
-  /// produisant un dégradé fluide aux transitions de vitesse.
-  static Polyline? _buildGradientPolyline(List<VehiclePosition> positions) {
-    if (positions.length < 2) return null;
-
-    return Polyline(
-      points: positions.map((p) => LatLng(p.lat, p.lon)).toList(),
-      strokeWidth: 5,
-      gradientColors: positions.map((p) => _speedColor(p.speedKmh)).toList(),
-      strokeCap: StrokeCap.round,
-      strokeJoin: StrokeJoin.round,
-    );
-  }
-
   void _fitRoute(List<LatLng> points) {
     if (points.isEmpty) return;
     final bounds = LatLngBounds.fromPoints(points);
@@ -319,6 +432,10 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
         padding: const EdgeInsets.fromLTRB(40, 120, 40, 60),
       ),
     );
+  }
+
+  void _fitTrip(Trip trip) {
+    _fitRoute(trip.points.map((p) => LatLng(p.lat, p.lon)).toList());
   }
 }
 
@@ -487,20 +604,20 @@ class _DateSelector extends ConsumerWidget {
 
   String _formatDate(DateTime d) {
     const m = [
-      'Jan',
-      'Fév',
-      'Mar',
-      'Avr',
-      'Mai',
-      'Juin',
-      'Juil',
-      'Aoû',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Déc',
+      'janv.',
+      'févr.',
+      'mars',
+      'avr.',
+      'mai',
+      'juin',
+      'juil.',
+      'août',
+      'sept.',
+      'oct.',
+      'nov.',
+      'déc.',
     ];
-    return '${m[d.month - 1]} ${d.day}, ${d.year}';
+    return '${d.day} ${m[d.month - 1]} ${d.year}';
   }
 
   String _dayName(DateTime d) {
@@ -556,11 +673,18 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── Trip Summary Panel ────────────────────────────────────────────────────────
+// ── Day Summary Panel ─────────────────────────────────────────────────────────
 
-class _TripPanel extends StatelessWidget {
-  final TripStats stats;
-  const _TripPanel({required this.stats});
+class _DayPanel extends StatelessWidget {
+  final DayTrips day;
+  final int? selectedTrip;
+  final void Function(int index) onTripTap;
+
+  const _DayPanel({
+    required this.day,
+    required this.selectedTrip,
+    required this.onTripTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -582,12 +706,12 @@ class _TripPanel extends StatelessWidget {
             ),
           ),
 
-          // ── Header Trip Summary ───────────────────────────────────────
+          // ── Header ────────────────────────────────────────────────────
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Résumé du trajet',
+                'Résumé de la journée',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 17,
@@ -600,12 +724,14 @@ class _TripPanel extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.primary, width: 1.5),
+                  color: AppColors.pastelGreen,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text(
-                  'TERMINÉ',
-                  style: TextStyle(
+                child: Text(
+                  day.tripCount == 0
+                      ? 'AUCUN TRAJET'
+                      : '${day.tripCount} TRAJET${day.tripCount > 1 ? 'S' : ''}',
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
@@ -618,7 +744,7 @@ class _TripPanel extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // ── Stats ─────────────────────────────────────────────────────
+          // ── Stats hero (distance / conduite / vitesse max) ────────────
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
@@ -633,15 +759,15 @@ class _TripPanel extends StatelessWidget {
                     iconColor: const Color(0xFF5B8DEF),
                     iconBg: const Color(0xFFEEF2FF),
                     label: 'DISTANCE',
-                    value: stats.formattedDistance,
+                    value: day.formattedDistance,
                   ),
                   Container(width: 1, color: AppColors.divider),
                   _StatTile(
                     icon: Icons.timer_outlined,
                     iconColor: const Color(0xFFF97316),
                     iconBg: const Color(0xFFFFF3E8),
-                    label: 'DURÉE',
-                    value: stats.formattedDuration,
+                    label: 'CONDUITE',
+                    value: day.formattedDrivingTime,
                   ),
                   Container(width: 1, color: AppColors.divider),
                   _StatTile(
@@ -649,12 +775,44 @@ class _TripPanel extends StatelessWidget {
                     iconColor: const Color(0xFF9333EA),
                     iconBg: const Color(0xFFF5EEFF),
                     label: 'VITESSE MAX',
-                    value: stats.formattedTopSpeed,
+                    value: day.formattedTopSpeed,
                   ),
                 ],
               ),
             ),
           ),
+
+          // ── Stats secondaires (moyenne / arrêts / stationné) ──────────
+          if (!day.isEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _MiniStat(
+                    icon: Icons.trending_up_rounded,
+                    label: 'Moyenne',
+                    value: day.formattedAvgSpeed,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _MiniStat(
+                    icon: Icons.local_parking_rounded,
+                    label: 'Arrêts',
+                    value: '${day.stopCount}',
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _MiniStat(
+                    icon: Icons.pause_circle_outline_rounded,
+                    label: 'Stationné',
+                    value: day.formattedParkedTime,
+                  ),
+                ),
+              ],
+            ),
+          ],
 
           const SizedBox(height: 16),
 
@@ -663,30 +821,36 @@ class _TripPanel extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // ── Journey Timeline ──────────────────────────────────────────
-          const Text(
-            'CHRONOLOGIE',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textHint,
-              letterSpacing: 1,
+          // ── Trajets ───────────────────────────────────────────────────
+          if (day.isEmpty)
+            _StationaryNote()
+          else ...[
+            const Text(
+              'TRAJETS',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textHint,
+                letterSpacing: 1,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-
-          if (stats.startPosition != null)
-            _JourneyTimeline(
-              start: stats.startPosition!,
-              end: stats.endPosition!,
-            ),
+            const SizedBox(height: 12),
+            for (var i = 0; i < day.trips.length; i++) ...[
+              _TripCard(
+                trip: day.trips[i],
+                selected: selectedTrip == day.trips[i].index,
+                onTap: () => onTripTap(day.trips[i].index),
+              ),
+              if (i < day.stops.length) _StopSeparator(stop: day.stops[i]),
+            ],
+          ],
         ],
       ),
     );
   }
 }
 
-// ── Stat Tile ─────────────────────────────────────────────────────────────────
+// ── Stat Tile (hero) ──────────────────────────────────────────────────────────
 
 class _StatTile extends StatelessWidget {
   final IconData icon;
@@ -764,138 +928,327 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-// ── Journey Timeline ──────────────────────────────────────────────────────────
+// ── Mini Stat (secondaire) ────────────────────────────────────────────────────
 
-class _JourneyTimeline extends StatelessWidget {
-  final VehiclePosition start;
-  final VehiclePosition end;
+class _MiniStat extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
 
-  const _JourneyTimeline({required this.start, required this.end});
+  const _MiniStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _TimelineItem(
-          isStart: true,
-          time: _hhmm(start.deviceTime),
-          latLng: LatLng(start.lat, start.lon),
-          fallback: start.address ?? 'Point de départ',
-        ),
-        // Connecting line
-        Padding(
-          padding: const EdgeInsets.only(left: 10),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Container(width: 2, height: 28, color: AppColors.divider),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 18, color: AppColors.textSecondary),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textHint,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Stationary note (positions mais aucun trajet significatif) ────────────────
+
+class _StationaryNote extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.local_parking_rounded,
+              size: 22, color: AppColors.textSecondary),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Véhicule stationné — aucun déplacement significatif ce jour.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Trip Card ─────────────────────────────────────────────────────────────────
+
+class _TripCard extends ConsumerWidget {
+  final Trip trip;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _TripCard({
+    required this.trip,
+    required this.selected,
+    required this.onTap,
+  });
+
+  String _hhmm(DateTime t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final startAddr =
+        ref.watch(reverseGeocodeProvider(LatLng(trip.start.lat, trip.start.lon)));
+    final endAddr =
+        ref.watch(reverseGeocodeProvider(LatLng(trip.end.lat, trip.end.lon)));
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: AppMotion.fast,
+        curve: AppMotion.quint,
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.pastelGreen : AppColors.background,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? AppColors.primary : Colors.transparent,
+            width: 1.5,
           ),
         ),
-        _TimelineItem(
-          isStart: false,
-          time: _hhmm(end.deviceTime),
-          latLng: LatLng(end.lat, end.lon),
-          fallback: end.address ?? 'Point d\'arrivée',
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Numéro du trajet
+            Container(
+              width: 26,
+              height: 26,
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${trip.index}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Heures + chevron
+                  Row(
+                    children: [
+                      Text(
+                        '${_hhmm(trip.start.deviceTime)} – ${_hhmm(trip.end.deviceTime)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        selected
+                            ? Icons.my_location_rounded
+                            : Icons.chevron_right_rounded,
+                        size: 18,
+                        color: selected
+                            ? AppColors.primary
+                            : AppColors.textHint,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Adresse départ
+                  _AddrLine(
+                    dotColor: AppColors.primary,
+                    filled: true,
+                    text: _addrText(startAddr, 'Départ'),
+                  ),
+                  const SizedBox(height: 2),
+                  // Adresse arrivée
+                  _AddrLine(
+                    dotColor: const Color(0xFFEF6C6C),
+                    filled: false,
+                    text: _addrText(endAddr, 'Arrivée'),
+                  ),
+                  const SizedBox(height: 8),
+                  // Stats du trajet
+                  Row(
+                    children: [
+                      _chip(Icons.straighten_rounded, trip.formattedDistance),
+                      const SizedBox(width: 8),
+                      _chip(Icons.schedule_rounded, trip.formattedDuration),
+                      const SizedBox(width: 8),
+                      _chip(Icons.speed_rounded, trip.formattedTopSpeed),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _addrText(AsyncValue<String?> addr, String fallback) {
+    return addr.maybeWhen(
+      data: (a) => a ?? fallback,
+      orElse: () => 'Localisation…',
+    );
+  }
+
+  Widget _chip(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: AppColors.textSecondary),
+        const SizedBox(width: 3),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
         ),
       ],
     );
   }
-
-  String _hhmm(DateTime t) =>
-      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 }
 
-class _TimelineItem extends ConsumerWidget {
-  final bool isStart;
-  final String time;
-  final LatLng latLng;
-  final String fallback;
+class _AddrLine extends StatelessWidget {
+  final Color dotColor;
+  final bool filled;
+  final String text;
 
-  const _TimelineItem({
-    required this.isStart,
-    required this.time,
-    required this.latLng,
-    required this.fallback,
+  const _AddrLine({
+    required this.dotColor,
+    required this.filled,
+    required this.text,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final addressAsync = ref.watch(reverseGeocodeProvider(latLng));
-
+  Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Dot (vert plein = départ, bleu creux = arrivée)
-        SizedBox(
-          width: 22,
-          height: 22,
-          child: isStart
-              ? Container(
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                )
-              : Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF5B8DEF),
-                      width: 2.5,
-                    ),
-                  ),
-                ),
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: filled ? dotColor : Colors.transparent,
+            border: Border.all(color: dotColor, width: 2),
+          ),
         ),
-        const SizedBox(width: 12),
-        // Card
+        const SizedBox(width: 8),
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: addressAsync.when(
-                    data: (addr) => Text(
-                      addr ?? fallback,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: AppColors.primaryDark,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    loading: () => const Text(
-                      'Localisation...',
-                      style: TextStyle(fontSize: 13, color: AppColors.textHint),
-                    ),
-                    error: (_, __) => Text(
-                      fallback,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textHint,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Stop separator (entre deux trajets) ───────────────────────────────────────
+
+class _StopSeparator extends StatelessWidget {
+  final TripStop stop;
+  const _StopSeparator({required this.stop});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          // Aligné sous le cercle numéro (26px) → trait vertical pointillé.
+          const SizedBox(
+            width: 26,
+            child: Center(
+              child: _DottedLine(),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Icon(Icons.local_parking_rounded,
+              size: 14, color: AppColors.textHint),
+          const SizedBox(width: 6),
+          Text(
+            'Arrêt · ${stop.formattedDuration}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textHint,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DottedLine extends StatelessWidget {
+  const _DottedLine();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(
+        3,
+        (_) => Container(
+          width: 2,
+          height: 3,
+          margin: const EdgeInsets.symmetric(vertical: 1.5),
+          color: AppColors.divider,
+        ),
+      ),
     );
   }
 }
@@ -906,11 +1259,11 @@ class _SpeedLegend extends StatelessWidget {
   const _SpeedLegend();
 
   static const _entries = [
-    (color: Color(0xFF9CA3AF), label: 'Arrêté',  sub: '< 5'),
-    (color: Color(0xFF4ECB8D), label: 'Lent',    sub: '5–30'),
-    (color: Color(0xFF5B8DEF), label: 'Urbain',  sub: '30–70'),
-    (color: Color(0xFFF59E0B), label: 'Route',   sub: '70–100'),
-    (color: Color(0xFFEF4444), label: 'Excès',   sub: '> 100'),
+    (color: Color(0xFF9CA3AF), label: 'Arrêté', sub: '< 5'),
+    (color: Color(0xFF4ECB8D), label: 'Lent', sub: '5–30'),
+    (color: Color(0xFF5B8DEF), label: 'Urbain', sub: '30–70'),
+    (color: Color(0xFFF59E0B), label: 'Route', sub: '70–100'),
+    (color: Color(0xFFEF4444), label: 'Excès', sub: '> 100'),
   ];
 
   @override

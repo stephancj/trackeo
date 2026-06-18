@@ -10,6 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/geocoding_provider.dart';
 import '../providers/geofences_provider.dart';
 import '../models/geofence_model.dart';
+import '../models/geofence_type.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
 
 class CreateGeofenceView extends ConsumerStatefulWidget {
@@ -28,11 +29,25 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
   double _radius = 500;
   bool _onEntry = true;
   bool _onExit = true;
+  bool _alertViaWhatsapp = false;
+  String _type = 'home';
   LatLng _center = const LatLng(-18.8792, 47.5079);
   bool _isSaving = false;
   bool _isDragging = false;
   final Set<int> _selectedVehicleIds = {};
   late final TextEditingController _nameController;
+
+  // Rayon : bornes fixes, indépendantes du zoom de la carte.
+  static const double _minRadius = 100;
+  static const double _maxRadius = 5000;
+
+  // Fond de carte cyclé par le bouton calques (plan clair → satellite).
+  static const List<String> _tiles = [
+    AppMapTiles.positron,
+    AppMapTiles.satellite,
+  ];
+  static const List<String> _tileNames = ['Plan', 'Satellite'];
+  int _tileIndex = 0;
 
   // Recherche de lieu (geocoding avant)
   final TextEditingController _searchController = TextEditingController();
@@ -58,9 +73,11 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     if (gf != null) {
       _nameController = TextEditingController(text: gf.name);
       _center = LatLng(gf.centerLat, gf.centerLon);
-      _radius = gf.radiusM;
+      _radius = gf.radiusM.clamp(_minRadius, _maxRadius);
       _onEntry = gf.alertOnEntry;
       _onExit = gf.alertOnExit;
+      _alertViaWhatsapp = gf.alertViaWhatsapp;
+      _type = gf.type;
       if (gf.deviceIds != null) _selectedVehicleIds.addAll(gf.deviceIds!);
       // Fit circle into view after the map widget is ready
       WidgetsBinding.instance.addPostFrameCallback(
@@ -127,6 +144,12 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     _mapController.move(_center, 15);
     _ensureCircleVisible();
     _updateAddress();
+  }
+
+  void _cycleTiles() {
+    HapticFeedback.selectionClick();
+    setState(() => _tileIndex = (_tileIndex + 1) % _tiles.length);
+    _showSnack('Fond : ${_tileNames[_tileIndex]}', AppColors.primaryDark);
   }
 
   // ── Ma position (GPS navigateur / appareil) ──────────────────────────────
@@ -303,10 +326,12 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
       'centerLat': _center.latitude,
       'centerLon': _center.longitude,
       'radiusM': _radius.toInt(),
+      'type': _type,
       'isActive': widget.geofence?.isActive ?? true,
       'deviceIds': _selectedVehicleIds.toList(),
       'alertOnEntry': _onEntry,
       'alertOnExit': _onExit,
+      'alertViaWhatsapp': _alertViaWhatsapp,
     };
 
     final notifier = ref.read(geofencesProvider.notifier);
@@ -355,9 +380,9 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
             ),
             children: [
               TileLayer(
-                urlTemplate: AppMapTiles.positron,
-                subdomains: AppMapTiles.subdomains,
-                retinaMode: true,
+                urlTemplate: _tiles[_tileIndex],
+                subdomains: _tileIndex == 0 ? AppMapTiles.subdomains : const [],
+                retinaMode: _tileIndex == 0,
                 userAgentPackageName: 'mg.trackeo.app',
               ),
               // Geofence circle
@@ -567,6 +592,13 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
             bottom: bottomPanelHeight + 20,
             child: Column(
               children: [
+                // Fond de carte — bascule plan / satellite (placement précis)
+                _buildMapFabButton(
+                  icon: Icons.layers_rounded,
+                  onTap: _cycleTiles,
+                  tooltip: 'Fond de carte',
+                ),
+                const SizedBox(height: 8),
                 // Ma position — déplace l'épingle vers la position GPS de l'user
                 _buildMapFabButton(
                   icon: Icons.my_location_rounded,
@@ -741,6 +773,12 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                     ),
                     const SizedBox(height: 20),
 
+                    // ── Zone Type ──────────────────────────────────────────
+                    _buildLabel('Type de zone'),
+                    const SizedBox(height: 10),
+                    _buildTypeSelector(),
+                    const SizedBox(height: 20),
+
                     // ── Radius Slider ──────────────────────────────────────
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -786,9 +824,9 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                         overlayColor: AppColors.primary.withValues(alpha: 0.12),
                       ),
                       child: Slider(
-                        value: _radius.clamp(100, _getMaxRadiusForZoom()),
-                        min: 100,
-                        max: _getMaxRadiusForZoom(),
+                        value: _radius.clamp(_minRadius, _maxRadius),
+                        min: _minRadius,
+                        max: _maxRadius,
                         onChanged: (val) {
                           setState(() => _radius = val);
                         },
@@ -859,6 +897,8 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    _buildWhatsappToggle(),
                     const SizedBox(height: 24),
 
                     // ── Save / Delete Buttons ──────────────────────────────
@@ -1336,7 +1376,11 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                     : AppColors.divider.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.send_rounded, color: Colors.green, size: 18),
+              child: Icon(
+                icon,
+                color: isActive ? AppColors.primary : AppColors.textHint,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1363,19 +1407,129 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     );
   }
 
-  double _getMaxRadiusForZoom() {
-    try {
-      final camera = _mapController.camera;
-      final zoom = camera.zoom;
-      // meters_per_pixel = 156543 * cos(lat) / 2^zoom
-      final metersPerPixel =
-          156543.0 *
-          math.cos(_center.latitude * math.pi / 180) /
-          math.pow(2, zoom);
-      // We want the max value to allow filling the screen (e.g. 400 pixels radius)
-      return (metersPerPixel * 400).clamp(500.0, 10000.0);
-    } catch (_) {
-      return 5000.0;
-    }
+  Widget _buildTypeSelector() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: kGeofenceTypes.map((t) {
+        final selected = _type == t.key;
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            setState(() => _type = t.key);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: selected
+                  ? t.color.withValues(alpha: 0.12)
+                  : AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected
+                    ? t.color
+                    : AppColors.divider.withValues(alpha: 0.5),
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  t.icon,
+                  size: 16,
+                  color: selected ? t.color : AppColors.textHint,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  t.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? t.color : AppColors.textHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildWhatsappToggle() {
+    final active = _alertViaWhatsapp;
+    const waGreen = Color(0xFF25D366);
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _alertViaWhatsapp = !active);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: active ? waGreen.withValues(alpha: 0.08) : AppColors.background,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: active ? waGreen : AppColors.divider.withValues(alpha: 0.5),
+            width: active ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: active
+                    ? waGreen.withValues(alpha: 0.15)
+                    : AppColors.divider.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.chat_rounded,
+                color: active ? waGreen : AppColors.textHint,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Aussi par WhatsApp',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: active
+                          ? const Color(0xFF1E9E4A)
+                          : AppColors.textHint,
+                    ),
+                  ),
+                  const Text(
+                    'Nécessite un numéro dans votre profil',
+                    style: TextStyle(fontSize: 11, color: AppColors.textHint),
+                  ),
+                ],
+              ),
+            ),
+            Transform.scale(
+              scale: 0.8,
+              child: Switch.adaptive(
+                value: active,
+                activeColor: waGreen,
+                onChanged: (v) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _alertViaWhatsapp = v);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

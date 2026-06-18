@@ -9,7 +9,9 @@ import '../../../core/theme/app_theme.dart';
 import '../providers/alerts_provider.dart';
 import '../providers/geofences_provider.dart';
 import '../models/geofence_model.dart';
+import '../models/geofence_type.dart';
 import '../models/alert_model.dart';
+import '../../vehicles/models/vehicle_model.dart';
 import 'create_geofence_view.dart';
 import 'all_alerts_view.dart';
 import 'widgets/alert_skeletons.dart';
@@ -48,13 +50,20 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeader(
-              'ZONES ACTIVES',
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => Future.wait([
+          ref.read(alertsProvider.notifier).silentRefresh(),
+          ref.read(geofencesProvider.notifier).silentRefresh(),
+        ]),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader(
+                'ZONES ACTIVES',
               action: '+ Ajouter',
               onActionTap: () {
                 Navigator.push(
@@ -88,17 +97,18 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
               loading: () => const GeofenceCarouselSkeleton(),
               error: (e, st) => _buildErrorState('$e'),
             ),
-            const SizedBox(height: 32),
+              const SizedBox(height: 32),
 
-            _buildActivitySectionHeader(),
-            const SizedBox(height: 12),
-            alertsState.when(
-              data: (alerts) => _buildRecentActivityList(alerts),
-              loading: () => const AlertListSkeleton(),
-              error: (e, st) => _buildErrorState('$e'),
-            ),
-            const SizedBox(height: 32),
-          ],
+              _buildActivitySectionHeader(),
+              const SizedBox(height: 12),
+              alertsState.when(
+                data: (alerts) => _buildRecentActivityList(alerts),
+                loading: () => const AlertListSkeleton(),
+                error: (e, st) => _buildErrorState('$e'),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
@@ -238,8 +248,44 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         '${ids.length} véhicule${ids.length > 1 ? 's' : ''}';
   }
 
+  /// Nom du véhicule lié à une alerte (via deviceId), ou null si introuvable.
+  String? _vehicleNameFor(int deviceId) {
+    final vehicles = ref.watch(vehiclesProvider).valueOrNull;
+    if (vehicles == null) return null;
+    for (final Vehicle v in vehicles) {
+      if (v.id == deviceId) return v.name;
+    }
+    return null;
+  }
+
+  Widget _metaChip(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActiveGeofenceCard(Geofence geofence) {
     final vehicleNames = _vehicleNamesFor(geofence);
+    final info = geofenceTypeInfo(geofence.type);
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -365,10 +411,10 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.home_rounded,
+                            Icon(
+                              info.icon,
                               size: 14,
-                              color: AppColors.primary,
+                              color: info.color,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -397,16 +443,29 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
+                      color: info.color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.work_rounded, color: Colors.blue),
+                    child: Icon(info.icon, color: info.color),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Nom de la zone (titre)
+                        Text(
+                          geofence.name,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        // Adresse (sous-titre, géocodée)
                         Builder(
                           builder: (context) {
                             final addressAsync = ref.watch(
@@ -414,59 +473,40 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                                 LatLng(geofence.centerLat, geofence.centerLon),
                               ),
                             );
-                            return addressAsync.when(
-                              data: (addr) => Text(
-                                addr ?? geofence.name,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            return Text(
+                              addressAsync.maybeWhen(
+                                data: (addr) => addr ?? 'Position enregistrée',
+                                orElse: () => 'Localisation…',
                               ),
-                              loading: () => const Text(
-                                'Localisation...',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                color: AppColors.textHint,
                               ),
-                              error: (_, __) => Text(
-                                geofence.name,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             );
                           },
                         ),
-                        const SizedBox(height: 2),
-                        Row(
+                        const SizedBox(height: 6),
+                        // Badges : rayon + déclencheurs actifs
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
                           children: [
-                            Text(
-                              'Rayon ${geofence.radiusM.toInt()} m',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textHint,
-                              ),
+                            _metaChip(
+                              Icons.adjust_rounded,
+                              '${geofence.radiusM.toInt()} m',
+                              AppColors.textSecondary,
                             ),
-                            const SizedBox(width: 4),
-                            const Text(
-                              '•',
-                              style: TextStyle(color: AppColors.textHint),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              geofence.isActive ? 'Active' : 'Inactive',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
+                            if (geofence.alertOnEntry)
+                              _metaChip(
+                                  Icons.login_rounded, 'Entrée', Colors.green),
+                            if (geofence.alertOnExit)
+                              _metaChip(Icons.logout_rounded, 'Sortie',
+                                  Colors.orange),
+                            if (geofence.alertViaWhatsapp)
+                              _metaChip(Icons.chat_rounded, 'WhatsApp',
+                                  const Color(0xFF25D366)),
                           ],
                         ),
                         if (vehicleNames != null) ...[
@@ -836,6 +876,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
   Widget _buildActivityItem(AlertModel alert) {
     final isOpen = alert.status == 'open';
     final dotColor = isOpen ? _alertDotColor(alert.type) : AppColors.textHint;
+    final vehicleName = _vehicleNameFor(alert.deviceId);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -901,6 +942,33 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                         ),
                     ],
                   ),
+                  if (vehicleName != null) ...[
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.directions_car_rounded,
+                          size: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            vehicleName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isOpen
+                                  ? AppColors.textSecondary
+                                  : AppColors.textHint,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 2),
                   Text(
                     alert.message ?? 'Aucun détail',

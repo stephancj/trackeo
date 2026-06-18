@@ -106,6 +106,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             git pull origin main &&
+            cat \$(ls apps/api/migrations/*.sql | sort) | docker exec -i trackeo-postgres psql -v ON_ERROR_STOP=1 -U trackeo -d traccar_db &&
             docker ps -a --filter 'name=trackeo-api' -q | xargs -r docker rm -f &&
             DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d --build --no-deps api
           "

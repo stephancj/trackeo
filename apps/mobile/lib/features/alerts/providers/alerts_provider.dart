@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../repositories/alert_repository.dart';
@@ -10,11 +11,26 @@ final alertRepositoryProvider = Provider((ref) {
 
 class AlertsNotifier extends StateNotifier<AsyncValue<List<AlertModel>>> {
   final AlertRepository _repository;
+  Timer? _pollTimer;
 
   AlertsNotifier(this._repository) : super(const AsyncValue.loading()) {
     refresh();
+    // Polling léger : les alertes sont la donnée la plus urgente, mais une
+    // cadence de 60 s suffit (pas de WebSocket en MVP). Rafraîchissement
+    // silencieux pour ne pas faire clignoter la liste.
+    _pollTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => silentRefresh(),
+    );
   }
 
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Rechargement initial / explicite : passe par l'état loading (skeleton).
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     try {
@@ -22,6 +38,17 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<AlertModel>>> {
       state = AsyncValue.data(alerts);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Rechargement sans flash : conserve les données affichées tant que le
+  /// fetch n'a pas abouti. Utilisé par le polling et le pull-to-refresh.
+  Future<void> silentRefresh() async {
+    try {
+      final alerts = await _repository.fetchAlerts();
+      if (mounted) state = AsyncValue.data(alerts);
+    } catch (_) {
+      // Silencieux : on garde l'état courant (données ou erreur déjà affichée).
     }
   }
 
