@@ -65,18 +65,21 @@ jobs:
           if [ "$EVENT" = "workflow_dispatch" ]; then
             echo "deploy_api=$( [ "$TARGET" = "api" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
             echo "deploy_web=$( [ "$TARGET" = "web" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
-            echo "deploy_ios=$( [ "$TARGET" = "ios" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+            echo "deploy_ios=$( [ "$TARGET" = "ios" ] && echo true || echo false )" >> $GITHUB_OUTPUT
             echo "deploy_admin=$( [ "$TARGET" = "admin" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
             echo "deploy_landing=$( [ "$TARGET" = "landing" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
             echo "deploy_infra=$( [ "$TARGET" = "infra" ] || [ "$TARGET" = "all" ] && echo true || echo false )" >> $GITHUB_OUTPUT
           else
             echo "deploy_api=${{ steps.filter.outputs.api }}" >> $GITHUB_OUTPUT
             echo "deploy_web=${{ steps.filter.outputs.mobile }}" >> $GITHUB_OUTPUT
-            echo "deploy_ios=${{ steps.filter.outputs.mobile }}" >> $GITHUB_OUTPUT
+            echo "deploy_ios=false" >> $GITHUB_OUTPUT
             echo "deploy_admin=${{ steps.filter.outputs.admin }}" >> $GITHUB_OUTPUT
             echo "deploy_landing=${{ steps.filter.outputs.landing }}" >> $GITHUB_OUTPUT
             echo "deploy_infra=${{ steps.filter.outputs.infra }}" >> $GITHUB_OUTPUT
           fi
+
+          # iOS désactivé du déploiement auto (signing "invalid curve name" à
+          # corriger) — relançable manuellement via workflow_dispatch target=ios.
 
       - name: Log deploy targets
         run: |
@@ -106,7 +109,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             git pull origin main &&
-            cat \$(ls apps/api/migrations/*.sql | sort) | docker exec -i trackeo-postgres psql -v ON_ERROR_STOP=1 -U trackeo -d traccar_db &&
+            cat \$(ls apps/api/migrations/*.sql | sort) | docker-compose exec -T postgres psql -v ON_ERROR_STOP=1 -U trackeo -d traccar_db &&
             docker ps -a --filter 'name=trackeo-api' -q | xargs -r docker rm -f &&
             DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d --build --no-deps api
           "
