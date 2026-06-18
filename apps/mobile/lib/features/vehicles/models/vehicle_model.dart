@@ -28,6 +28,7 @@ class VehiclePosition extends Equatable {
   final double course;
   final String? address;
   final int? battery;
+  final bool? charging;
   final bool? ignition;
   final int? rssi;
   final DateTime deviceTime;
@@ -39,6 +40,7 @@ class VehiclePosition extends Equatable {
     required this.course,
     this.address,
     this.battery,
+    this.charging,
     this.ignition,
     this.rssi,
     required this.deviceTime,
@@ -52,6 +54,7 @@ class VehiclePosition extends Equatable {
         course: (json['course'] as num).toDouble(),
         address: json['address'] as String?,
         battery: json['battery'] as int?,
+        charging: json['charging'] as bool?,
         ignition: json['ignition'] as bool?,
         rssi: json['rssi'] as int?,
         deviceTime: _parseDateTimeSafe(json['deviceTime'] as String),

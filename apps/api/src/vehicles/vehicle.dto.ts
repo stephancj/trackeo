@@ -8,6 +8,8 @@ export interface VehiclePositionDto {
   address: string | null;
   /** Niveau de batterie en % extrait des attributs Traccar (peut être null) */
   battery: number | null;
+  /** true = branché sur alimentation externe (voiture / chargeur) */
+  charging: boolean | null;
   /** Engine status (ignition) */
   ignition: boolean | null;
   /** Signal strength / RSSI */

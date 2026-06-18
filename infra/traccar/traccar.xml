@@ -27,6 +27,9 @@
   <!-- GPS103 / TK103 (traceurs génériques) -->
   <entry key='gps103.port'>5001</entry>
 
+  <!-- GT06 / Sinotrack ST-901 -->
+  <entry key='gt06.port'>5023</entry>
+
   <!-- Teltonika (FMB series) -->
   <entry key='teltonika.port'>5027</entry>
 

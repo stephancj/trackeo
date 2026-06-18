@@ -87,6 +87,7 @@ export class VehiclesService {
         course: pos.course,
         address: pos.address,
         battery: this.extractBattery(pos.attributes),
+        charging: this.extractCharging(pos.attributes),
         ignition: this.extractIgnition(pos.attributes),
         rssi: this.extractRssi(pos.attributes),
         deviceTime: pos.deviceTime,
@@ -146,6 +147,7 @@ export class VehiclesService {
       course: pos.course,
       address: pos.address,
       battery: this.extractBattery(pos.attributes),
+      charging: this.extractCharging(pos.attributes),
       ignition: this.extractIgnition(pos.attributes),
       rssi: this.extractRssi(pos.attributes),
       deviceTime: pos.deviceTime,
@@ -186,9 +188,26 @@ export class VehiclesService {
       attributes['battery'] ??
       attributes['batteryLevel'] ??
       attributes['io113'];
-    if (typeof raw === 'number') {
-      return raw <= 1 ? Math.round(raw * 100) : Math.round(raw);
+    if (typeof raw !== 'number') return null;
+    // Fraction [0,1] → percentage
+    if (raw <= 1) return Math.round(raw * 100);
+    // Already a percentage [2,100]
+    if (raw >= 2 && raw <= 100) return Math.round(raw);
+    // GT06 / Li-Ion voltage [3.0V, 4.5V] → percentage
+    if (raw >= 3.0 && raw <= 4.5) {
+      return Math.max(0, Math.min(100, Math.round((raw - 3.5) / 0.7 * 100)));
     }
+    return null;
+  }
+
+  private extractCharging(
+    attributes: Record<string, unknown> | null,
+  ): boolean | null {
+    if (!attributes) return null;
+    // GT06: 'charge' boolean
+    const charge = attributes['charge'] ?? attributes['externalPower'];
+    if (typeof charge === 'boolean') return charge;
+    if (typeof charge === 'number') return charge > 0;
     return null;
   }
 
