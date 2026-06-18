@@ -1114,6 +1114,20 @@ class _VehicleCard extends ConsumerWidget {
                     ),
                   ),
                 ),
+                Container(width: 1, color: AppColors.divider),
+                // Ignition
+                _StatBox(
+                  label: 'Allumage',
+                  child: Icon(
+                    pos?.ignition == true
+                        ? Icons.key_rounded
+                        : Icons.key_off_rounded,
+                    size: 22,
+                    color: pos?.ignition == true
+                        ? AppColors.statusOnline
+                        : AppColors.textHint,
+                  ),
+                ),
               ],
             ),
           ),

@@ -206,9 +206,26 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                         ),
                       ],
                     ),
-                    BatteryIndicator(
-                        battery: widget.vehicle.position?.battery,
-                        charging: widget.vehicle.position?.charging),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.vehicle.position?.ignition != null) ...[
+                          Icon(
+                            widget.vehicle.position!.ignition == true
+                                ? Icons.key_rounded
+                                : Icons.key_off_rounded,
+                            size: 13,
+                            color: widget.vehicle.position!.ignition == true
+                                ? AppColors.statusOnline
+                                : AppColors.textHint,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        BatteryIndicator(
+                            battery: widget.vehicle.position?.battery,
+                            charging: widget.vehicle.position?.charging),
+                      ],
+                    ),
                   ],
                 ),
 
