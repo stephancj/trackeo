@@ -77,6 +77,23 @@ void main() {
       expect(day.isEmpty, isTrue, reason: 'déplacement < 100 m ⇒ stationné');
     });
 
+    test('jitter à l\'arrêt : distance cumulée > 100 m mais sur place ⇒ PAS un '
+        'trajet (bug signalé)', () {
+      // Véhicule stationné qui reporte toutes les 2 min, GPS qui oscille entre
+      // 2 points distants de ~30 m. Sur 12 points : ~330 m cumulés (> seuil
+      // historique de 100 m) MAIS bounding box ~30 m → ne doit PAS être un trajet.
+      const a = -18.9000;
+      const b = -18.89973; // ~30 m au nord
+      final positions = [
+        for (var k = 0; k < 12; k++)
+          _p(9 * 60 + k * 2, k.isEven ? a : b, 47.5300, speed: 1),
+      ];
+      final day = DayTrips.fromPositions(positions);
+      expect(day.isEmpty, isTrue,
+          reason: 'déplacement net ~30 m ⇒ stationné, malgré ~330 m cumulés');
+      expect(day.tripCount, 0);
+    });
+
     test('vitesse moyenne = distance / temps de conduite', () {
       // 1 trajet d'1 h, points toutes les 10 min (cadence réaliste), de
       // -18.90 à -18.80 (~11 km vers le nord).

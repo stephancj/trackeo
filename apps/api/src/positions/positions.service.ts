@@ -218,18 +218,34 @@ export class PositionsService {
       if (seg.length < 2) return;
       let dist = 0;
       let maxSpd = 0;
-      for (let i = 1; i < seg.length; i++) {
-        const d = this.haversine(
-          seg[i - 1].latitude,
-          seg[i - 1].longitude,
-          seg[i].latitude,
-          seg[i].longitude,
-        );
-        if (d < 5) dist += d;
-        const spd = Math.round((seg[i].speed ?? 0) * 1.852 * 10) / 10;
+      let minLat = seg[0].latitude;
+      let maxLat = seg[0].latitude;
+      let minLon = seg[0].longitude;
+      let maxLon = seg[0].longitude;
+      for (let i = 0; i < seg.length; i++) {
+        const p = seg[i];
+        if (i > 0) {
+          const d = this.haversine(
+            seg[i - 1].latitude,
+            seg[i - 1].longitude,
+            p.latitude,
+            p.longitude,
+          );
+          if (d < 5) dist += d; // ignore les sauts GPS aberrants (> 5 km)
+        }
+        const spd = Math.round((p.speed ?? 0) * 1.852 * 10) / 10;
         if (spd > maxSpd) maxSpd = spd;
+        if (p.latitude < minLat) minLat = p.latitude;
+        if (p.latitude > maxLat) maxLat = p.latitude;
+        if (p.longitude < minLon) minLon = p.longitude;
+        if (p.longitude > maxLon) maxLon = p.longitude;
       }
-      if (dist < 0.1) return; // skip micro-movements < 100m
+      // Déplacement net (diagonale de la bounding box) : robuste au jitter GPS
+      // d'un véhicule stationné, dont la distance cumulée gonfle alors qu'il
+      // n'a pas bougé. < 150 m ⇒ stationné, pas un trajet.
+      const spanM =
+        this.haversine(minLat, minLon, maxLat, maxLon) * 1000;
+      if (spanM < 150) return;
       const durationMin = Math.round(
         (seg[seg.length - 1].deviceTime.getTime() - seg[0].deviceTime.getTime()) /
           60000,

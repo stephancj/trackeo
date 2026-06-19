@@ -91,7 +91,11 @@ class DayTrips {
   factory DayTrips.fromPositions(
     List<VehiclePosition> raw, {
     Duration gap = const Duration(minutes: 10),
-    double minTripKm = 0.1,
+    // Déplacement net minimal (mètres) pour qu'un segment soit un vrai trajet.
+    // On mesure la diagonale de la bounding box (et NON la distance cumulée),
+    // sinon le jitter GPS d'un véhicule stationné s'accumule et crée un faux
+    // trajet alors que le véhicule n'a pas bougé.
+    double minTripSpanM = 150,
   }) {
     if (raw.isEmpty) {
       return const DayTrips(
@@ -128,18 +132,31 @@ class DayTrips {
     for (final seg in segments) {
       if (seg.length < 2) continue;
       var dist = 0.0;
-      var top = 0.0;
-      for (var i = 1; i < seg.length; i++) {
-        dist += _haversineKm(
-          seg[i - 1].lat,
-          seg[i - 1].lon,
-          seg[i].lat,
-          seg[i].lon,
-        );
-        if (seg[i].speedKmh > top) top = seg[i].speedKmh;
+      var top = seg.first.speedKmh;
+      var minLat = seg.first.lat, maxLat = seg.first.lat;
+      var minLon = seg.first.lon, maxLon = seg.first.lon;
+      for (var i = 0; i < seg.length; i++) {
+        final p = seg[i];
+        if (i > 0) {
+          dist += _haversineKm(
+            seg[i - 1].lat,
+            seg[i - 1].lon,
+            p.lat,
+            p.lon,
+          );
+        }
+        if (p.speedKmh > top) top = p.speedKmh;
+        if (p.lat < minLat) minLat = p.lat;
+        if (p.lat > maxLat) maxLat = p.lat;
+        if (p.lon < minLon) minLon = p.lon;
+        if (p.lon > maxLon) maxLon = p.lon;
       }
-      if (seg.first.speedKmh > top) top = seg.first.speedKmh;
-      if (dist < minTripKm) continue; // jitter GPS à l'arrêt → ignoré
+
+      // Déplacement net (diagonale de la bounding box, en mètres). Pour du
+      // jitter à l'arrêt il reste minuscule ; pour un vrai trajet il est grand,
+      // même si le véhicule revient à son point de départ.
+      final spanM = _haversineKm(minLat, minLon, maxLat, maxLon) * 1000;
+      if (spanM < minTripSpanM) continue; // stationné → pas un trajet
 
       final dur = seg.last.deviceTime.difference(seg.first.deviceTime);
       final hours = dur.inSeconds / 3600.0;
