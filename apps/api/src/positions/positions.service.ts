@@ -3,6 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Position } from './position.entity';
 
+/**
+ * Plafond de points chargés par requête de rapport. Un véhicule actif génère
+ * ~1500 points/jour, donc 50 000 couvre ~30 jours. Au-delà, les rapports sont
+ * partiels (cf. `partial` dans getActivitySummary) — la vraie solution long
+ * terme est l'agrégation SQL (TimescaleDB time_bucket).
+ */
+const MAX_REPORT_POINTS = 50000;
+
 export interface PositionDto {
   id: number;
   deviceId: number;
@@ -79,7 +87,7 @@ export class PositionsService {
     const positions = await this.positionRepo.find({
       where: { deviceId, deviceTime: Between(from, to), valid: true },
       order: { deviceTime: 'ASC' },
-      take: 10000,
+      take: MAX_REPORT_POINTS,
     });
 
     let distanceKm = 0;
@@ -203,7 +211,7 @@ export class PositionsService {
     const positions = await this.positionRepo.find({
       where: { deviceId, deviceTime: Between(from, to), valid: true },
       order: { deviceTime: 'ASC' },
-      take: 10000,
+      take: MAX_REPORT_POINTS,
     });
 
     if (positions.length === 0) return [];
@@ -300,7 +308,7 @@ export class PositionsService {
     const positions = await this.positionRepo.find({
       where: { deviceId, deviceTime: Between(from, to), valid: true },
       order: { deviceTime: 'ASC' },
-      take: 10000,
+      take: MAX_REPORT_POINTS,
     });
 
     const violations: Awaited<ReturnType<typeof this.getSpeedViolations>> = [];
@@ -379,7 +387,7 @@ export class PositionsService {
     const positions = await this.positionRepo.find({
       where: { deviceId, deviceTime: Between(from, to), valid: true },
       order: { deviceTime: 'ASC' },
-      take: 10000,
+      take: MAX_REPORT_POINTS,
     });
 
     const episodes: Awaited<ReturnType<typeof this.getIdleTime>> = [];
@@ -455,6 +463,7 @@ export class PositionsService {
     tripCount: number;
     speedViolationCount: number;
     pointCount: number;
+    partial: boolean;
   }> {
     const [distSummary, trips, violations, idleEpisodes] = await Promise.all([
       this.getDistanceSummary(deviceId, from, to),
@@ -465,15 +474,21 @@ export class PositionsService {
 
     const drivingMinutes = trips.reduce((sum, t) => sum + t.durationMin, 0);
     const idleMinutes = idleEpisodes.reduce((sum, e) => sum + e.durationMin, 0);
+    // Cohérence : la distance = somme des distances de trajets (même source que
+    // l'onglet Trajets), au lieu d'un calcul séparé sur tous les points qui
+    // gonflait avec le jitter à l'arrêt.
+    const distanceKm =
+      Math.round(trips.reduce((sum, t) => sum + t.distanceKm, 0) * 10) / 10;
 
     return {
-      distanceKm: distSummary.distanceKm,
+      distanceKm,
       drivingMinutes,
       idleMinutes,
       maxSpeedKmh: distSummary.maxSpeedKmh,
       tripCount: trips.length,
       speedViolationCount: violations.length,
       pointCount: distSummary.pointCount,
+      partial: distSummary.pointCount >= MAX_REPORT_POINTS,
     };
   }
 

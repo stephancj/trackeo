@@ -536,6 +536,42 @@ class _ActivityHero extends StatelessWidget {
   }
 }
 
+// ── Partial-data banner ───────────────────────────────────────────────────────
+
+class _PartialBanner extends StatelessWidget {
+  const _PartialBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border:
+            Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFFB45309)),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Période trop large : totaux partiels (limite atteinte). '
+              'Choisissez une période plus courte pour un total exact.',
+              style: TextStyle(
+                fontSize: 12.5,
+                color: Color(0xFF92400E),
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Activity Tab ──────────────────────────────────────────────────────────────
 
 class _ActivityTab extends ConsumerWidget {
@@ -575,6 +611,10 @@ class _ActivityTab extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              if (summary.partial) ...[
+                const _PartialBanner(),
+                const SizedBox(height: 12),
+              ],
               _ActivityHero(summary: summary),
               const SizedBox(height: 12),
               GridView.count(
@@ -588,7 +628,7 @@ class _ActivityTab extends ConsumerWidget {
                   _StatCard(
                     icon: Icons.pause_circle_outline,
                     iconColor: const Color(0xFFF59E0B),
-                    label: 'Temps inactif',
+                    label: 'Temps à l\'arrêt',
                     value: _fmtDuration(summary.idleMinutes),
                   ),
                   _StatCard(

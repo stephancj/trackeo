@@ -9,6 +9,9 @@ class ActivitySummary extends Equatable {
   final int speedViolationCount;
   final int pointCount;
 
+  /// True si la période a dépassé le plafond de points → totaux partiels.
+  final bool partial;
+
   const ActivitySummary({
     required this.distanceKm,
     required this.drivingMinutes,
@@ -17,6 +20,7 @@ class ActivitySummary extends Equatable {
     required this.tripCount,
     required this.speedViolationCount,
     required this.pointCount,
+    this.partial = false,
   });
 
   factory ActivitySummary.fromJson(Map<String, dynamic> json) =>
@@ -29,6 +33,7 @@ class ActivitySummary extends Equatable {
         speedViolationCount:
             (json['speedViolationCount'] as num?)?.toInt() ?? 0,
         pointCount: (json['pointCount'] as num?)?.toInt() ?? 0,
+        partial: json['partial'] as bool? ?? false,
       );
 
   @override
@@ -40,6 +45,7 @@ class ActivitySummary extends Equatable {
         tripCount,
         speedViolationCount,
         pointCount,
+        partial,
       ];
 }
 
