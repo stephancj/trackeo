@@ -3,21 +3,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/speed_palette.dart';
 import '../../models/alert_model.dart';
 import '../../providers/alert_track_provider.dart';
 import '../../../vehicles/models/vehicle_model.dart';
 
 /// Seuil d'excès (doit refléter SPEED_LIMIT_KMH côté backend).
 const double kSpeedLimitKmh = 120;
-
-/// Couleur d'un point selon sa vitesse (km/h) — même palette que l'historique.
-Color speedColor(double kmh) {
-  if (kmh < 5) return const Color(0xFF9CA3AF); // arrêté → gris
-  if (kmh < 30) return const Color(0xFF4ECB8D); // lent   → vert
-  if (kmh < 70) return const Color(0xFF5B8DEF); // urbain → bleu
-  if (kmh < 100) return const Color(0xFFF59E0B); // route  → orange
-  return const Color(0xFFEF4444); // excès  → rouge
-}
 
 /// Carte traçant le segment GPS autour d'une alerte (fenêtre ±5 min), coloré
 /// par vitesse — le rouge matérialise l'excès. Repli sur un simple marqueur si
@@ -211,21 +203,16 @@ class _AlertTraceMapState extends ConsumerState<AlertTraceMap> {
   static const _fallbackCenter = LatLng(-18.9137, 47.5361);
 }
 
-/// Légende compacte de la palette de vitesse (pour le plein écran).
+/// Légende compacte de la palette de vitesse (pour le plein écran). Bloc qui
+/// s'adapte en hauteur (Wrap) pour ne pas déborder dans le coin haut-droit.
 class SpeedTraceLegend extends StatelessWidget {
   const SpeedTraceLegend({super.key});
-
-  static const _entries = [
-    (color: Color(0xFF4ECB8D), label: '< 30'),
-    (color: Color(0xFF5B8DEF), label: '30–70'),
-    (color: Color(0xFFF59E0B), label: '70–100'),
-    (color: Color(0xFFEF4444), label: '> 100'),
-  ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      constraints: const BoxConstraints(maxWidth: 172),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -233,29 +220,30 @@ class SpeedTraceLegend extends StatelessWidget {
           BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6),
         ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 5,
         children: [
-          for (final e in _entries) ...[
-            Container(
-              width: 14,
-              height: 5,
-              decoration: BoxDecoration(
-                color: e.color,
-                borderRadius: BorderRadius.circular(3),
-              ),
+          for (final b in kSpeedBands)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 12,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: b.color,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  b.range,
+                  style:
+                      const TextStyle(fontSize: 10, color: AppColors.textHint),
+                ),
+              ],
             ),
-            const SizedBox(width: 4),
-            Text(
-              e.label,
-              style: const TextStyle(fontSize: 10, color: AppColors.textHint),
-            ),
-            const SizedBox(width: 10),
-          ],
-          const Text(
-            'km/h',
-            style: TextStyle(fontSize: 10, color: AppColors.textHint),
-          ),
         ],
       ),
     );

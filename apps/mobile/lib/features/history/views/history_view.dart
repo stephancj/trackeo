@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/speed_palette.dart';
 import '../../../core/providers/geocoding_provider.dart';
 import '../../../core/utils/app_time.dart';
 import '../models/trip_model.dart';
@@ -325,15 +326,6 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
 
   // ── Map helpers ────────────────────────────────────────────────────────
 
-  /// Couleur correspondant à une vitesse en km/h.
-  static Color _speedColor(double kmh) {
-    if (kmh < 5) return const Color(0xFF9CA3AF); // arrêté → gris
-    if (kmh < 30) return const Color(0xFF4ECB8D); // lent   → vert
-    if (kmh < 70) return const Color(0xFF5B8DEF); // urbain → bleu
-    if (kmh < 100) return const Color(0xFFF59E0B); // route  → orange
-    return const Color(0xFFEF4444); // excès  → rouge
-  }
-
   /// Une polyligne par trajet. Si un trajet est sélectionné, les autres sont
   /// estompés en gris translucide pour le mettre en avant.
   static List<Polyline> _buildTripPolylines(DayTrips day, int? selected) {
@@ -357,7 +349,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                 points: pts,
                 strokeWidth: selected == t.index ? 6 : 5,
                 gradientColors:
-                    t.points.map((p) => _speedColor(p.speedKmh)).toList(),
+                    t.points.map((p) => speedColor(p.speedKmh)).toList(),
                 strokeCap: StrokeCap.round,
                 strokeJoin: StrokeJoin.round,
               ),
@@ -1258,14 +1250,6 @@ class _DottedLine extends StatelessWidget {
 class _SpeedLegend extends StatelessWidget {
   const _SpeedLegend();
 
-  static const _entries = [
-    (color: Color(0xFF9CA3AF), label: 'Arrêté', sub: '< 5'),
-    (color: Color(0xFF4ECB8D), label: 'Lent', sub: '5–30'),
-    (color: Color(0xFF5B8DEF), label: 'Urbain', sub: '30–70'),
-    (color: Color(0xFFF59E0B), label: 'Route', sub: '70–100'),
-    (color: Color(0xFFEF4444), label: 'Excès', sub: '> 100'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1274,10 +1258,12 @@ class _SpeedLegend extends StatelessWidget {
         color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: _entries
-            .map((e) => _LegendItem(e.color, e.label, e.sub))
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        spacing: 6,
+        runSpacing: 10,
+        children: kSpeedBands
+            .map((b) => _LegendItem(b.color, b.label, b.range))
             .toList(),
       ),
     );
