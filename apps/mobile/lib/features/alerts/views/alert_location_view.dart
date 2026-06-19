@@ -1,51 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
+import '../models/alert_model.dart';
+import 'widgets/alert_trace_map.dart';
 
-/// Plein écran montrant l'endroit exact où une alerte s'est produite
-/// (ex. le lieu d'un excès de vitesse). Carte lecture seule + épingle + adresse.
+/// Plein écran montrant où une alerte s'est produite. Pour un excès de vitesse,
+/// trace le segment GPS coloré par vitesse (rouge = excès) ; sinon, une épingle.
 class AlertLocationView extends StatelessWidget {
-  final double lat;
-  final double lon;
+  final AlertModel alert;
   final String title;
-  final String? subtitle;
   final Color color;
   final IconData icon;
 
   const AlertLocationView({
     super.key,
-    required this.lat,
-    required this.lon,
+    required this.alert,
     required this.title,
-    this.subtitle,
     required this.color,
     required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
-    final point = LatLng(lat, lon);
     final topPad = MediaQuery.of(context).padding.top;
     final bottomPad = MediaQuery.of(context).padding.bottom;
+    final isSpeed = alert.type == 'speed_limit';
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          FlutterMap(
-            options: MapOptions(initialCenter: point, initialZoom: 16),
-            children: [
-              TileLayer(
-                urlTemplate: AppMapTiles.positron,
-                subdomains: AppMapTiles.subdomains,
-                retinaMode: true,
-                userAgentPackageName: 'mg.trackeo.app',
-              ),
-              MarkerLayer(
-                markers: [_marker(point)],
-              ),
-            ],
+          Positioned.fill(
+            child: AlertTraceMap(
+              alert: alert,
+              color: color,
+              icon: icon,
+              interactive: true,
+            ),
           ),
 
           // Bouton retour
@@ -68,14 +58,19 @@ class AlertLocationView extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 16,
-                  color: AppColors.primaryDark,
-                ),
+                child: const Icon(Icons.arrow_back_ios_new,
+                    size: 16, color: AppColors.primaryDark),
               ),
             ),
           ),
+
+          // Légende vitesse (excès uniquement)
+          if (isSpeed)
+            Positioned(
+              top: topPad + 8,
+              right: 16,
+              child: const SpeedTraceLegend(),
+            ),
 
           // Carte d'info en bas
           Positioned(
@@ -119,10 +114,11 @@ class AlertLocationView extends StatelessWidget {
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        if (subtitle != null && subtitle!.isNotEmpty) ...[
+                        if (alert.message != null &&
+                            alert.message!.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(
-                            subtitle!,
+                            alert.message!,
                             style: const TextStyle(
                               fontSize: 12.5,
                               color: AppColors.textSecondary,
@@ -132,14 +128,6 @@ class AlertLocationView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                        const SizedBox(height: 4),
-                        Text(
-                          '${lat.toStringAsFixed(5)}, ${lon.toStringAsFixed(5)}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textHint,
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -148,29 +136,6 @@ class AlertLocationView extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Marker _marker(LatLng point) {
-    return Marker(
-      point: point,
-      width: 46,
-      height: 46,
-      child: Container(
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 3),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(icon, color: Colors.white, size: 22),
       ),
     );
   }

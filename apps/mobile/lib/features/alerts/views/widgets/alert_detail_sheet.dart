@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/navigation/app_shell.dart';
@@ -9,6 +7,7 @@ import '../../../vehicles/providers/vehicles_provider.dart';
 import '../../models/alert_model.dart';
 import '../../providers/alerts_provider.dart';
 import '../alert_location_view.dart';
+import 'alert_trace_map.dart';
 
 class AlertDetailSheet extends ConsumerStatefulWidget {
   final AlertModel alert;
@@ -61,19 +60,20 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
     return null;
   }
 
-  /// Montre l'alerte sur la carte. Si elle porte une position (ex. lieu de
-  /// l'excès), ouvre le plein écran à cet endroit exact ; sinon, repli sur la
-  /// carte live centrée sur le véhicule.
+  /// Vrai si on peut montrer l'alerte sur une carte : position enregistrée, ou
+  /// excès de vitesse (traçable depuis l'historique même sans lat/lon stockés).
+  bool get _hasMap => _alert.hasLocation || _alert.type == 'speed_limit';
+
+  /// Ouvre le plein écran : segment tracé pour un excès, épingle sinon. Repli
+  /// sur la carte live (véhicule) si aucune position n'est disponible.
   void _openOnMap() {
     final a = _alert;
-    if (a.hasLocation) {
+    if (_hasMap) {
       Navigator.of(context).push(
         TrackeoRoute(
           builder: (_) => AlertLocationView(
-            lat: a.lat!,
-            lon: a.lon!,
+            alert: a,
             title: _title,
-            subtitle: a.message,
             color: _color,
             icon: _icon,
           ),
@@ -86,9 +86,9 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  /// Mini-carte (lecture seule) montrant le lieu de l'alerte, tap → plein écran.
+  /// Mini-carte : trace l'excès (segment coloré par vitesse) ou pointe le lieu.
+  /// Tap → plein écran.
   Widget _buildMiniMap(AlertModel a) {
-    final point = LatLng(a.lat!, a.lon!);
     return GestureDetector(
       onTap: _openOnMap,
       child: ClipRRect(
@@ -97,45 +97,13 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
           height: 150,
           child: Stack(
             children: [
-              FlutterMap(
-                options: MapOptions(
-                  initialCenter: point,
-                  initialZoom: 15,
-                  interactionOptions: const InteractionOptions(
-                    flags: InteractiveFlag.none,
-                  ),
+              Positioned.fill(
+                child: AlertTraceMap(
+                  alert: a,
+                  color: _color,
+                  icon: _icon,
+                  interactive: false,
                 ),
-                children: [
-                  TileLayer(
-                    urlTemplate: AppMapTiles.positron,
-                    subdomains: AppMapTiles.subdomains,
-                    retinaMode: true,
-                    userAgentPackageName: 'mg.trackeo.app',
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: point,
-                        width: 36,
-                        height: 36,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: _color,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                          child: Icon(_icon, color: Colors.white, size: 18),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
               // Indice "agrandir"
               Positioned(
@@ -393,8 +361,8 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
 
           const SizedBox(height: 24),
 
-          // ── Mini-carte (lieu de l'alerte) ──────────────────────────────────
-          if (_alert.hasLocation) ...[
+          // ── Mini-carte (trace de l'excès / lieu de l'alerte) ───────────────
+          if (_hasMap) ...[
             _buildMiniMap(_alert),
             const SizedBox(height: 16),
           ],
