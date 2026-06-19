@@ -17,10 +17,10 @@ class SpeedBand {
 /// les embouteillages pour stationné.
 const List<SpeedBand> kSpeedBands = [
   SpeedBand(1, Color(0xFF9CA3AF), 'Arrêté', '< 1'),
-  SpeedBand(15, Color(0xFFFBBF24), 'Au pas', '1–15'),
-  SpeedBand(40, Color(0xFF4ECB8D), 'Lent', '15–40'),
-  SpeedBand(70, Color(0xFF5B8DEF), 'Urbain', '40–70'),
-  SpeedBand(100, Color(0xFFF59E0B), 'Route', '70–100'),
+  SpeedBand(10, Color(0xFFFBBF24), 'Au pas', '1–10'),
+  SpeedBand(30, Color(0xFF4ECB8D), 'Lent', '10–30'),
+  SpeedBand(50, Color(0xFF5B8DEF), 'Urbain', '30–50'),
+  SpeedBand(100, Color(0xFFF59E0B), 'Route', '50–100'),
   SpeedBand(double.infinity, Color(0xFFEF4444), 'Excès', '> 100'),
 ];
 
