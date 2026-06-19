@@ -176,14 +176,25 @@ export class GeofencesCheckerService {
   // Cache pour éviter le spam d'alertes (clé: vehicleId_alertType)
   private readonly lastAlertCache = new Map<string, Date>();
 
-  // Cache pour suivre le début d'un excès de vitesse par véhicule
+  // Suit l'épisode d'excès en cours par véhicule. `alertId` = l'UNE alerte
+  // créée pour cet épisode (mise à jour au lieu d'en recréer une à chaque tick).
   private readonly speedExcessStartCache = new Map<
     number,
-    { startTime: Date; lat: number; lon: number; maxSpeed: number }
+    {
+      startTime: Date;
+      lat: number;
+      lon: number;
+      maxSpeed: number;
+      alertId: string | null;
+    }
   >();
 
   // Seuil d'excès de vitesse (km/h) — au-delà, une alerte est générée.
   private readonly SPEED_LIMIT_KMH = 120;
+
+  // Anti-spam des alertes batterie : on n'en ré-émet pas une avant ce délai
+  // (le cron tourne toutes les 30 s ; sans ça la batterie faible spammait).
+  private readonly ALERT_THROTTLE_MS = 30 * 60 * 1000; // 30 min
 
   @Cron('*/30 * * * * *')
   async checkVehicleAlerts() {
@@ -224,51 +235,63 @@ export class GeofencesCheckerService {
           );
         }
 
-        // Speed Limit Alert — track duration and location
+        // Excès de vitesse — UNE alerte par épisode, mise à jour au fil du temps
         const speedKmh = vehicle.position.speedKmh;
         if (userAlertSettings.alertSpeedLimit && speedKmh != null) {
           if (speedKmh > this.SPEED_LIMIT_KMH) {
-            // Update or start tracking this excess
             const existing = this.speedExcessStartCache.get(vehicle.id);
             if (!existing) {
+              // Début d'un nouvel épisode
               this.speedExcessStartCache.set(vehicle.id, {
                 startTime: new Date(),
                 lat: vehicle.position.lat,
                 lon: vehicle.position.lon,
                 maxSpeed: speedKmh,
+                alertId: null,
               });
-            } else {
-              // Update max speed seen during this excess
-              if (speedKmh > existing.maxSpeed) {
-                existing.maxSpeed = speedKmh;
-              }
+            } else if (speedKmh > existing.maxSpeed) {
+              existing.maxSpeed = speedKmh; // suit le pic
             }
 
             const excess = this.speedExcessStartCache.get(vehicle.id)!;
-            const durationMs = Date.now() - excess.startTime.getTime();
-            const sustained = durationMs >= 60_000;
-            const peakKmh = Math.round(excess.maxSpeed);
-            const location = await this.reverseGeocode(excess.lat, excess.lon);
+            const message = await this.buildSpeedMessage(excess);
 
-            // Message épuré : pic de vitesse, limite, lieu — et durée seulement
-            // si l'excès dure (≥ 1 min). Pas de nom de véhicule (affiché par
-            // l'UI), pas d'URL brute, pas d'heure (déjà dans le timestamp).
-            let message = `${peakKmh} km/h (limite ${this.SPEED_LIMIT_KMH} km/h)`;
-            if (location) message += ` · ${location}`;
-            if (sustained) message += ` · sur ${this.formatDuration(durationMs)}`;
-
-            await this.sendAlertIfNotSpammed(
-              userId,
-              vehicle.id,
-              vehicle.name,
-              AlertType.SPEED_LIMIT,
-              message,
-              userAlertSettings,
-              excess.lat,
-              excess.lon,
-            );
+            if (excess.alertId == null) {
+              // Première détection → UNE alerte + notification (une seule fois)
+              const alert = await this.alertsService.createAlert(
+                userId,
+                vehicle.id,
+                AlertType.SPEED_LIMIT,
+                message,
+                excess.lat,
+                excess.lon,
+              );
+              excess.alertId = alert.id;
+              this.logger.log(`🚨 ${vehicle.name} SPEED_LIMIT: ${message}`);
+              await this.notifyAlert(
+                userId,
+                vehicle.id,
+                vehicle.name,
+                AlertType.SPEED_LIMIT,
+                message,
+                userAlertSettings,
+              );
+            } else {
+              // Épisode en cours → on met à jour l'alerte existante (pic/durée)
+              await this.alertsService.updateAlertMessage(
+                excess.alertId,
+                message,
+              );
+            }
           } else {
-            // Speed back to normal — reset tracking
+            // Retour sous la limite → mise à jour finale puis reset de l'épisode
+            const excess = this.speedExcessStartCache.get(vehicle.id);
+            if (excess?.alertId) {
+              await this.alertsService.updateAlertMessage(
+                excess.alertId,
+                await this.buildSpeedMessage(excess),
+              );
+            }
             this.speedExcessStartCache.delete(vehicle.id);
           }
         }
@@ -276,6 +299,23 @@ export class GeofencesCheckerService {
     } catch (e) {
       this.logger.error('Erreur lors du check alerts véhicule', e);
     }
+  }
+
+  /** Message épuré d'un excès : pic, limite, lieu, et durée si ≥ 1 min. */
+  private async buildSpeedMessage(excess: {
+    startTime: Date;
+    lat: number;
+    lon: number;
+    maxSpeed: number;
+  }): Promise<string> {
+    const durationMs = Date.now() - excess.startTime.getTime();
+    const sustained = durationMs >= 60_000;
+    const peakKmh = Math.round(excess.maxSpeed);
+    const location = await this.reverseGeocode(excess.lat, excess.lon);
+    let message = `${peakKmh} km/h (limite ${this.SPEED_LIMIT_KMH} km/h)`;
+    if (location) message += ` · ${location}`;
+    if (sustained) message += ` · sur ${this.formatDuration(durationMs)}`;
+    return message;
   }
 
   private formatDuration(ms: number): string {
@@ -299,14 +339,12 @@ export class GeofencesCheckerService {
   ): Promise<void> {
     const cacheKey = `${vehicleId}_${alertType}`;
     const lastAlert = this.lastAlertCache.get(cacheKey);
-    const now = new Date();
 
-    // Éviter le spam: une alerte toutes les 5 secondes max
-    if (lastAlert && now.getTime() - lastAlert.getTime() < 5 * 1000) {
+    if (lastAlert && Date.now() - lastAlert.getTime() < this.ALERT_THROTTLE_MS) {
       return;
     }
 
-    this.lastAlertCache.set(cacheKey, now);
+    this.lastAlertCache.set(cacheKey, new Date());
     this.logger.log(`🚨 ${vehicleName} ${alertType}: ${message}`);
 
     await this.alertsService.createAlert(
@@ -317,7 +355,25 @@ export class GeofencesCheckerService {
       lat,
       lon,
     );
+    await this.notifyAlert(
+      userId,
+      vehicleId,
+      vehicleName,
+      alertType,
+      message,
+      settings,
+    );
+  }
 
+  /** Notifications (push + WhatsApp) d'une alerte, sans la créer en base. */
+  private async notifyAlert(
+    userId: number,
+    vehicleId: number,
+    vehicleName: string,
+    alertType: AlertType,
+    message: string,
+    settings: AlertSettings,
+  ): Promise<void> {
     if (settings.alertViaPush) {
       const subscriptionId = await this.getUserSubId(userId);
       const title =

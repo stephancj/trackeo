@@ -56,6 +56,14 @@ export class AlertsService {
     return this.alertsRepository.save(alert);
   }
 
+  /**
+   * Met à jour le message d'une alerte (épisode d'excès en cours : pic/durée
+   * évoluent sans créer une nouvelle alerte). Ne change pas le statut.
+   */
+  async updateAlertMessage(id: string, message: string): Promise<void> {
+    await this.alertsRepository.update({ id }, { message });
+  }
+
   async findActiveByDeviceAndType(
     deviceId: number,
     type: AlertType,
