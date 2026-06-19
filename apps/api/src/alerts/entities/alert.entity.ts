@@ -33,6 +33,13 @@ export class Alert {
   @Column({ default: 'open' })
   status: string;
 
+  /** Position où l'alerte s'est produite (ex. lieu de l'excès). Nullable. */
+  @Column({ type: 'double precision', nullable: true })
+  lat: number | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  lon: number | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

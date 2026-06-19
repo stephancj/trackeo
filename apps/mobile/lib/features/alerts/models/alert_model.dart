@@ -16,6 +16,8 @@ class AlertModel extends Equatable {
   final String type;
   final String? message;
   final String status;
+  final double? lat;
+  final double? lon;
   final DateTime createdAt;
 
   const AlertModel({
@@ -25,8 +27,13 @@ class AlertModel extends Equatable {
     required this.type,
     this.message,
     required this.status,
+    this.lat,
+    this.lon,
     required this.createdAt,
   });
+
+  /// True si l'alerte porte une position affichable sur la carte.
+  bool get hasLocation => lat != null && lon != null;
 
   factory AlertModel.fromJson(Map<String, dynamic> json) => AlertModel(
     id: json['id'] as String,
@@ -35,6 +42,8 @@ class AlertModel extends Equatable {
     type: json['type'] as String,
     message: json['message'] as String?,
     status: json['status'] as String,
+    lat: (json['lat'] as num?)?.toDouble(),
+    lon: (json['lon'] as num?)?.toDouble(),
     createdAt: _parseDateTimeSafe(json['createdAt'] as String),
   );
 
@@ -45,6 +54,8 @@ class AlertModel extends Equatable {
     String? type,
     String? message,
     String? status,
+    double? lat,
+    double? lon,
     DateTime? createdAt,
   }) =>
       AlertModel(
@@ -54,6 +65,8 @@ class AlertModel extends Equatable {
         type: type ?? this.type,
         message: message ?? this.message,
         status: status ?? this.status,
+        lat: lat ?? this.lat,
+        lon: lon ?? this.lon,
         createdAt: createdAt ?? this.createdAt,
       );
 
@@ -65,6 +78,8 @@ class AlertModel extends Equatable {
     type,
     message,
     status,
+    lat,
+    lon,
     createdAt,
   ];
 }

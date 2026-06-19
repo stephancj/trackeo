@@ -99,6 +99,8 @@ export class GeofencesCheckerService {
               vehicle.id,
               AlertType.GEOFENCE_ENTER,
               `${vehicle.name} est entré dans la zone ${fence.name}`,
+              vehicle.position.lat,
+              vehicle.position.lon,
             );
 
             if (userAlertSettings.alertViaPush) {
@@ -136,6 +138,8 @@ export class GeofencesCheckerService {
               vehicle.id,
               AlertType.GEOFENCE_EXIT,
               `${vehicle.name} a quitté la zone ${fence.name}`,
+              vehicle.position.lat,
+              vehicle.position.lon,
             );
 
             if (userAlertSettings.alertViaPush) {
@@ -178,6 +182,9 @@ export class GeofencesCheckerService {
     { startTime: Date; lat: number; lon: number; maxSpeed: number }
   >();
 
+  // Seuil d'excès de vitesse (km/h) — au-delà, une alerte est générée.
+  private readonly SPEED_LIMIT_KMH = 120;
+
   @Cron('*/30 * * * * *')
   async checkVehicleAlerts() {
     this.logger.debug('Vérification des alertes véhicule...');
@@ -212,13 +219,15 @@ export class GeofencesCheckerService {
             AlertType.LOW_BATTERY,
             `Batterie faible: ${vehicle.position.battery}%`,
             userAlertSettings,
+            vehicle.position.lat,
+            vehicle.position.lon,
           );
         }
 
         // Speed Limit Alert — track duration and location
         const speedKmh = vehicle.position.speedKmh;
         if (userAlertSettings.alertSpeedLimit && speedKmh != null) {
-          if (speedKmh > 120) {
+          if (speedKmh > this.SPEED_LIMIT_KMH) {
             // Update or start tracking this excess
             const existing = this.speedExcessStartCache.get(vehicle.id);
             if (!existing) {
@@ -236,20 +245,17 @@ export class GeofencesCheckerService {
             }
 
             const excess = this.speedExcessStartCache.get(vehicle.id)!;
-            const now = new Date();
-            const durationMs = now.getTime() - excess.startTime.getTime();
-            const durationStr = this.formatDuration(durationMs);
-            const startStr = this.formatTime(excess.startTime);
-            const endStr = this.formatTime(now);
-            const timeStr = durationMs < 60_000 ? startStr : `${startStr} – ${endStr}`;
-            const mapsUrl = `https://maps.google.com/?q=${excess.lat.toFixed(5)},${excess.lon.toFixed(5)}`;
+            const durationMs = Date.now() - excess.startTime.getTime();
+            const sustained = durationMs >= 60_000;
+            const peakKmh = Math.round(excess.maxSpeed);
             const location = await this.reverseGeocode(excess.lat, excess.lon);
-            const message =
-              `${vehicle.name} • ${Math.round(speedKmh)} km/h` +
-              ` • ${timeStr} (${durationStr})` +
-              ` • max ${Math.round(excess.maxSpeed)} km/h` +
-              ` • ${location}` +
-              ` • ${mapsUrl}`;
+
+            // Message épuré : pic de vitesse, limite, lieu — et durée seulement
+            // si l'excès dure (≥ 1 min). Pas de nom de véhicule (affiché par
+            // l'UI), pas d'URL brute, pas d'heure (déjà dans le timestamp).
+            let message = `${peakKmh} km/h (limite ${this.SPEED_LIMIT_KMH} km/h)`;
+            if (location) message += ` · ${location}`;
+            if (sustained) message += ` · sur ${this.formatDuration(durationMs)}`;
 
             await this.sendAlertIfNotSpammed(
               userId,
@@ -258,6 +264,8 @@ export class GeofencesCheckerService {
               AlertType.SPEED_LIMIT,
               message,
               userAlertSettings,
+              excess.lat,
+              excess.lon,
             );
           } else {
             // Speed back to normal — reset tracking
@@ -268,14 +276,6 @@ export class GeofencesCheckerService {
     } catch (e) {
       this.logger.error('Erreur lors du check alerts véhicule', e);
     }
-  }
-
-  private formatTime(date: Date): string {
-    return date.toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Indian/Antananarivo',
-    });
   }
 
   private formatDuration(ms: number): string {
@@ -294,6 +294,8 @@ export class GeofencesCheckerService {
     alertType: AlertType,
     message: string,
     settings: AlertSettings,
+    lat?: number,
+    lon?: number,
   ): Promise<void> {
     const cacheKey = `${vehicleId}_${alertType}`;
     const lastAlert = this.lastAlertCache.get(cacheKey);
@@ -307,7 +309,14 @@ export class GeofencesCheckerService {
     this.lastAlertCache.set(cacheKey, now);
     this.logger.log(`🚨 ${vehicleName} ${alertType}: ${message}`);
 
-    await this.alertsService.createAlert(userId, vehicleId, alertType, message);
+    await this.alertsService.createAlert(
+      userId,
+      vehicleId,
+      alertType,
+      message,
+      lat,
+      lon,
+    );
 
     if (settings.alertViaPush) {
       const subscriptionId = await this.getUserSubId(userId);
@@ -315,11 +324,8 @@ export class GeofencesCheckerService {
         alertType === AlertType.LOW_BATTERY
           ? '🔋 Batterie faible'
           : '⚡ Excès de vitesse';
-      // For push, use a clean body without the maps URL (keep it short)
-      const pushBody =
-        alertType === AlertType.SPEED_LIMIT
-          ? message.replace(/\s*•\s*https:\/\/maps\.google\.com[^\s]*/g, '')
-          : message;
+      // Préfixe le nom du véhicule : le push n'a pas de puce véhicule comme l'in-app.
+      const pushBody = `${vehicleName} • ${message}`;
       await this.notificationsService.sendPush({
         externalUserId: userId.toString(),
         subscriptionId: subscriptionId ?? undefined,

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/navigation/app_shell.dart';
+import '../../../../core/navigation/trackeo_route.dart';
 import '../../../vehicles/providers/vehicles_provider.dart';
 import '../../models/alert_model.dart';
 import '../../providers/alerts_provider.dart';
+import '../alert_location_view.dart';
 
 class AlertDetailSheet extends ConsumerStatefulWidget {
   final AlertModel alert;
@@ -57,11 +61,122 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
     return null;
   }
 
-  /// Ouvre la carte centrée sur le véhicule concerné et ferme les feuilles/écrans.
+  /// Montre l'alerte sur la carte. Si elle porte une position (ex. lieu de
+  /// l'excès), ouvre le plein écran à cet endroit exact ; sinon, repli sur la
+  /// carte live centrée sur le véhicule.
   void _openOnMap() {
-    ref.read(selectedVehicleIdProvider.notifier).state = _alert.deviceId;
+    final a = _alert;
+    if (a.hasLocation) {
+      Navigator.of(context).push(
+        TrackeoRoute(
+          builder: (_) => AlertLocationView(
+            lat: a.lat!,
+            lon: a.lon!,
+            title: _title,
+            subtitle: a.message,
+            color: _color,
+            icon: _icon,
+          ),
+        ),
+      );
+      return;
+    }
+    ref.read(selectedVehicleIdProvider.notifier).state = a.deviceId;
     ref.read(activeTabProvider.notifier).state = 1; // onglet Carte
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  /// Mini-carte (lecture seule) montrant le lieu de l'alerte, tap → plein écran.
+  Widget _buildMiniMap(AlertModel a) {
+    final point = LatLng(a.lat!, a.lon!);
+    return GestureDetector(
+      onTap: _openOnMap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: SizedBox(
+          height: 150,
+          child: Stack(
+            children: [
+              FlutterMap(
+                options: MapOptions(
+                  initialCenter: point,
+                  initialZoom: 15,
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.none,
+                  ),
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: AppMapTiles.positron,
+                    subdomains: AppMapTiles.subdomains,
+                    retinaMode: true,
+                    userAgentPackageName: 'mg.trackeo.app',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: point,
+                        width: 36,
+                        height: 36,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _color,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          child: Icon(_icon, color: Colors.white, size: 18),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Indice "agrandir"
+              Positioned(
+                right: 10,
+                bottom: 10,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.open_in_full_rounded,
+                          size: 13, color: AppColors.primaryDark),
+                      SizedBox(width: 5),
+                      Text(
+                        'Agrandir',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Color get _color {
@@ -277,6 +392,12 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
           ],
 
           const SizedBox(height: 24),
+
+          // ── Mini-carte (lieu de l'alerte) ──────────────────────────────────
+          if (_alert.hasLocation) ...[
+            _buildMiniMap(_alert),
+            const SizedBox(height: 16),
+          ],
 
           // ── Message card ───────────────────────────────────────────────────
           if (_alert.message != null) ...[

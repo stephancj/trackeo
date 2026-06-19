@@ -41,6 +41,8 @@ export class AlertsService {
     deviceId: number,
     type: AlertType,
     message: string,
+    lat?: number,
+    lon?: number,
   ): Promise<Alert> {
     const alert = this.alertsRepository.create({
       ownerId,
@@ -48,6 +50,8 @@ export class AlertsService {
       type,
       message,
       status: 'open',
+      lat: lat ?? null,
+      lon: lon ?? null,
     });
     return this.alertsRepository.save(alert);
   }
