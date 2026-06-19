@@ -81,7 +81,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                   return _buildGeofencesEmptyState();
                 }
                 return SizedBox(
-                  height: 230,
+                  height: 300,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     clipBehavior: Clip.none,
@@ -437,8 +437,13 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
           // Info row
           Padding(
             padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Ligne 1 : icône + nom/adresse + contrôles
+                Row(
+                  children: [
                   Container(
                     width: 40,
                     height: 40,
@@ -487,52 +492,6 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                             );
                           },
                         ),
-                        const SizedBox(height: 6),
-                        // Badges : rayon + déclencheurs actifs
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: [
-                            _metaChip(
-                              Icons.adjust_rounded,
-                              '${geofence.radiusM.toInt()} m',
-                              AppColors.textSecondary,
-                            ),
-                            if (geofence.alertOnEntry)
-                              _metaChip(
-                                  Icons.login_rounded, 'Entrée', Colors.green),
-                            if (geofence.alertOnExit)
-                              _metaChip(Icons.logout_rounded, 'Sortie',
-                                  Colors.orange),
-                            if (geofence.alertViaWhatsapp)
-                              _metaChip(Icons.chat_rounded, 'WhatsApp',
-                                  const Color(0xFF25D366)),
-                          ],
-                        ),
-                        if (vehicleNames != null) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.directions_car_rounded,
-                                size: 12,
-                                color: AppColors.textHint,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  vehicleNames,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textHint,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ],
                     ),
                   ),
@@ -590,6 +549,47 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                   ),
                 ],
               ),
+                const SizedBox(height: 10),
+                // Badges pleine largeur (rayon + déclencheurs actifs)
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _metaChip(
+                      Icons.adjust_rounded,
+                      '${geofence.radiusM.toInt()} m',
+                      AppColors.textSecondary,
+                    ),
+                    if (geofence.alertOnEntry)
+                      _metaChip(Icons.login_rounded, 'Entrée', Colors.green),
+                    if (geofence.alertOnExit)
+                      _metaChip(Icons.logout_rounded, 'Sortie', Colors.orange),
+                    if (geofence.alertViaWhatsapp)
+                      _metaChip(Icons.chat_rounded, 'WhatsApp',
+                          const Color(0xFF25D366)),
+                  ],
+                ),
+                if (vehicleNames != null) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.directions_car_rounded,
+                          size: 12, color: AppColors.textHint),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          vehicleNames,
+                          style: const TextStyle(
+                              fontSize: 12, color: AppColors.textHint),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
             ),
           ],
         ),
