@@ -7,6 +7,7 @@ import '../../../../core/theme/speed_palette.dart';
 import '../../models/alert_model.dart';
 import '../../providers/alert_track_provider.dart';
 import '../../../vehicles/models/vehicle_model.dart';
+import '../../../vehicles/utils/speed_gradient.dart';
 
 /// Seuil d'excès (doit refléter SPEED_LIMIT_KMH côté backend).
 const double kSpeedLimitKmh = 120;
@@ -126,8 +127,7 @@ class _AlertTraceMapState extends ConsumerState<AlertTraceMap> {
               Polyline(
                 points: pts,
                 strokeWidth: 5,
-                gradientColors:
-                    positions.map((p) => speedColor(p.speedKmh)).toList(),
+                gradientColors: speedGradientColors(positions),
                 strokeCap: StrokeCap.round,
                 strokeJoin: StrokeJoin.round,
               ),

@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/speed_palette.dart';
 import '../../../core/providers/geocoding_provider.dart';
 import '../../../core/utils/app_time.dart';
+import '../../vehicles/utils/speed_gradient.dart';
 import '../models/trip_model.dart';
 import '../models/day_activity_model.dart';
 import '../providers/history_provider.dart';
@@ -348,8 +349,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
             : Polyline(
                 points: pts,
                 strokeWidth: selected == t.index ? 6 : 5,
-                gradientColors:
-                    t.points.map((p) => speedColor(p.speedKmh)).toList(),
+                gradientColors: speedGradientColors(t.points),
                 strokeCap: StrokeCap.round,
                 strokeJoin: StrokeJoin.round,
               ),
