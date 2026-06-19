@@ -85,15 +85,15 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader('CONTRÔLE GÉNÉRAL'),
-            const SizedBox(height: 12),
             _buildMasterSwitch(),
-            const SizedBox(height: 24),
-            _buildSectionHeader('TYPES D\'ALERTES'),
+            const SizedBox(height: 28),
+            _buildSectionHeader('TYPES D\'ALERTES',
+                subtitle: 'Ce qui déclenche une alerte'),
             const SizedBox(height: 12),
             _buildAlertTypes(),
-            const SizedBox(height: 24),
-            _buildSectionHeader('CANAUX DE NOTIFICATION'),
+            const SizedBox(height: 28),
+            _buildSectionHeader('CANAUX',
+                subtitle: 'Comment vous êtes prévenu'),
             const SizedBox(height: 12),
             _buildNotificationMethods(hasPhone),
             const SizedBox(height: 32),
@@ -103,38 +103,113 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textHint,
-        letterSpacing: 1.2,
-      ),
+  Widget _buildSectionHeader(String title, {String? subtitle}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textHint,
+            letterSpacing: 1.2,
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: const TextStyle(fontSize: 12.5, color: AppColors.textHint),
+          ),
+        ],
+      ],
     );
   }
 
+  /// Carte hero : bascule maîtresse de toutes les alertes.
   Widget _buildMasterSwitch() {
+    final on = _alertsEnabled;
     return Container(
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        gradient: on
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF2BA870), Color(0xFF13805A)],
+              )
+            : null,
+        color: on ? null : AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: on ? null : Border.all(color: AppColors.divider),
+        boxShadow: on
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF2BA870).withValues(alpha: 0.28),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ]
+            : null,
       ),
-      child: _buildSettingItem(
-        icon: Icons.notifications_active_rounded,
-        iconColor: _alertsEnabled ? AppColors.primary : AppColors.textHint,
-        iconBg: _alertsEnabled
-            ? AppColors.primary.withValues(alpha: 0.1)
-            : AppColors.divider.withValues(alpha: 0.3),
-        title: 'Activer les alertes',
-        subtitle: 'Activer ou désactiver toutes les notifications',
-        value: _alertsEnabled,
-        onChanged: (v) {
-          HapticFeedback.selectionClick();
-          setState(() => _alertsEnabled = v);
-        },
-        isEnabled: true,
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: on
+                  ? Colors.white.withValues(alpha: 0.18)
+                  : AppColors.divider.withValues(alpha: 0.4),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              on
+                  ? Icons.notifications_active_rounded
+                  : Icons.notifications_off_rounded,
+              color: on ? Colors.white : AppColors.textHint,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Alertes',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: on ? Colors.white : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  on
+                      ? 'Activées — vous recevez les notifications'
+                      : 'Désactivées — aucune notification',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: on
+                        ? Colors.white.withValues(alpha: 0.8)
+                        : AppColors.textHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: on,
+            activeColor: Colors.white,
+            activeTrackColor: Colors.white.withValues(alpha: 0.35),
+            onChanged: (v) {
+              HapticFeedback.selectionClick();
+              setState(() => _alertsEnabled = v);
+            },
+          ),
+        ],
       ),
     );
   }

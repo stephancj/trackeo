@@ -417,6 +417,125 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+// ── Activity Hero ─────────────────────────────────────────────────────────────
+
+class _ActivityHero extends StatelessWidget {
+  final ActivitySummary summary;
+  const _ActivityHero({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2BA870), Color(0xFF13805A)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2BA870).withValues(alpha: 0.28),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.route_rounded,
+                  size: 15, color: Colors.white.withValues(alpha: 0.8)),
+              const SizedBox(width: 6),
+              Text(
+                'DISTANCE PARCOURUE',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _fmtDist(summary.distanceKm),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _heroStat(
+                Icons.map_outlined,
+                '${summary.tripCount}',
+                summary.tripCount > 1 ? 'trajets' : 'trajet',
+              ),
+              Container(
+                width: 1,
+                height: 30,
+                color: Colors.white.withValues(alpha: 0.22),
+              ),
+              _heroStat(
+                Icons.drive_eta_outlined,
+                _fmtDuration(summary.drivingMinutes),
+                'conduite',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroStat(IconData icon, String value, String label) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: Colors.white.withValues(alpha: 0.75)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── Activity Tab ──────────────────────────────────────────────────────────────
 
 class _ActivityTab extends ConsumerWidget {
@@ -456,32 +575,16 @@ class _ActivityTab extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              _ActivityHero(summary: summary),
+              const SizedBox(height: 12),
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 1.4,
+                childAspectRatio: 1.5,
                 children: [
-                  _StatCard(
-                    icon: Icons.route,
-                    iconColor: AppColors.primary,
-                    label: 'Distance totale',
-                    value: _fmtDist(summary.distanceKm),
-                  ),
-                  _StatCard(
-                    icon: Icons.map_outlined,
-                    iconColor: const Color(0xFF5B8DEF),
-                    label: 'Trajets',
-                    value: '${summary.tripCount}',
-                  ),
-                  _StatCard(
-                    icon: Icons.drive_eta_outlined,
-                    iconColor: const Color(0xFF4ECB8D),
-                    label: 'Temps de conduite',
-                    value: _fmtDuration(summary.drivingMinutes),
-                  ),
                   _StatCard(
                     icon: Icons.pause_circle_outline,
                     iconColor: const Color(0xFFF59E0B),
@@ -500,29 +603,13 @@ class _ActivityTab extends ConsumerWidget {
                     label: 'Excès de vitesse',
                     value: '${summary.speedViolationCount}',
                   ),
+                  _StatCard(
+                    icon: Icons.location_on_outlined,
+                    iconColor: const Color(0xFF5B8DEF),
+                    label: 'Points GPS',
+                    value: '${summary.pointCount}',
+                  ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.divider),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.location_on_outlined,
-                        size: 18, color: AppColors.textSecondary),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${summary.pointCount} points GPS enregistrés',
-                      style: const TextStyle(
-                          fontSize: 13, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),

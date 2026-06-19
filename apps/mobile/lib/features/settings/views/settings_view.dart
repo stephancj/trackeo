@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/app_version.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../reports/views/reports_view.dart';
 import 'alert_settings_view.dart';
@@ -148,7 +149,6 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
               _ProfileCard(
                 displayName: displayName,
                 email: user?.email ?? '',
-                role: user?.role,
                 isEditing: _isEditing,
                 nameController: _nameController,
                 phoneController: _phoneController,
@@ -192,39 +192,37 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
 
               const SizedBox(height: 28),
 
-              // ── Compte ────────────────────────────────────────────────────
-              _SectionLabel('COMPTE'),
-              _MenuSection(
-                children: [
-                  _InfoTile(
-                    icon: Icons.shield_outlined,
-                    iconBg: AppColors.pastelPurple,
-                    iconColor: const Color(0xFF8B5CF6),
-                    label: 'Rôle',
-                    value: user?.role ?? '-',
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
               // Logout button (destructive, outside the group)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _LogoutTile(onTap: () => _showLogoutDialog(context)),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
 
               // ── Version ───────────────────────────────────────────────────
               Center(
-                child: Text(
-                  'Trackeo v1.0.0',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textHint.withValues(alpha: 0.7),
-                    letterSpacing: 0.3,
-                  ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Trackeo',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary.withValues(alpha: 0.7),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Version $kAppVersion',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textHint.withValues(alpha: 0.7),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -267,7 +265,6 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
 class _ProfileCard extends StatelessWidget {
   final String displayName;
   final String email;
-  final String? role;
   final String? phone;
   final bool isEditing;
   final TextEditingController nameController;
@@ -278,7 +275,6 @@ class _ProfileCard extends StatelessWidget {
   const _ProfileCard({
     required this.displayName,
     required this.email,
-    required this.role,
     required this.phone,
     required this.isEditing,
     required this.nameController,
@@ -385,33 +381,6 @@ class _ProfileCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                  ),
-                ],
-
-                // Role badge
-                if (role == 'admin') ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: const Text(
-                      'Admin',
-                      style: TextStyle(
-                        color: Color(0xFFB39DDB),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
                   ),
                 ],
               ],
@@ -671,62 +640,6 @@ class _MenuTile extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── Info Tile (non-tappable row) ──────────────────────────────────────────────
-
-class _InfoTile extends StatelessWidget {
-  final IconData icon;
-  final Color iconBg;
-  final Color iconColor;
-  final String label;
-  final String value;
-
-  const _InfoTile({
-    required this.icon,
-    required this.iconBg,
-    required this.iconColor,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Icon(icon, color: iconColor, size: 19),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
       ),
     );
   }
