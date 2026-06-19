@@ -9,12 +9,13 @@ void main() {
   const red = Color(0xFFEF4444);
 
   group('speedColor — distinguer arrêt et bouchon', () {
-    test('0 et 2 km/h ⇒ gris (arrêté)', () {
+    test('< 1 km/h ⇒ gris (arrêté)', () {
       expect(speedColor(0), gray);
-      expect(speedColor(2), gray);
+      expect(speedColor(0.9), gray);
     });
 
-    test('4 km/h (au pas / bouchon) ⇒ ambre, PAS gris (bug signalé)', () {
+    test('2 et 4 km/h (au pas / bouchon) ⇒ ambre, PAS gris (bug signalé)', () {
+      expect(speedColor(2), amber);
       expect(speedColor(4), amber);
       expect(speedColor(4), isNot(gray));
     });

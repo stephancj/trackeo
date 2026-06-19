@@ -11,13 +11,13 @@ class SpeedBand {
 
 /// Palette de vitesse partagée (trace Historique + trace d'alerte).
 ///
-/// On distingue l'**arrêt réel** (< 3 km/h, jitter GPS compris) du **roulage
-/// lent / bouchon** (3–15 km/h) — fréquent à Antananarivo. Avant, tout ce qui
-/// était sous 5 km/h s'affichait en gris « arrêté », ce qui faisait passer un
-/// véhicule au pas dans les embouteillages pour stationné.
+/// On distingue l'**arrêt réel** (< 1 km/h) du **roulage lent / bouchon**
+/// (1–15 km/h) — fréquent à Antananarivo. Avant, tout ce qui était sous 5 km/h
+/// s'affichait en gris « arrêté », ce qui faisait passer un véhicule au pas dans
+/// les embouteillages pour stationné.
 const List<SpeedBand> kSpeedBands = [
-  SpeedBand(3, Color(0xFF9CA3AF), 'Arrêté', '< 3'),
-  SpeedBand(15, Color(0xFFFBBF24), 'Au pas', '3–15'),
+  SpeedBand(1, Color(0xFF9CA3AF), 'Arrêté', '< 1'),
+  SpeedBand(15, Color(0xFFFBBF24), 'Au pas', '1–15'),
   SpeedBand(40, Color(0xFF4ECB8D), 'Lent', '15–40'),
   SpeedBand(70, Color(0xFF5B8DEF), 'Urbain', '40–70'),
   SpeedBand(100, Color(0xFFF59E0B), 'Route', '70–100'),
