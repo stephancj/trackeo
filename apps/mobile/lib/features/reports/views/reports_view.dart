@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/app_time.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
 import '../../vehicles/models/vehicle_model.dart';
 import '../models/report_models.dart';
@@ -31,9 +32,10 @@ String _fmtDate(DateTime dt) {
     'Nov',
     'Déc',
   ];
-  final h = dt.hour.toString().padLeft(2, '0');
-  final m = dt.minute.toString().padLeft(2, '0');
-  return '${dt.day} ${months[dt.month - 1]}, $h:$m';
+  final d = toMgTime(dt);
+  final h = d.hour.toString().padLeft(2, '0');
+  final m = d.minute.toString().padLeft(2, '0');
+  return '${d.day} ${months[d.month - 1]}, $h:$m';
 }
 
 String _fmtDist(double km) {

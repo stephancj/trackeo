@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/app_time.dart';
 import '../models/alert_model.dart';
 import '../providers/alerts_provider.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
@@ -35,8 +36,8 @@ class _AllAlertsViewState extends ConsumerState<AllAlertsView> {
   }
 
   String _dayLabel(DateTime dt) {
-    final d = dt.toLocal();
-    final now = DateTime.now();
+    final d = toMgTime(dt);
+    final now = toMgTime(DateTime.now());
     final today = DateTime(now.year, now.month, now.day);
     final day = DateTime(d.year, d.month, d.day);
     final diff = today.difference(day).inDays;

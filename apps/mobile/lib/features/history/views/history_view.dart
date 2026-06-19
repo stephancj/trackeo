@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/geocoding_provider.dart';
+import '../../../core/utils/app_time.dart';
 import '../models/trip_model.dart';
 import '../models/day_activity_model.dart';
 import '../providers/history_provider.dart';
@@ -1019,8 +1020,7 @@ class _TripCard extends ConsumerWidget {
     required this.onTap,
   });
 
-  String _hhmm(DateTime t) =>
-      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  String _hhmm(DateTime t) => fmtMgHm(t);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

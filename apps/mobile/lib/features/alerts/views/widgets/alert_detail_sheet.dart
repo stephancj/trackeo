@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/app_time.dart';
 import '../../../../core/navigation/app_shell.dart';
 import '../../../../core/navigation/trackeo_route.dart';
 import '../../../vehicles/providers/vehicles_provider.dart';
@@ -222,7 +223,7 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
       'nov.',
       'déc.',
     ];
-    final d = dt.toLocal();
+    final d = toMgTime(dt);
     final h = d.hour.toString().padLeft(2, '0');
     final m = d.minute.toString().padLeft(2, '0');
     return '${d.day} ${months[d.month - 1]} ${d.year} · $h:$m';
