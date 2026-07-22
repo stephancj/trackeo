@@ -296,6 +296,7 @@ jobs:
             git fetch origin main &&
             git reset --hard origin/main &&
             docker-compose pull &&
+            docker ps -a --filter 'name=trackeo-traccar' -q | xargs -r docker rm -f &&
             DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d
           "
 
