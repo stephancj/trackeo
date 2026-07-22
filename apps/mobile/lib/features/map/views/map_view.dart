@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../history/views/history_view.dart';
+import '../../../core/navigation/app_shell.dart';
 import '../../../core/navigation/trackeo_route.dart';
 import '../../vehicles/models/vehicle_model.dart';
 import '../../vehicles/views/vehicle_details_view.dart';
@@ -44,6 +45,9 @@ class _MapViewState extends ConsumerState<MapView>
 
   // ── Tracking mode ("always-center" on selected vehicle) ───────────────
   bool _trackingMode = false;
+
+  // Voyager → Satellite → Plan clair.
+  int _tileStyleIndex = 0;
 
   // One-shot : recadre une seule fois sur l'unique véhicule au 1er chargement.
   bool _didInitialFit = false;
@@ -119,6 +123,13 @@ class _MapViewState extends ConsumerState<MapView>
       final newCourse = v.position!.course.toDouble();
 
       final oldPos = _animatedPositions[v.id];
+      final selectedId = ref.read(selectedVehicleIdProvider);
+      if (oldPos != null && selectedId != v.id) {
+        _animControllers.remove(v.id)?.dispose();
+        _animatedPositions[v.id] = newPos;
+        _animatedCourses[v.id] = newCourse;
+        continue;
+      }
       if (oldPos == null) {
         // First position — place directly with no animation.
         _animatedPositions[v.id] = newPos;
@@ -185,7 +196,7 @@ class _MapViewState extends ConsumerState<MapView>
       _animatedCourses.remove(id);
     }
 
-    // Premium mono-véhicule : recadrage initial unique sur l'unique véhicule.
+    // Expérience mono-véhicule : recadrage initial sur l'unique véhicule.
     if (!_didInitialFit) {
       final withPos = vehicles.where((v) => v.position != null).toList();
       if (withPos.length == 1) {
@@ -205,10 +216,27 @@ class _MapViewState extends ConsumerState<MapView>
     }
   }
 
+  String get _tileUrl => switch (_tileStyleIndex) {
+        1 => AppMapTiles.satellite,
+        2 => AppMapTiles.positron,
+        _ => AppMapTiles.voyager,
+      };
+
+  String get _tileStyleLabel => switch (_tileStyleIndex) {
+        1 => 'Satellite',
+        2 => 'Plan clair',
+        _ => 'Plan standard',
+      };
+
+  void _cycleTiles() {
+    setState(() => _tileStyleIndex = (_tileStyleIndex + 1) % 3);
+  }
+
   /// Sélectionne et recadre l'unique véhicule (tap sur la pastille du haut).
   void _focusSingleVehicle(Vehicle v) {
     if (v.position == null) return;
-    final p = _animatedPositions[v.id] ?? LatLng(v.position!.lat, v.position!.lon);
+    final p =
+        _animatedPositions[v.id] ?? LatLng(v.position!.lat, v.position!.lon);
     ref.read(selectedVehicleIdProvider.notifier).state = v.id;
     setState(() => _trackingMode = true);
     _moveToTarget(p, 15, cardShowing: true);
@@ -230,9 +258,10 @@ class _MapViewState extends ConsumerState<MapView>
 
     final vehiclesAsync = ref.watch(vehiclesProvider);
     final mapFilter = ref.watch(mapFilterProvider);
+    final mapSearch = ref.watch(mapSearchProvider).trim().toLowerCase();
     final allVehicles = vehiclesAsync.valueOrNull ?? [];
     final isSingle = allVehicles.length == 1;
-    final vehicles = switch (mapFilter) {
+    final statusFiltered = switch (mapFilter) {
       VehicleFilter.moving =>
         allVehicles.where((v) => v.status == VehicleStatus.online).toList(),
       VehicleFilter.idle =>
@@ -241,6 +270,16 @@ class _MapViewState extends ConsumerState<MapView>
         allVehicles.where((v) => v.status == VehicleStatus.offline).toList(),
       VehicleFilter.all => allVehicles,
     };
+    final vehicles = mapSearch.isEmpty
+        ? statusFiltered
+        : statusFiltered
+            .where(
+              (vehicle) =>
+                  vehicle.name.toLowerCase().contains(mapSearch) ||
+                  (vehicle.plate?.toLowerCase().contains(mapSearch) ?? false) ||
+                  vehicle.serialNumber.toLowerCase().contains(mapSearch),
+            )
+            .toList();
     final selected = ref.watch(selectedVehicleProvider);
     final topPad = MediaQuery.of(context).padding.top;
 
@@ -270,9 +309,11 @@ class _MapViewState extends ConsumerState<MapView>
             ),
             children: [
               TileLayer(
-                urlTemplate: AppMapTiles.voyager,
-                subdomains: AppMapTiles.subdomains,
-                retinaMode: true,
+                urlTemplate: _tileUrl,
+                subdomains: _tileStyleIndex == 1
+                    ? const <String>[]
+                    : AppMapTiles.subdomains,
+                retinaMode: _tileStyleIndex != 1,
                 userAgentPackageName: 'mg.trackeo.app',
               ),
               MarkerLayer(
@@ -348,25 +389,33 @@ class _MapViewState extends ConsumerState<MapView>
                     ),
                   ),
                 ),
-                // Bell
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                Semantics(
+                  button: true,
+                  label: 'Ouvrir les alertes',
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      tooltip: 'Alertes',
+                      onPressed: () =>
+                          ref.read(activeTabProvider.notifier).state = 2,
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        color: AppColors.primaryDark,
+                        size: 20,
                       ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.notifications_outlined,
-                    color: AppColors.primaryDark,
-                    size: 20,
+                    ),
                   ),
                 ),
               ],
@@ -406,49 +455,63 @@ class _MapViewState extends ConsumerState<MapView>
             right: 16,
             child: Column(
               children: [
-                // Layers (dark)
-                Container(
+                Semantics(
+                  button: true,
+                  label: 'Changer le fond de carte, $_tileStyleLabel',
+                  child: Tooltip(
+                    message: 'Fond : $_tileStyleLabel',
+                    child: GestureDetector(
+                      onTap: _cycleTiles,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryDark,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _tileStyleIndex == 1
+                              ? Icons.satellite_alt_outlined
+                              : Icons.layers,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Recenter — glows primary when tracking is active
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: AppColors.primaryDark,
-                    borderRadius: BorderRadius.circular(10),
+                    color: _trackingMode && selected != null
+                        ? AppColors.primary
+                        : Colors.white,
+                    shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
+                        color: Colors.black.withValues(alpha: 0.15),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.layers,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Recenter — glows primary when tracking is active
-                GestureDetector(
-                  onTap: () => _recenter(selected),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: _trackingMode && selected != null
-                          ? AppColors.primary
-                          : Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
+                  child: IconButton(
+                    tooltip: selected != null
+                        ? 'Suivre ${selected.name}'
+                        : 'Centrer la flotte',
+                    onPressed: () => _recenter(selected),
+                    icon: Icon(
                       Icons.gps_fixed,
                       color: _trackingMode && selected != null
                           ? Colors.white
@@ -626,7 +689,7 @@ class _MarkerBeacon extends StatelessWidget {
 
 // ── Widgets internes ─────────────────────────────────────────────────────────
 
-/// Barre de recherche avec icône filtre (tune) à droite
+/// Barre de recherche des véhicules affichés sur la carte.
 class _MapSearchBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -651,8 +714,7 @@ class _MapSearchBar extends ConsumerWidget {
           ),
           Expanded(
             child: TextField(
-              onChanged: (v) =>
-                  ref.read(vehicleSearchProvider.notifier).state = v,
+              onChanged: (v) => ref.read(mapSearchProvider.notifier).state = v,
               style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textPrimary,
@@ -668,17 +730,7 @@ class _MapSearchBar extends ConsumerWidget {
               ),
             ),
           ),
-          // Séparateur vertical
-          Container(width: 1, height: 24, color: AppColors.divider),
-          // Icône filtre
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 14),
-            child: Icon(
-              Icons.tune_rounded,
-              color: AppColors.textSecondary,
-              size: 20,
-            ),
-          ),
+          const SizedBox(width: 14),
         ],
       ),
     );
@@ -815,7 +867,9 @@ class _Chip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        constraints: const BoxConstraints(minHeight: 44),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(20),

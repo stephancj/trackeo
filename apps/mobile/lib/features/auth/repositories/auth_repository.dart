@@ -4,7 +4,16 @@ import '../../../core/network/api_client.dart';
 import '../models/auth_model.dart';
 
 abstract class AuthRepository {
-  Future<AuthResponse> login(String email, String password);
+  Future<AuthResponse> login(String identifier, String password);
+
+  Future<AuthResponse> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+  });
+
+  Future<void> deleteAccount(String password);
 
   /// Enregistre le subscription ID OneSignal pour l'utilisateur connecté.
   /// Permet au backend de cibler cet appareil via include_subscription_ids.
@@ -29,12 +38,39 @@ class RemoteAuthRepository implements AuthRepository {
   const RemoteAuthRepository(this._dio);
 
   @override
-  Future<AuthResponse> login(String email, String password) async {
+  Future<AuthResponse> login(String identifier, String password) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/auth/login',
-      data: {'email': email, 'password': password},
+      data: {'identifier': identifier, 'password': password},
     );
     return AuthResponse.fromJson(response.data!);
+  }
+
+  @override
+  Future<AuthResponse> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/auth/register',
+      data: {
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'password': password,
+      },
+    );
+    return AuthResponse.fromJson(response.data!);
+  }
+
+  @override
+  Future<void> deleteAccount(String password) async {
+    await _dio.delete<void>(
+      '/auth/account',
+      data: {'password': password},
+    );
   }
 
   @override

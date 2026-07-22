@@ -13,6 +13,7 @@ export interface AuthResponse {
     id: number;
     email: string;
     name: string | null;
+    phone: string | null;
     role: string;
   };
 }
@@ -25,15 +26,17 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto): Promise<AuthResponse> {
-    const user = await this.usersService.findByEmailWithPassword(dto.email);
+    const user = await this.usersService.findByIdentifierWithPassword(
+      dto.identifier ?? dto.email!,
+    );
 
     if (!user) {
-      throw new UnauthorizedException('Email ou mot de passe incorrect');
+      throw new UnauthorizedException('Identifiant ou mot de passe incorrect');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Email ou mot de passe incorrect');
+      throw new UnauthorizedException('Identifiant ou mot de passe incorrect');
     }
 
     return this.buildResponse(user);
@@ -44,9 +47,14 @@ export class AuthService {
       email: dto.email,
       password: dto.password,
       name: dto.name,
-      role: dto.role ?? UserRole.USER,
+      phone: dto.phone,
+      role: UserRole.USER,
     });
     return this.buildResponse(user);
+  }
+
+  async deleteAccount(userId: number, password: string): Promise<void> {
+    await this.usersService.deleteAccount(userId, password);
   }
 
   private buildResponse(user: User): AuthResponse {
@@ -62,6 +70,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        phone: user.phone,
         role: user.role,
       },
     };

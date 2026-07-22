@@ -6,6 +6,11 @@ import '../models/vehicle_model.dart';
 
 abstract class VehicleRepository {
   Future<List<Vehicle>> getVehicles();
+  Future<Vehicle> claimVehicle({
+    required String serialNumber,
+    String? name,
+    String? plate,
+  });
   Future<VehiclePosition?> getLastPosition(int vehicleId);
   Future<List<VehiclePosition>> getHistory(
     int vehicleId,
@@ -30,6 +35,23 @@ class RemoteVehicleRepository implements VehicleRepository {
     return (response.data ?? [])
         .map((json) => Vehicle.fromJson(json as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<Vehicle> claimVehicle({
+    required String serialNumber,
+    String? name,
+    String? plate,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/vehicles/claim',
+      data: {
+        'serialNumber': serialNumber,
+        if (name != null && name.isNotEmpty) 'name': name,
+        if (plate != null && plate.isNotEmpty) 'plate': plate,
+      },
+    );
+    return Vehicle.fromJson(response.data!);
   }
 
   @override

@@ -64,6 +64,7 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<AlertModel>>> {
       await _repository.markAllRead();
     } catch (_) {
       await refresh();
+      rethrow;
     }
   }
 
@@ -81,14 +82,15 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<AlertModel>>> {
     try {
       await _repository.ackAlert(alertId);
     } catch (_) {
-      // En cas d'erreur, on recharge l'état réel depuis le serveur
+      // En cas d'erreur, on recharge l'état réel depuis le serveur.
       await refresh();
+      rethrow;
     }
   }
 }
 
 final alertsProvider =
     StateNotifierProvider<AlertsNotifier, AsyncValue<List<AlertModel>>>((ref) {
-      final repo = ref.watch(alertRepositoryProvider);
-      return AlertsNotifier(repo);
-    });
+  final repo = ref.watch(alertRepositoryProvider);
+  return AlertsNotifier(repo);
+});

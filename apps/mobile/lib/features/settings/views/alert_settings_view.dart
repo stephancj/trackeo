@@ -13,7 +13,6 @@ class AlertSettingsView extends ConsumerStatefulWidget {
 
 class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
   late bool _alertsEnabled;
-  late bool _sosAlerts;
   late bool _lowBattery;
   late bool _speedLimit;
   late bool _pushNotification;
@@ -30,7 +29,6 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
   void _loadFromUser() {
     final user = ref.read(authProvider).user;
     _alertsEnabled = user?.alertsEnabled ?? true;
-    _sosAlerts = user?.alertSos ?? true;
     _lowBattery = user?.alertLowBattery ?? true;
     _speedLimit = user?.alertSpeedLimit ?? false;
     _pushNotification = user?.alertViaPush ?? true;
@@ -44,7 +42,6 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
 
     if (!_initialized && user != null) {
       _alertsEnabled = user.alertsEnabled;
-      _sosAlerts = user.alertSos;
       _lowBattery = user.alertLowBattery;
       _speedLimit = user.alertSpeedLimit;
       _pushNotification = user.alertViaPush;
@@ -223,20 +220,6 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
       child: Column(
         children: [
           _buildSettingItem(
-            icon: Icons.warning_rounded,
-            iconColor: Colors.red,
-            iconBg: Colors.red.withValues(alpha: 0.1),
-            title: 'Alertes SOS',
-            subtitle: 'Notification immédiate en cas d\'urgence',
-            value: _sosAlerts,
-            onChanged: (v) {
-              HapticFeedback.selectionClick();
-              setState(() => _sosAlerts = v);
-            },
-            isEnabled: _alertsEnabled,
-          ),
-          const Divider(height: 1, indent: 64, color: AppColors.divider),
-          _buildSettingItem(
             icon: Icons.battery_alert_rounded,
             iconColor: Colors.amber,
             iconBg: Colors.amber.withValues(alpha: 0.1),
@@ -324,9 +307,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
   }) {
     final effectiveValue = isEnabled ? value : false;
     final effectiveColor = isEnabled ? iconColor : AppColors.textHint;
-    final effectiveBg = isEnabled
-        ? iconBg
-        : AppColors.divider.withValues(alpha: 0.3);
+    final effectiveBg =
+        isEnabled ? iconBg : AppColors.divider.withValues(alpha: 0.3);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -351,9 +333,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: isEnabled
-                        ? AppColors.textPrimary
-                        : AppColors.textHint,
+                    color:
+                        isEnabled ? AppColors.textPrimary : AppColors.textHint,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -364,9 +345,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
                         subtitle,
                         style: TextStyle(
                           fontSize: 12,
-                          color: showWarning
-                              ? Colors.orange
-                              : AppColors.textHint,
+                          color:
+                              showWarning ? Colors.orange : AppColors.textHint,
                         ),
                       ),
                     ),
@@ -398,11 +378,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
     setState(() => _isSaving = true);
 
     try {
-      await ref
-          .read(authProvider.notifier)
-          .updateAlertSettings(
+      await ref.read(authProvider.notifier).updateAlertSettings(
             alertsEnabled: _alertsEnabled,
-            alertSos: _sosAlerts,
             alertLowBattery: _lowBattery,
             alertSpeedLimit: _speedLimit,
             alertViaPush: _pushNotification,
@@ -418,11 +395,11 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
         );
         Navigator.pop(context);
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur : ${e.toString()}'),
+          const SnackBar(
+            content: Text('Impossible d’enregistrer les paramètres.'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),

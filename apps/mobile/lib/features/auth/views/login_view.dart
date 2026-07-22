@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import 'register_view.dart';
 
 class LoginView extends ConsumerStatefulWidget {
   const LoginView({super.key});
@@ -13,7 +14,7 @@ class LoginView extends ConsumerStatefulWidget {
 class _LoginViewState extends ConsumerState<LoginView>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailCtrl = TextEditingController();
+  final _identifierCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscure = true;
 
@@ -31,12 +32,13 @@ class _LoginViewState extends ConsumerState<LoginView>
     super.initState();
     _entrance = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: AppMotion.enter,
     );
 
     _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-          parent: _entrance, curve: const Interval(0.0, 0.5, curve: Curves.easeOut)),
+          parent: _entrance,
+          curve: const Interval(0.0, 0.5, curve: Curves.easeOut)),
     );
     _logoSlide = Tween<Offset>(
       begin: const Offset(0, -0.4),
@@ -47,7 +49,8 @@ class _LoginViewState extends ConsumerState<LoginView>
 
     _titleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-          parent: _entrance, curve: const Interval(0.25, 0.65, curve: Curves.easeOut)),
+          parent: _entrance,
+          curve: const Interval(0.25, 0.65, curve: Curves.easeOut)),
     );
     _titleSlide = Tween<Offset>(
       begin: const Offset(0, 0.3),
@@ -58,7 +61,8 @@ class _LoginViewState extends ConsumerState<LoginView>
 
     _formFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-          parent: _entrance, curve: const Interval(0.45, 1.0, curve: Curves.easeOut)),
+          parent: _entrance,
+          curve: const Interval(0.45, 1.0, curve: Curves.easeOut)),
     );
     _formSlide = Tween<Offset>(
       begin: const Offset(0, 0.3),
@@ -83,7 +87,7 @@ class _LoginViewState extends ConsumerState<LoginView>
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
+    _identifierCtrl.dispose();
     _passwordCtrl.dispose();
     _entrance.dispose();
     super.dispose();
@@ -92,7 +96,7 @@ class _LoginViewState extends ConsumerState<LoginView>
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     await ref.read(authProvider.notifier).login(
-          _emailCtrl.text.trim(),
+          _identifierCtrl.text.trim(),
           _passwordCtrl.text,
         );
   }
@@ -160,24 +164,21 @@ class _LoginViewState extends ConsumerState<LoginView>
                     child: Column(
                       children: [
                         TextFormField(
-                          controller: _emailCtrl,
+                          controller: _identifierCtrl,
                           keyboardType: TextInputType.emailAddress,
+                          autofillHints: const [AutofillHints.username],
                           textInputAction: TextInputAction.next,
+                          onChanged: (_) =>
+                              ref.read(authProvider.notifier).clearError(),
                           decoration: const InputDecoration(
-                            labelText: 'Email',
-                            prefixIcon: Icon(Icons.email_outlined,
+                            labelText: 'Email ou téléphone',
+                            hintText: 'nom@email.com ou +261…',
+                            prefixIcon: Icon(Icons.person_outline_rounded,
                                 color: AppColors.textSecondary),
                           ),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) return 'Email requis';
-                            final emailRegex = RegExp(
-                              r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$',
-                            );
-                            if (!emailRegex.hasMatch(v.trim())) {
-                              return 'Email invalide';
-                            }
-                            return null;
-                          },
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Email ou téléphone requis'
+                              : null,
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
@@ -201,19 +202,21 @@ class _LoginViewState extends ConsumerState<LoginView>
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty) return 'Mot de passe requis';
+                            if (v == null || v.isEmpty) {
+                              return 'Mot de passe requis';
+                            }
                             if (v.length < 6) return '6 caractères minimum';
                             return null;
                           },
                         ),
-
                         if (auth.error != null) ...[
                           const SizedBox(height: 12),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppColors.statusAlert.withValues(alpha: 0.08),
+                              color:
+                                  AppColors.statusAlert.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                   color: AppColors.statusAlert
@@ -236,7 +239,6 @@ class _LoginViewState extends ConsumerState<LoginView>
                             ),
                           ),
                         ],
-
                         const SizedBox(height: 28),
                         ElevatedButton(
                           onPressed: isLoading ? null : _submit,
@@ -248,6 +250,36 @@ class _LoginViewState extends ConsumerState<LoginView>
                                       color: Colors.white, strokeWidth: 2),
                                 )
                               : const Text('Se connecter'),
+                        ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            const Text(
+                              'Nouveau sur Trackeo ?',
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                            TextButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () {
+                                      ref
+                                          .read(authProvider.notifier)
+                                          .clearError();
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => const RegisterView(),
+                                        ),
+                                      );
+                                    },
+                              child: const Text(
+                                'Créer un compte',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

@@ -66,9 +66,9 @@ const STATUS_DOT: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  online: "Online",
-  idle: "Idle",
-  offline: "Offline",
+  online: "En ligne",
+  idle: "Arrêté",
+  offline: "Hors ligne",
 };
 
 const REFRESH_INTERVAL = 30_000;
@@ -106,7 +106,7 @@ export default function VehiclesPage() {
         setVehicles(r.data);
         setLastRefresh(new Date());
       })
-      .catch(() => toast.error("Failed to refresh vehicles"));
+      .catch(() => toast.error("Impossible d’actualiser les véhicules"));
   }
 
   useEffect(() => {
@@ -126,11 +126,11 @@ export default function VehiclesPage() {
     try {
       await assignDevice(assignTarget.id, Number(assignUserId));
       await fetchVehicles();
-      toast.success(`${assignTarget.name} assigned`, { description: `To ${user?.name || user?.email}` });
+      toast.success(`${assignTarget.name} assigné`, { description: `À ${user?.name || user?.email}` });
       setAssignTarget(null);
       setAssignUserId("");
     } catch {
-      toast.error("Failed to assign vehicle");
+      toast.error("Impossible d’assigner le véhicule");
     } finally {
       setSaving(false);
     }
@@ -140,9 +140,9 @@ export default function VehiclesPage() {
     try {
       await unassignDevice(v.id);
       await fetchVehicles();
-      toast.success(`${v.name} unassigned`);
+      toast.success(`${v.name} désassigné`);
     } catch {
-      toast.error("Failed to unassign vehicle");
+      toast.error("Impossible de désassigner le véhicule");
     }
   }
 
@@ -166,26 +166,26 @@ export default function VehiclesPage() {
   };
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "all", label: `All (${counts.all})` },
-    { key: "online", label: `Online (${counts.online})` },
-    { key: "idle", label: `Idle (${counts.idle})` },
-    { key: "offline", label: `Offline (${counts.offline})` },
-    { key: "unassigned", label: `Unassigned (${counts.unassigned})` },
+    { key: "all", label: `Tous (${counts.all})` },
+    { key: "online", label: `En ligne (${counts.online})` },
+    { key: "idle", label: `Arrêtés (${counts.idle})` },
+    { key: "offline", label: `Hors ligne (${counts.offline})` },
+    { key: "unassigned", label: `Non assignés (${counts.unassigned})` },
   ];
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-trackeo-dark">Vehicles</h1>
+        <h1 className="text-2xl font-bold text-trackeo-dark">Véhicules</h1>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => router.push("/map")} className="gap-1.5">
             <Map className="h-3.5 w-3.5" />
-            Fleet Map
+            Carte de la flotte
           </Button>
-          <span className="text-xs text-muted-foreground">Updated {relativeTime(lastRefresh)}</span>
+          <span className="text-xs text-muted-foreground">Actualisé {relativeTime(lastRefresh)}</span>
           <Button size="sm" variant="outline" onClick={fetchVehicles} className="gap-1.5">
             <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
+            Actualiser
           </Button>
         </div>
       </div>
@@ -208,25 +208,25 @@ export default function VehiclesPage() {
 
       <div className="mb-4">
         <Input
-          placeholder="Search by name, plate or IMEI..."
+          placeholder="Rechercher par nom, plaque ou IMEI..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
       </div>
 
-      <div className="rounded-md border bg-card">
+      <div className="overflow-x-auto rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Vehicle</TableHead>
-              <TableHead>Plate</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Battery</TableHead>
-              <TableHead>Ignition</TableHead>
-              <TableHead>Alerts</TableHead>
-              <TableHead>Last Seen</TableHead>
-              <TableHead>Assigned To</TableHead>
+              <TableHead>Véhicule</TableHead>
+              <TableHead>Plaque</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead>Batterie</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Alertes</TableHead>
+              <TableHead>Dernière position</TableHead>
+              <TableHead>Assigné à</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
@@ -243,7 +243,7 @@ export default function VehiclesPage() {
               <TableRow>
                 <TableCell colSpan={9} className="py-12 text-center">
                   <p className="text-muted-foreground font-medium">
-                    {tab === "unassigned" ? "All vehicles are assigned." : "No vehicles found."}
+                    {tab === "unassigned" ? "Tous les véhicules sont assignés." : "Aucun véhicule trouvé."}
                   </p>
                 </TableCell>
               </TableRow>
@@ -269,7 +269,7 @@ export default function VehiclesPage() {
                     {v.position?.ignition == null ? (
                       <span className="text-muted-foreground text-xs">—</span>
                     ) : v.position.ignition ? (
-                      <span className="text-xs font-medium text-trackeo-online">🔑 On</span>
+                      <span className="text-xs font-medium text-trackeo-online">Activé</span>
                     ) : (
                       <span className="text-xs text-muted-foreground">Off</span>
                     )}
@@ -293,7 +293,7 @@ export default function VehiclesPage() {
                     {v.assignedUserName ? (
                       <span className="text-sm">{v.assignedUserName}</span>
                     ) : (
-                      <Badge variant="outline" className="text-muted-foreground">Unassigned</Badge>
+                      <Badge variant="outline" className="text-muted-foreground">Non assigné</Badge>
                     )}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
@@ -304,18 +304,18 @@ export default function VehiclesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/vehicles/${v.id}`)}>View detail</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/vehicles/${v.id}`)}>Voir le détail</DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
                             setAssignTarget(v);
                             setAssignUserId(v.assignedUserId?.toString() ?? "");
                           }}
                         >
-                          {v.assignedUserId ? "Reassign" : "Assign to user"}
+                          {v.assignedUserId ? "Réassigner" : "Assigner à un utilisateur"}
                         </DropdownMenuItem>
                         {v.assignedUserId !== null && (
                           <DropdownMenuItem className="text-destructive" onClick={() => handleUnassign(v)}>
-                            Unassign
+                            Désassigner
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
@@ -332,7 +332,7 @@ export default function VehiclesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {assignTarget?.assignedUserId ? "Reassign" : "Assign"} {assignTarget?.name}
+              {assignTarget?.assignedUserId ? "Réassigner" : "Assigner"} {assignTarget?.name}
             </DialogTitle>
           </DialogHeader>
           <div className="py-2">
@@ -342,7 +342,7 @@ export default function VehiclesPage() {
               value={assignUserId}
               onChange={(e) => setAssignUserId(e.target.value)}
             >
-              <option value="">— Choose a user —</option>
+              <option value="">Choisir un utilisateur</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name || u.email} ({u.email})
@@ -351,9 +351,9 @@ export default function VehiclesPage() {
             </select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignTarget(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAssignTarget(null)}>Annuler</Button>
             <Button onClick={handleAssign} disabled={!assignUserId || saving}>
-              {saving ? "Saving..." : "Assign"}
+              {saving ? "Enregistrement..." : "Assigner"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -12,7 +12,6 @@ import {
   MapPin,
   Bell,
   BarChart2,
-  CreditCard,
   Settings,
   LogOut,
   Map,
@@ -52,24 +51,23 @@ export function SidebarNav() {
   }
 
   const navItems = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { href: "/users", label: "Users", icon: Users },
-    { href: "/vehicles", label: "Vehicles", icon: Car },
-    { href: "/map", label: "Fleet Map", icon: Map },
-    { href: "/geofences", label: "Geofences", icon: MapPin },
+    { href: "/", label: "Vue d’ensemble", icon: LayoutDashboard, exact: true },
+    { href: "/users", label: "Utilisateurs", icon: Users },
+    { href: "/vehicles", label: "Véhicules", icon: Car },
+    { href: "/map", label: "Carte de la flotte", icon: Map },
+    { href: "/geofences", label: "Zones", icon: MapPin },
     {
       href: "/alerts",
-      label: "Alerts",
+      label: "Alertes",
       icon: Bell,
       badge: openAlerts > 0 ? openAlerts : undefined,
     },
-    { href: "/reports", label: "Reports", icon: BarChart2 },
-    { href: "/subscriptions", label: "Subscriptions", icon: CreditCard },
-    { href: "/settings", label: "Settings", icon: Settings },
+    { href: "/reports", label: "Rapports", icon: BarChart2 },
+    { href: "/settings", label: "Configuration", icon: Settings },
   ];
 
   return (
-    <aside className="flex flex-col w-60 min-h-screen border-r border-sidebar-border bg-sidebar px-3 py-5">
+    <aside className="hidden lg:flex flex-col w-60 min-h-screen border-r border-sidebar-border bg-sidebar px-3 py-5">
       {/* Brand */}
       <div className="mb-5 px-3 flex items-center gap-2">
         <div className="h-8 w-8 rounded-lg bg-trackeo-primary flex items-center justify-center">
@@ -87,7 +85,7 @@ export function SidebarNav() {
         className="flex items-center gap-2 w-full mb-4 px-3 py-2 text-sm text-muted-foreground rounded-lg border border-border bg-background/60 hover:bg-background transition-colors"
       >
         <Search className="h-3.5 w-3.5" />
-        <span className="flex-1 text-left">Search…</span>
+        <span className="flex-1 text-left">Rechercher…</span>
         <kbd className="text-[10px] border border-border rounded px-1.5 py-0.5 font-mono text-muted-foreground bg-muted">⌘K</kbd>
       </button>
 
@@ -137,7 +135,7 @@ export function SidebarNav() {
           onClick={handleLogout}
         >
           <LogOut className="h-4 w-4" />
-          Logout
+          Déconnexion
         </Button>
       </div>
     </aside>

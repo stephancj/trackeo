@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   Patch,
+  Delete,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
@@ -16,6 +17,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateAlertSettingsDto } from './dto/update-alert-settings.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
@@ -27,7 +29,7 @@ export class AuthController {
 
   /**
    * POST /api/auth/login
-   * { "email": "admin@trackeo.mg", "password": "xxx" }
+   * { "identifier": "email ou téléphone", "password": "xxx" }
    * → { access_token, user }
    */
   @Post('login')
@@ -36,10 +38,7 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  /**
-   * POST /api/auth/register
-   * Réservé à l'admin — à protéger en prod ou supprimer après setup.
-   */
+  /** POST /api/auth/register — inscription utilisateur. */
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -88,6 +87,14 @@ export class AuthController {
       dto,
     );
     return updated;
+  }
+
+  /** DELETE /api/auth/account — suppression définitive du compte. */
+  @Delete('account')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard)
+  async deleteAccount(@Request() req, @Body() dto: DeleteAccountDto) {
+    await this.authService.deleteAccount(req.user.id as number, dto.password);
   }
 
   /**

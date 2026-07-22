@@ -77,14 +77,26 @@ class _AllAlertsViewState extends ConsumerState<AllAlertsView> {
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             onSelected: (value) async {
               if (value == 'mark_read') {
-                await ref.read(alertsProvider.notifier).markAllRead();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Toutes les alertes marquées comme lues'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                try {
+                  await ref.read(alertsProvider.notifier).markAllRead();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Toutes les alertes marquées comme lues'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (_) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Impossible de mettre à jour les alertes.'),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: AppColors.statusAlert,
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -356,7 +368,7 @@ class _AlertCard extends ConsumerWidget {
     final vehicleName = _vehicleName(ref);
 
     return GestureDetector(
-      onTap: () => AlertDetailSheet.show(context, ref, alert),
+      onTap: () => AlertDetailSheet.show(context, alert),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(

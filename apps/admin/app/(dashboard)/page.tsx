@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getUsers, getAdminVehicles, getAlerts, ackAlert } from "@/lib/api";
 import { relativeTime } from "@/lib/utils";
@@ -24,10 +23,10 @@ interface Vehicle {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  geofence_enter: "Geofence Enter",
-  geofence_exit: "Geofence Exit",
-  low_battery: "Low Battery",
-  speed_limit: "Speed Limit",
+  geofence_enter: "Entrée de zone",
+  geofence_exit: "Sortie de zone",
+  low_battery: "Batterie faible",
+  speed_limit: "Excès de vitesse",
   sos: "SOS",
 };
 
@@ -71,9 +70,9 @@ export default function DashboardPage() {
       setAlerts((prev) =>
         prev.map((a) => (a.id === alert.id ? { ...a, status: "acked" } : a))
       );
-      toast.success("Alert acknowledged");
+      toast.success("Alerte acquittée");
     } catch {
-      toast.error("Failed to acknowledge alert");
+      toast.error("Impossible d’acquitter l’alerte");
     } finally {
       setAcking(null);
     }
@@ -87,31 +86,31 @@ export default function DashboardPage() {
 
   const cards = [
     {
-      label: "Users",
+      label: "Utilisateurs",
       value: String(users),
       icon: Users,
       iconBg: "bg-trackeo-pastel-blue",
       iconColor: "text-trackeo-idle",
     },
     {
-      label: "Vehicles",
+      label: "Véhicules",
       value: `${online + idle}/${vehicles.length}`,
-      sub: "active",
+      sub: "actifs",
       icon: Car,
       iconBg: "bg-trackeo-pastel-green",
       iconColor: "text-trackeo-online",
     },
     {
-      label: "Open Alerts",
+      label: "Alertes ouvertes",
       value: String(openAlerts.length),
       icon: Bell,
       iconBg: openAlerts.length > 0 ? "bg-trackeo-pastel-red" : "bg-muted",
       iconColor: openAlerts.length > 0 ? "text-trackeo-alert" : "text-muted-foreground",
     },
     {
-      label: "Unassigned",
+      label: "Non assignés",
       value: String(unassigned),
-      sub: "vehicles",
+      sub: "véhicules",
       icon: AlertTriangle,
       iconBg: unassigned > 0 ? "bg-trackeo-pastel-orange" : "bg-muted",
       iconColor: unassigned > 0 ? "text-trackeo-warning" : "text-muted-foreground",
@@ -120,7 +119,7 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-trackeo-dark mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-trackeo-dark mb-6">Vue d’ensemble</h1>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {cards.map(({ label, value, sub, icon: Icon, iconBg, iconColor }) => (
@@ -142,9 +141,9 @@ export default function DashboardPage() {
       {recentOpen.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-foreground">Open Alerts</h2>
+            <h2 className="text-base font-semibold text-foreground">Alertes à traiter</h2>
             <a href="/alerts" className="text-xs font-medium text-trackeo-primary hover:text-trackeo-primary-dark transition-colors">
-              View all →
+              Tout voir
             </a>
           </div>
           <Card>
@@ -177,7 +176,7 @@ export default function DashboardPage() {
                     className="gap-1 h-7 text-xs shrink-0 hover:bg-trackeo-pastel-green hover:text-trackeo-online hover:border-trackeo-online/30"
                   >
                     <CheckCheck className="h-3 w-3" />
-                    {acking === alert.id ? "..." : "Ack"}
+                    {acking === alert.id ? "..." : "Acquitter"}
                   </Button>
                 </div>
               ))}
@@ -186,7 +185,7 @@ export default function DashboardPage() {
         </div>
       ) : alerts.length > 0 ? (
         <Card className="px-4 py-6 text-center">
-          <p className="text-muted-foreground text-sm">All clear — no open alerts.</p>
+          <p className="text-muted-foreground text-sm">Aucune alerte ouverte.</p>
         </Card>
       ) : null}
     </div>

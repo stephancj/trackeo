@@ -58,7 +58,7 @@ export default function GeofencesPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Geofences</h1>
-      <div className="rounded-md border bg-card">
+      <div className="overflow-x-auto rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

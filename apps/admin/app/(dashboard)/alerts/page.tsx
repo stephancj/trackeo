@@ -136,7 +136,7 @@ export default function AlertsPage() {
         ))}
       </div>
 
-      <div className="rounded-md border bg-card">
+      <div className="overflow-x-auto rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

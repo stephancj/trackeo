@@ -21,10 +21,10 @@ class AuthState {
   const AuthState.loading() : this._(status: AuthStatus.loading);
 
   const AuthState.unauthenticated({String? error})
-    : this._(status: AuthStatus.unauthenticated, error: error);
+      : this._(status: AuthStatus.unauthenticated, error: error);
 
   AuthState.authenticated({required String token, required AuthUser user})
-    : this._(status: AuthStatus.authenticated, token: token, user: user);
+      : this._(status: AuthStatus.authenticated, token: token, user: user);
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isLoading => status == AuthStatus.loading;
@@ -84,22 +84,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> login(String email, String password) async {
+  void clearError() {
+    if (state.error == null) return;
+    state = const AuthState.unauthenticated();
+  }
+
+  Future<void> login(String identifier, String password) async {
     state = const AuthState.loading();
     try {
-      final response = await _repo.login(email, password);
-      await TokenStorage.saveSession(
-        token: response.accessToken,
-        email: response.user.email,
-        userId: response.user.id,
-        name: response.user.name,
-        phone: response.user.phone,
-      );
-      state = AuthState.authenticated(
-        token: response.accessToken,
-        user: response.user,
-      );
-      _linkOneSignal(response.user.id);
+      final response = await _repo.login(identifier, password);
+      await _openSession(response);
     } on DioException catch (e) {
       state = AuthState.unauthenticated(error: _parseError(e));
     } catch (_) {
@@ -107,7 +101,55 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<bool> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+  }) async {
+    try {
+      final response = await _repo.register(
+        name: name,
+        email: email,
+        phone: phone,
+        password: password,
+      );
+      await _openSession(response);
+      return true;
+    } on DioException catch (e) {
+      state = AuthState.unauthenticated(error: _parseError(e));
+      return false;
+    } catch (_) {
+      state = const AuthState.unauthenticated(error: 'Erreur inattendue');
+      return false;
+    }
+  }
+
+  Future<void> _openSession(AuthResponse response) async {
+    await TokenStorage.saveSession(
+      token: response.accessToken,
+      email: response.user.email,
+      userId: response.user.id,
+      name: response.user.name,
+      phone: response.user.phone,
+    );
+    state = AuthState.authenticated(
+      token: response.accessToken,
+      user: response.user,
+    );
+    _linkOneSignal(response.user.id);
+  }
+
   Future<void> logout() async {
+    await _clearSession();
+  }
+
+  Future<void> deleteAccount(String password) async {
+    await _repo.deleteAccount(password);
+    await _clearSession();
+  }
+
+  Future<void> _clearSession() async {
     await OneSignal.logout(); // Détache l'utilisateur (mobile)
     oneSignalLogoutPlatform(); // Détache l'utilisateur (web JS direct)
     await TokenStorage.clear();
@@ -176,9 +218,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   String _parseError(DioException e) {
     final data = e.response?.data;
     if (data is Map && data['message'] != null) {
-      return data['message'].toString();
+      final message = data['message'];
+      if (message is List && message.isNotEmpty) {
+        return message.first.toString();
+      }
+      return message.toString();
     }
-    return 'Email ou mot de passe incorrect';
+    return 'Identifiant ou mot de passe incorrect';
   }
 }
 

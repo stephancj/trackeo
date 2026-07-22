@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Body,
   Param,
@@ -16,6 +17,7 @@ import { PositionsService } from '../positions/positions.service';
 import { AlertsService } from '../alerts/alerts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Device } from '../devices/device.entity';
+import { ClaimVehicleDto } from './dto/claim-vehicle.dto';
 
 @Controller('vehicles')
 @UseGuards(JwtAuthGuard)
@@ -24,7 +26,7 @@ export class VehiclesController {
     private readonly vehiclesService: VehiclesService,
     private readonly positionsService: PositionsService,
     private readonly alertsService: AlertsService,
-  ) { }
+  ) {}
 
   /**
    * GET /api/vehicles
@@ -33,6 +35,15 @@ export class VehiclesController {
   @Get()
   findAll(@Request() req: { user: { id: number } }) {
     return this.vehiclesService.findAllForUser(req.user.id);
+  }
+
+  /** POST /api/vehicles/claim — associe un device via IMEI / numéro de série. */
+  @Post('claim')
+  claimVehicle(
+    @Body() dto: ClaimVehicleDto,
+    @Request() req: { user: { id: number } },
+  ) {
+    return this.vehiclesService.claimVehicle(req.user.id, dto);
   }
 
   /**

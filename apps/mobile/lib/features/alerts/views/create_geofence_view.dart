@@ -34,6 +34,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
   LatLng _center = const LatLng(-18.8792, 47.5079);
   bool _isSaving = false;
   bool _isDragging = false;
+  int _formStep = 0;
   final Set<int> _selectedVehicleIds = {};
   late final TextEditingController _nameController;
 
@@ -218,8 +219,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
     // Visible area center is (screenHeight - bottomPanelHeight) / 2 from top,
     // which is bottomPanelHeight / 2 pixels above the screen center.
     // To place the marker there, shift the camera center downward by that offset.
-    final metersPerPixel =
-        156543.03392 *
+    final metersPerPixel = 156543.03392 *
         math.cos(_center.latitude * math.pi / 180) /
         math.pow(2, zoom);
     final latPerPixel = metersPerPixel / 111320;
@@ -301,6 +301,15 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
         ),
       );
     }
+  }
+
+  void _continueToRules() {
+    if (_nameController.text.trim().isEmpty) {
+      _showSnack('Donnez un nom à cette zone.', Colors.orange.shade700);
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    setState(() => _formStep = 1);
   }
 
   Future<void> _saveGeofence() async {
@@ -415,13 +424,11 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                         final camera = _mapController.camera;
                         final zoom = camera.zoom;
                         // Meters per pixel at current zoom and latitude
-                        final metersPerPixel =
-                            156543.03392 *
+                        final metersPerPixel = 156543.03392 *
                             math.cos(_center.latitude * math.pi / 180) /
                             math.pow(2, zoom);
                         final latPerPixel = metersPerPixel / 111320;
-                        final lonPerPixel =
-                            metersPerPixel /
+                        final lonPerPixel = metersPerPixel /
                             (111320 *
                                 math.cos(_center.latitude * math.pi / 180));
 
@@ -645,7 +652,8 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                 maxWidth: MediaQuery.of(context).size.width * 0.5,
               ),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
@@ -734,179 +742,221 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                       ),
                     ),
 
-                    // ── Zone Name ──────────────────────────────────────────
-                    _buildLabel('Nom de la zone'),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _nameController,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(
-                          Icons.label_outline_rounded,
-                          color: AppColors.textHint,
-                          size: 20,
-                        ),
-                        hintText: 'ex. Domicile, Bureau…',
-                        hintStyle: const TextStyle(color: AppColors.textHint),
-                        filled: true,
-                        fillColor: AppColors.background,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
+                    Row(
+                      children: [
+                        if (_formStep == 1)
+                          IconButton(
+                            tooltip: 'Revenir à l’emplacement',
+                            onPressed: () => setState(() => _formStep = 0),
+                            icon: const Icon(Icons.arrow_back_rounded),
+                          ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _formStep == 0
+                                    ? '1 sur 2 · Emplacement'
+                                    : '2 sur 2 · Règles et notifications',
+                                style: AppTextStyles.caps,
+                              ),
+                              const SizedBox(height: 6),
+                              LinearProgressIndicator(
+                                value: _formStep == 0 ? 0.5 : 1,
+                                minHeight: 4,
+                                borderRadius: BorderRadius.circular(4),
+                                color: AppColors.primary,
+                                backgroundColor: AppColors.divider,
+                              ),
+                            ],
                           ),
                         ),
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 20),
 
-                    // ── Zone Type ──────────────────────────────────────────
-                    _buildLabel('Type de zone'),
-                    const SizedBox(height: 10),
-                    _buildTypeSelector(),
-                    const SizedBox(height: 20),
-
-                    // ── Radius Slider ──────────────────────────────────────
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildLabel('Rayon de la zone'),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
+                    if (_formStep == 0) ...[
+                      // ── Zone Name ──────────────────────────────────────────
+                      _buildLabel('Nom de la zone'),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _nameController,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(
+                            Icons.label_outline_rounded,
+                            color: AppColors.textHint,
+                            size: 20,
                           ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(20),
+                          hintText: 'ex. Domicile, Bureau…',
+                          hintStyle: const TextStyle(color: AppColors.textHint),
+                          filled: true,
+                          fillColor: AppColors.background,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
-                          child: Text(
-                            _radius >= 1000
-                                ? '${(_radius / 1000).toStringAsFixed(1)} km'
-                                : '${_radius.toInt()} m',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
                               color: AppColors.primary,
+                              width: 1.5,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 4,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 10,
-                        ),
-                        overlayShape: const RoundSliderOverlayShape(
-                          overlayRadius: 22,
-                        ),
-                        activeTrackColor: AppColors.primary,
-                        inactiveTrackColor: AppColors.primary.withValues(
-                          alpha: 0.15,
-                        ),
-                        thumbColor: AppColors.primary,
-                        overlayColor: AppColors.primary.withValues(alpha: 0.12),
                       ),
-                      child: Slider(
-                        value: _radius.clamp(_minRadius, _maxRadius),
-                        min: _minRadius,
-                        max: _maxRadius,
-                        onChanged: (val) {
-                          setState(() => _radius = val);
-                        },
-                        onChangeEnd: (val) {
-                          _ensureCircleVisible();
-                          HapticFeedback.lightImpact();
-                        },
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          '100 m',
-                          style: TextStyle(
-                            color: AppColors.textHint,
-                            fontSize: 11,
-                          ),
-                        ),
-                        Text(
-                          '5 km',
-                          style: TextStyle(
-                            color: AppColors.textHint,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                    // ── Monitored Vehicles ─────────────────────────────────
-                    _buildLabel('Véhicules surveillés'),
-                    const SizedBox(height: 4),
-                    Text(
-                      _selectedVehicleIds.isEmpty
-                          ? 'Tous les véhicules (aucun filtre)'
-                          : '${_selectedVehicleIds.length} véhicule${_selectedVehicleIds.length > 1 ? 's' : ''} sélectionné${_selectedVehicleIds.length > 1 ? 's' : ''}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textHint,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildVehicleSelector(),
-                    const SizedBox(height: 20),
+                      // ── Zone Type ──────────────────────────────────────────
+                      _buildLabel('Type de zone'),
+                      const SizedBox(height: 10),
+                      _buildTypeSelector(),
+                      const SizedBox(height: 20),
 
-                    // ── Alert Triggers ─────────────────────────────────────
-                    _buildLabel('Déclencheurs d\'alertes'),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildTriggerCard(
-                            'À l\'entrée',
-                            Icons.login_rounded,
-                            _onEntry,
-                            (v) => setState(() => _onEntry = v),
+                      // ── Radius Slider ──────────────────────────────────────
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildLabel('Rayon de la zone'),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _radius >= 1000
+                                  ? '${(_radius / 1000).toStringAsFixed(1)} km'
+                                  : '${_radius.toInt()} m',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildTriggerCard(
-                            'À la sortie',
-                            Icons.logout_rounded,
-                            _onExit,
-                            (v) => setState(() => _onExit = v),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 4,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 10,
                           ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 22,
+                          ),
+                          activeTrackColor: AppColors.primary,
+                          inactiveTrackColor: AppColors.primary.withValues(
+                            alpha: 0.15,
+                          ),
+                          thumbColor: AppColors.primary,
+                          overlayColor:
+                              AppColors.primary.withValues(alpha: 0.12),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildWhatsappToggle(),
-                    const SizedBox(height: 24),
+                        child: Slider(
+                          value: _radius.clamp(_minRadius, _maxRadius),
+                          min: _minRadius,
+                          max: _maxRadius,
+                          onChanged: (val) {
+                            setState(() => _radius = val);
+                          },
+                          onChangeEnd: (val) {
+                            _ensureCircleVisible();
+                            HapticFeedback.lightImpact();
+                          },
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text(
+                            '100 m',
+                            style: TextStyle(
+                              color: AppColors.textHint,
+                              fontSize: 11,
+                            ),
+                          ),
+                          Text(
+                            '5 km',
+                            style: TextStyle(
+                              color: AppColors.textHint,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
+                    if (_formStep == 1) ...[
+                      // ── Monitored Vehicles ─────────────────────────────────
+                      _buildLabel('Véhicules surveillés'),
+                      const SizedBox(height: 4),
+                      Text(
+                        _selectedVehicleIds.isEmpty
+                            ? 'Tous les véhicules (aucun filtre)'
+                            : '${_selectedVehicleIds.length} véhicule${_selectedVehicleIds.length > 1 ? 's' : ''} sélectionné${_selectedVehicleIds.length > 1 ? 's' : ''}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textHint,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildVehicleSelector(),
+                      const SizedBox(height: 20),
+
+                      // ── Alert Triggers ─────────────────────────────────────
+                      _buildLabel('Déclencheurs d\'alertes'),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTriggerCard(
+                              'À l\'entrée',
+                              Icons.login_rounded,
+                              _onEntry,
+                              (v) => setState(() => _onEntry = v),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildTriggerCard(
+                              'À la sortie',
+                              Icons.logout_rounded,
+                              _onExit,
+                              (v) => setState(() => _onExit = v),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _buildWhatsappToggle(),
+                      const SizedBox(height: 24),
+                    ],
 
                     // ── Save / Delete Buttons ──────────────────────────────
                     SizedBox(
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: _isSaving ? null : _saveGeofence,
+                        onPressed: _isSaving
+                            ? null
+                            : (_formStep == 0
+                                ? _continueToRules
+                                : _saveGeofence),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -933,14 +983,21 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    _isEditing
-                                        ? Icons.edit_rounded
-                                        : Icons.check_circle_outline_rounded,
+                                    _formStep == 0
+                                        ? Icons.arrow_forward_rounded
+                                        : _isEditing
+                                            ? Icons.edit_rounded
+                                            : Icons
+                                                .check_circle_outline_rounded,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    _isEditing ? 'Mettre à jour' : 'Enregistrer',
+                                    _formStep == 0
+                                        ? 'Continuer'
+                                        : _isEditing
+                                            ? 'Mettre à jour'
+                                            : 'Enregistrer',
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700,
@@ -951,7 +1008,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                               ),
                       ),
                     ),
-                    if (_isEditing) ...[
+                    if (_isEditing && _formStep == 1) ...[
                       const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
@@ -1058,9 +1115,8 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: selected
-                            ? AppColors.primary
-                            : AppColors.textHint,
+                        color:
+                            selected ? AppColors.primary : AppColors.textHint,
                       ),
                     ),
                     if (vehicle.plate != null && vehicle.plate!.isNotEmpty) ...[
@@ -1470,7 +1526,8 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: active ? waGreen.withValues(alpha: 0.08) : AppColors.background,
+          color:
+              active ? waGreen.withValues(alpha: 0.08) : AppColors.background,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: active ? waGreen : AppColors.divider.withValues(alpha: 0.5),
@@ -1504,9 +1561,8 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: active
-                          ? const Color(0xFF1E9E4A)
-                          : AppColors.textHint,
+                      color:
+                          active ? const Color(0xFF1E9E4A) : AppColors.textHint,
                     ),
                   ),
                   const Text(

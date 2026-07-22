@@ -10,8 +10,8 @@ import '../providers/vehicles_provider.dart';
 import 'widgets/vehicle_card.dart';
 import 'widgets/vehicle_card_skeleton.dart';
 import 'vehicle_details_view.dart';
+import 'add_vehicle_view.dart';
 import '../../history/views/history_view.dart';
-import '../../reports/views/reports_view.dart';
 import '../../../../core/navigation/trackeo_route.dart';
 
 class FleetListView extends ConsumerStatefulWidget {
@@ -22,6 +22,25 @@ class FleetListView extends ConsumerStatefulWidget {
 }
 
 class _FleetListViewState extends ConsumerState<FleetListView> {
+  Future<void> _addVehicle() async {
+    final vehicle = await Navigator.push<Vehicle>(
+      context,
+      TrackeoRoute(builder: (_) => const AddVehicleView()),
+    );
+    if (vehicle == null || !mounted) return;
+    ref.read(selectedVehicleIdProvider.notifier).state = vehicle.id;
+    if (vehicle.position != null) {
+      ref.read(activeTabProvider.notifier).state = 1;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${vehicle.name} est prêt dans votre flotte.'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.primaryDark,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final vehiclesAsync = ref.watch(vehiclesProvider);
@@ -31,7 +50,12 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
     if (vehiclesAsync.hasValue && allVehicles.length == 1) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        body: SafeArea(child: _SingleVehicleScreen(vehicle: allVehicles.first)),
+        body: SafeArea(
+          child: _SingleVehicleScreen(
+            vehicle: allVehicles.first,
+            onAddVehicle: _addVehicle,
+          ),
+        ),
       );
     }
 
@@ -77,12 +101,9 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
-                      Icons.tune,
-                      color: AppColors.primaryDark,
-                      size: 22,
-                    ),
-                    onPressed: () {},
+                    tooltip: 'Ajouter un véhicule',
+                    onPressed: _addVehicle,
+                    icon: const Icon(Icons.add_circle_outline_rounded),
                   ),
                 ],
               ),
@@ -101,7 +122,7 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
             // ── Chips de filtre ────────────────────────────────────────────
             vehiclesAsync.when(
               data: (v) => SizedBox(
-                height: 36,
+                height: 44,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -143,8 +164,8 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
                   ],
                 ),
               ),
-              loading: () => const SizedBox(height: 36),
-              error: (e, st) => const SizedBox(height: 36),
+              loading: () => const SizedBox(height: 44),
+              error: (e, st) => const SizedBox(height: 44),
             ),
 
             const SizedBox(height: 8),
@@ -155,8 +176,10 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
                 data: (vehicles) {
                   if (vehicles.isEmpty) {
                     return _EmptyState(
+                      hasVehicles: allVehicles.isNotEmpty,
                       hasFilter: filter != VehicleFilter.all ||
                           ref.watch(vehicleSearchProvider).isNotEmpty,
+                      onAdd: _addVehicle,
                       onClear: () {
                         ref.read(vehicleFilterProvider.notifier).state =
                             VehicleFilter.all;
@@ -270,7 +293,8 @@ class _FilterTab extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        constraints: const BoxConstraints(minHeight: 44),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryDark : AppColors.surface,
           borderRadius: BorderRadius.circular(24),
@@ -294,10 +318,17 @@ class _FilterTab extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
+  final bool hasVehicles;
   final bool hasFilter;
   final VoidCallback onClear;
+  final VoidCallback onAdd;
 
-  const _EmptyState({required this.hasFilter, required this.onClear});
+  const _EmptyState({
+    required this.hasVehicles,
+    required this.hasFilter,
+    required this.onClear,
+    required this.onAdd,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -311,14 +342,33 @@ class _EmptyState extends StatelessWidget {
             color: AppColors.textHint,
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Aucun véhicule trouvé',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+          Text(
+            hasVehicles ? 'Aucun résultat' : 'Ajoutez votre premier véhicule',
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
             ),
           ),
+          const SizedBox(height: 6),
+          Text(
+            hasVehicles
+                ? 'Modifiez votre recherche ou vos filtres.'
+                : 'Utilisez l’IMEI inscrit sur le traceur ou son emballage.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+          if (!hasVehicles) ...[
+            const SizedBox(height: 18),
+            ElevatedButton.icon(
+              onPressed: onAdd,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(220, 50),
+              ),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Ajouter mon véhicule'),
+            ),
+          ],
           if (hasFilter) ...[
             const SizedBox(height: 12),
             TextButton(
@@ -430,13 +480,17 @@ class _ErrorState extends StatelessWidget {
 
 // ── Écran véhicule unique ───────────────────────────────────────────────────
 // Quand l'utilisateur n'a qu'un seul véhicule : aucune barre de recherche ni
-// filtre. À la place, une carte mise en avant + des raccourcis premium qui
+// filtre. À la place, une carte mise en avant et des raccourcis utiles qui
 // remplissent l'espace utilement plutôt que de laisser un écran vide.
 
 class _SingleVehicleScreen extends ConsumerWidget {
   final Vehicle vehicle;
+  final VoidCallback onAddVehicle;
 
-  const _SingleVehicleScreen({required this.vehicle});
+  const _SingleVehicleScreen({
+    required this.vehicle,
+    required this.onAddVehicle,
+  });
 
   String get _statusLine {
     switch (vehicle.status) {
@@ -465,24 +519,36 @@ class _SingleVehicleScreen extends ConsumerWidget {
           // En-tête adaptatif
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
-            child: Column(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Mon véhicule',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryDark,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Mon véhicule',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _statusLine,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  _statusLine,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                IconButton(
+                  tooltip: 'Ajouter un véhicule',
+                  onPressed: onAddVehicle,
+                  icon: const Icon(Icons.add_circle_outline_rounded),
                 ),
               ],
             ),
@@ -530,9 +596,8 @@ class _SingleVehicleScreen extends ConsumerWidget {
                           bg: AppColors.pastelGreen,
                           color: AppColors.primary,
                           onTap: () {
-                            ref
-                                .read(selectedVehicleIdProvider.notifier)
-                                .state = vehicle.id;
+                            ref.read(selectedVehicleIdProvider.notifier).state =
+                                vehicle.id;
                             ref.read(activeTabProvider.notifier).state = 1;
                           },
                         ),
@@ -564,12 +629,10 @@ class _SingleVehicleScreen extends ConsumerWidget {
                         child: _QuickActionTile(
                           icon: Icons.insights_outlined,
                           label: 'Rapports',
-                          bg: AppColors.pastelPurple,
-                          color: const Color(0xFF8B5CF6),
-                          onTap: () => Navigator.push(
-                            context,
-                            TrackeoRoute(builder: (_) => const ReportsView()),
-                          ),
+                          bg: AppColors.pastelBlue,
+                          color: AppColors.statusIdle,
+                          onTap: () =>
+                              ref.read(activeTabProvider.notifier).state = 3,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -577,8 +640,8 @@ class _SingleVehicleScreen extends ConsumerWidget {
                         child: _QuickActionTile(
                           icon: Icons.notifications_outlined,
                           label: 'Alertes',
-                          bg: AppColors.pastelOrange,
-                          color: const Color(0xFFF97316),
+                          bg: AppColors.pastelRed,
+                          color: AppColors.statusAlert,
                           onTap: () =>
                               ref.read(activeTabProvider.notifier).state = 2,
                         ),
@@ -668,7 +731,8 @@ class _QuickActionTileState extends State<_QuickActionTile>
               Container(
                 width: 46,
                 height: 46,
-                decoration: BoxDecoration(color: widget.bg, shape: BoxShape.circle),
+                decoration:
+                    BoxDecoration(color: widget.bg, shape: BoxShape.circle),
                 child: Icon(widget.icon, color: widget.color, size: 22),
               ),
               const SizedBox(height: 10),

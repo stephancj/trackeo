@@ -47,8 +47,8 @@
   --radius-4xl: calc(var(--radius) + 16px);
 
   /* Trackeo custom semantic colors */
-  --color-trackeo-primary: #4ECB8D;
-  --color-trackeo-primary-dark: #3BB077;
+  --color-trackeo-primary: #16835D;
+  --color-trackeo-primary-dark: #106A4A;
   --color-trackeo-dark: #333549;
   --color-trackeo-online: #4ECB8D;
   --color-trackeo-idle: #5B8DEF;
@@ -90,8 +90,8 @@
   --popover: #FFFFFF;
   --popover-foreground: #1F2937;
 
-  /* Primary — Trackeo mint green */
-  --primary: #4ECB8D;
+  /* Primary action — accessible with white text */
+  --primary: #16835D;
   --primary-foreground: #FFFFFF;
 
   /* Secondary — light gray */
@@ -100,7 +100,7 @@
 
   /* Muted */
   --muted: #F0F1F3;
-  --muted-foreground: #6B7280;
+  --muted-foreground: #656D7A;
 
   /* Accent — pastel mint for subtle highlights */
   --accent: #E8F8F2;
@@ -112,7 +112,7 @@
   /* Borders & inputs */
   --border: #E5E7EB;
   --input: #E5E7EB;
-  --ring: #4ECB8D;
+  --ring: #16835D;
 
   /* Charts — Trackeo palette */
   --chart-1: #4ECB8D;
@@ -123,8 +123,8 @@
 
   /* Sidebar */
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #6B7280;
-  --sidebar-primary: #4ECB8D;
+  --sidebar-foreground: #656D7A;
+  --sidebar-primary: #16835D;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #E8F8F2;
   --sidebar-accent-foreground: #333549;

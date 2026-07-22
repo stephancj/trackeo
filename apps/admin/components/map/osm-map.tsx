@@ -36,7 +36,6 @@ export function OSMMap({ markers, center, zoom = 13, className = "" }: OSMMapPro
     async function init() {
       L = await import("leaflet");
       // Fix default icon paths broken by webpack
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",

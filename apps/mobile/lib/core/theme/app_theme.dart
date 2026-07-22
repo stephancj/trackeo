@@ -5,8 +5,11 @@ class AppColors {
   AppColors._();
 
   // ── Brand ──────────────────────────────────────────────────────────────────
-  /// Vert menthe — GPS pin du logo, boutons primaires, badges actifs
-  static const Color primary = Color(0xFF4ECB8D);
+  /// Vert d'action accessible avec texte blanc (contraste WCAG AA).
+  static const Color primary = Color(0xFF16835D);
+
+  /// Vert menthe de marque, réservé aux surfaces et statuts non textuels.
+  static const Color brandMint = Color(0xFF4ECB8D);
 
   /// Charcoal foncé — texte du logo, titres, icônes
   static const Color primaryDark = Color(0xFF333549);
@@ -18,26 +21,26 @@ class AppColors {
 
   // ── Text ──────────────────────────────────────────────────────────────────
   static const Color textPrimary = Color(0xFF1F2937);
-  static const Color textSecondary = Color(0xFF6B7280);
-  static const Color textHint = Color(0xFF9CA3AF);
+  static const Color textSecondary = Color(0xFF596273);
+  static const Color textHint = Color(0xFF656D7A);
 
   // ── Statuts véhicules ─────────────────────────────────────────────────────
-  static const Color statusOnline = Color(0xFF4ECB8D);   // En mouvement → vert
-  static const Color statusIdle = Color(0xFF5B8DEF);     // Arrêté connecté → bleu
-  static const Color statusOffline = Color(0xFF9CA3AF);  // Hors ligne → gris
-  static const Color statusAlert = Color(0xFFEF4444);    // Alerte → rouge
+  static const Color statusOnline = Color(0xFF4ECB8D); // En mouvement → vert
+  static const Color statusIdle = Color(0xFF5B8DEF); // Arrêté connecté → bleu
+  static const Color statusOffline = Color(0xFF9CA3AF); // Hors ligne → gris
+  static const Color statusAlert = Color(0xFFEF4444); // Alerte → rouge
 
   // ── Batterie ──────────────────────────────────────────────────────────────
-  static const Color batteryGood = Color(0xFF4ECB8D);    // > 50 %
-  static const Color batteryMedium = Color(0xFFF59E0B);  // 20–50 %
-  static const Color batteryLow = Color(0xFFEF4444);     // < 20 %
+  static const Color batteryGood = Color(0xFF4ECB8D); // > 50 %
+  static const Color batteryMedium = Color(0xFFF59E0B); // 20–50 %
+  static const Color batteryLow = Color(0xFFEF4444); // < 20 %
 
   // ── Pastels (fonds d'icônes) ──────────────────────────────────────────────
-  static const Color pastelGreen  = Color(0xFFE8F8F2);   // primary à 12 %
-  static const Color pastelBlue   = Color(0xFFEBF2FD);   // statusIdle à 15 %
-  static const Color pastelPurple = Color(0xFFF3EEFF);   // #8B5CF6 à 12 %
-  static const Color pastelRed    = Color(0xFFFEECEC);   // statusAlert à 10 %
-  static const Color pastelOrange = Color(0xFFFFF3E8);   // #F97316 à 12 %
+  static const Color pastelGreen = Color(0xFFE8F8F2); // primary à 12 %
+  static const Color pastelBlue = Color(0xFFEBF2FD); // statusIdle à 15 %
+  static const Color pastelPurple = Color(0xFFF3EEFF); // #8B5CF6 à 12 %
+  static const Color pastelRed = Color(0xFFFEECEC); // statusAlert à 10 %
+  static const Color pastelOrange = Color(0xFFFFF3E8); // #F97316 à 12 %
 }
 
 /// Échelle typographique — utiliser ces styles plutôt que des TextStyle inline.
@@ -101,11 +104,11 @@ class AppTextStyles {
 class AppSpacing {
   AppSpacing._();
 
-  static const double xs  = 4.0;
-  static const double sm  = 8.0;
-  static const double md  = 12.0;
-  static const double lg  = 16.0;   // padding standard
-  static const double xl  = 24.0;
+  static const double xs = 4.0;
+  static const double sm = 8.0;
+  static const double md = 12.0;
+  static const double lg = 16.0; // padding standard
+  static const double xl = 24.0;
   static const double xxl = 32.0;
 }
 
@@ -113,10 +116,10 @@ class AppSpacing {
 class AppRadius {
   AppRadius._();
 
-  static const double sm   = 8.0;
-  static const double md   = 12.0;  // cards standard
-  static const double lg   = 16.0;  // sections, modals
-  static const double pill = 24.0;  // chips, pills
+  static const double sm = 8.0;
+  static const double md = 12.0; // cards standard
+  static const double lg = 16.0; // sections, modals
+  static const double pill = 24.0; // chips, pills
 }
 
 /// Tokens de mouvement — une seule signature de courbe pour toute l'app,
@@ -133,11 +136,14 @@ class AppMotion {
   static const Cubic expo = Cubic(0.16, 1, 0.3, 1);
 
   // ── Durées ─────────────────────────────────────────────────────────────────
-  static const Duration instant = Duration(milliseconds: 120); // feedback tactile
-  static const Duration fast = Duration(milliseconds: 180);    // hover, chips
-  static const Duration base = Duration(milliseconds: 240);    // changements d'état
-  static const Duration enter = Duration(milliseconds: 420);   // entrées de contenu
-  static const Duration pulse = Duration(milliseconds: 2200);  // beacon "live"
+  static const Duration instant =
+      Duration(milliseconds: 120); // feedback tactile
+  static const Duration fast = Duration(milliseconds: 180); // hover, chips
+  static const Duration base =
+      Duration(milliseconds: 240); // changements d'état
+  static const Duration enter =
+      Duration(milliseconds: 420); // entrées de contenu
+  static const Duration pulse = Duration(milliseconds: 2200); // beacon "live"
 
   /// Respecte la préférence système « réduire les animations » (WCAG / PRODUCT.md).
   /// Les boucles décoratives doivent se désactiver quand ceci renvoie `true`.
@@ -172,8 +178,7 @@ class AppMapTiles {
   static const List<String> subdomains = ['a', 'b', 'c', 'd'];
 
   /// Attribution légale requise par CartoDB.
-  static const String attribution =
-      '© CartoDB  ©  OpenStreetMap contributors';
+  static const String attribution = '© CartoDB  ©  OpenStreetMap contributors';
 }
 
 class AppTheme {
@@ -237,10 +242,10 @@ class AppTheme {
             foregroundColor: Colors.white,
             disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
             minimumSize: const Size(double.infinity, 52),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            textStyle: const TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            textStyle:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             elevation: 0,
           ),
         ),

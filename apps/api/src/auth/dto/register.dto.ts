@@ -3,9 +3,8 @@ import {
   IsString,
   MinLength,
   IsOptional,
-  IsEnum,
+  Matches,
 } from 'class-validator';
-import { UserRole } from '../../users/user.entity';
 
 export class RegisterDto {
   @IsEmail({}, { message: 'Email invalide' })
@@ -16,10 +15,12 @@ export class RegisterDto {
   password: string;
 
   @IsString()
+  @Matches(/^(?:\+?261|0)\d{9}$/, {
+    message: 'Numéro invalide (ex : +261341234567)',
+  })
+  phone: string;
+
+  @IsString()
   @IsOptional()
   name?: string;
-
-  @IsEnum(UserRole)
-  @IsOptional()
-  role?: UserRole;
 }

@@ -41,7 +41,8 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         title: const Text('Alertes & Zones'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_active_outlined, color: AppColors.primary),
+            icon: const Icon(Icons.notifications_active_outlined,
+                color: AppColors.primary),
             tooltip: 'Paramètres d\'alertes',
             onPressed: () => Navigator.push(
               context,
@@ -64,47 +65,48 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
             children: [
               _buildSectionHeader(
                 'ZONES ACTIVES',
-              action: '+ Ajouter',
-              onActionTap: () {
-                Navigator.push(
-                  context,
-                  TrackeoRoute(
-                    builder: (context) => const CreateGeofenceView(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            geofencesState.when(
-              data: (geofences) {
-                if (geofences.isEmpty) {
-                  return _buildGeofencesEmptyState();
-                }
-                return SizedBox(
-                  height: 300,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    clipBehavior: Clip.none,
-                    itemCount: geofences.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
-                    itemBuilder: (_, i) => SizedBox(
-                      width: MediaQuery.of(context).size.width - 32,
-                      child: _buildActiveGeofenceCard(geofences[i]),
+                action: '+ Ajouter',
+                onActionTap: () {
+                  Navigator.push(
+                    context,
+                    TrackeoRoute(
+                      builder: (context) => const CreateGeofenceView(),
                     ),
-                  ),
-                );
-              },
-              loading: () => const GeofenceCarouselSkeleton(),
-              error: (e, st) => _buildErrorState('$e'),
-            ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              geofencesState.when(
+                data: (geofences) {
+                  if (geofences.isEmpty) {
+                    return _buildGeofencesEmptyState();
+                  }
+                  return SizedBox(
+                    height: 300,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      clipBehavior: Clip.none,
+                      itemCount: geofences.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (_, i) => SizedBox(
+                        width: MediaQuery.of(context).size.width - 32,
+                        child: _buildActiveGeofenceCard(geofences[i]),
+                      ),
+                    ),
+                  );
+                },
+                loading: () => const GeofenceCarouselSkeleton(),
+                error: (e, st) =>
+                    _buildErrorState('Impossible de charger les zones.'),
+              ),
               const SizedBox(height: 32),
-
               _buildActivitySectionHeader(),
               const SizedBox(height: 12),
               alertsState.when(
                 data: (alerts) => _buildRecentActivityList(alerts),
                 loading: () => const AlertListSkeleton(),
-                error: (e, st) => _buildErrorState('$e'),
+                error: (e, st) =>
+                    _buildErrorState('Impossible de charger les alertes.'),
               ),
               const SizedBox(height: 32),
             ],
@@ -176,24 +178,36 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
               color: AppColors.textHint,
               size: 20,
             ),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             onSelected: (value) async {
               if (value == 'mark_read') {
-                await ref.read(alertsProvider.notifier).markAllRead();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Toutes les alertes marquées comme lues'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                try {
+                  await ref.read(alertsProvider.notifier).markAllRead();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Toutes les alertes marquées comme lues'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (_) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content:
+                            Text('Impossible de mettre à jour les alertes.'),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: AppColors.statusAlert,
+                      ),
+                    );
+                  }
                 }
               } else if (value == 'view_all') {
                 Navigator.push(
                   context,
-                  TrackeoRoute(
-                      builder: (_) => const AllAlertsView()),
+                  TrackeoRoute(builder: (_) => const AllAlertsView()),
                 );
               }
             },
@@ -444,111 +458,113 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                 // Ligne 1 : icône + nom/adresse + contrôles
                 Row(
                   children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: info.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(info.icon, color: info.color),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Nom de la zone (titre)
-                        Text(
-                          geofence.name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        // Adresse (sous-titre, géocodée)
-                        Builder(
-                          builder: (context) {
-                            final addressAsync = ref.watch(
-                              reverseGeocodeProvider(
-                                LatLng(geofence.centerLat, geofence.centerLon),
-                              ),
-                            );
-                            return Text(
-                              addressAsync.maybeWhen(
-                                data: (addr) => addr ?? 'Position enregistrée',
-                                orElse: () => 'Localisation…',
-                              ),
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                color: AppColors.textHint,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch.adaptive(
-                    value: geofence.isActive,
-                    activeColor: AppColors.primary,
-                    onChanged: (v) {
-                      ref
-                          .read(geofencesProvider.notifier)
-                          .toggleGeofence(geofence, v);
-                    },
-                  ),
-                  // Bouton édition directe
-                  SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      child: InkWell(
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: info.color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
-                        onTap: () => Navigator.push(
-                          context,
-                          TrackeoRoute(
-                            builder: (_) =>
-                                CreateGeofenceView(geofence: geofence),
+                      ),
+                      child: Icon(info.icon, color: info.color),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Nom de la zone (titre)
+                          Text(
+                            geofence.name,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.edit_rounded,
-                          size: 18,
-                          color: AppColors.textHint,
+                          const SizedBox(height: 2),
+                          // Adresse (sous-titre, géocodée)
+                          Builder(
+                            builder: (context) {
+                              final addressAsync = ref.watch(
+                                reverseGeocodeProvider(
+                                  LatLng(
+                                      geofence.centerLat, geofence.centerLon),
+                                ),
+                              );
+                              return Text(
+                                addressAsync.maybeWhen(
+                                  data: (addr) =>
+                                      addr ?? 'Position enregistrée',
+                                  orElse: () => 'Localisation…',
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  color: AppColors.textHint,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch.adaptive(
+                      value: geofence.isActive,
+                      activeColor: AppColors.primary,
+                      onChanged: (v) {
+                        ref
+                            .read(geofencesProvider.notifier)
+                            .toggleGeofence(geofence, v);
+                      },
+                    ),
+                    // Bouton édition directe
+                    SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => Navigator.push(
+                            context,
+                            TrackeoRoute(
+                              builder: (_) =>
+                                  CreateGeofenceView(geofence: geofence),
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            size: 18,
+                            color: AppColors.textHint,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  // Bouton actions — remplace le longPress (non fiable sur PWA)
-                  SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      child: InkWell(
+                    const SizedBox(width: 4),
+                    // Bouton actions — remplace le longPress (non fiable sur PWA)
+                    SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: Material(
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
-                        onTap: () => _showQuickActionsSheet(geofence),
-                        child: const Icon(
-                          Icons.more_vert_rounded,
-                          size: 18,
-                          color: AppColors.textHint,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => _showQuickActionsSheet(geofence),
+                          child: const Icon(
+                            Icons.more_vert_rounded,
+                            size: 18,
+                            color: AppColors.textHint,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
                 const SizedBox(height: 10),
                 // Badges pleine largeur (rayon + déclencheurs actifs)
                 Wrap(
@@ -590,9 +606,9 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                 ],
               ],
             ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
     ); // end Container
   }
 
@@ -654,8 +670,8 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: AppColors.divider.withValues(alpha: 0.8)),
+                border:
+                    Border.all(color: AppColors.divider.withValues(alpha: 0.8)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -880,7 +896,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => AlertDetailSheet.show(context, ref, alert),
+      onTap: () => AlertDetailSheet.show(context, alert),
       child: Container(
         // Légère teinte de fond pour les alertes non lues
         color: isOpen
@@ -913,9 +929,8 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                           style: TextStyle(
                             fontSize: 14,
                             // Gras si non lu, normal si lu
-                            fontWeight: isOpen
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                            fontWeight:
+                                isOpen ? FontWeight.w700 : FontWeight.w500,
                             color: isOpen
                                 ? AppColors.textPrimary
                                 : AppColors.textSecondary,
@@ -1005,8 +1020,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
     // So 84 pixels should represent the diameter (2 * radius)
     final double metersPerPixel = (2 * radiusM) / 84;
     // zoom = log2(156543.03392 * cos(lat) / metersPerPixel)
-    final double zoom =
-        math.log(
+    final double zoom = math.log(
           156543.03392 * math.cos(lat * math.pi / 180) / metersPerPixel,
         ) /
         math.ln2;

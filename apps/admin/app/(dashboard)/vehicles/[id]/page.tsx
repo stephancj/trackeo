@@ -550,11 +550,11 @@ export default function VehicleDetailPage() {
   const [assignUserId, setAssignUserId] = useState("");
   const [assigning, setAssigning] = useState(false);
 
-  async function fetchVehicle() {
+  const fetchVehicle = useCallback(async () => {
     const r = await getVehicleDetail(vehicleId);
     setVehicle(r.data);
     setLastRefresh(new Date());
-  }
+  }, [vehicleId]);
 
   useEffect(() => {
     fetchVehicle().finally(() => setLoading(false));
@@ -562,7 +562,7 @@ export default function VehicleDetailPage() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [vehicleId]);
+  }, [fetchVehicle]);
 
   async function handleAck(alertId: string) {
     setAcking(alertId);
@@ -765,7 +765,7 @@ export default function VehicleDetailPage() {
                   {vehicle.position?.ignition == null ? (
                     "—"
                   ) : vehicle.position.ignition ? (
-                    <span className="text-trackeo-online">🔑 On</span>
+                    <span className="text-trackeo-online">Activé</span>
                   ) : (
                     "Off"
                   )}

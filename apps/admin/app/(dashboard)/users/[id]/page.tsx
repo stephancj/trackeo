@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getUserDetail, updateUser, assignDevice, getAdminVehicles, getUsers } from "@/lib/api";
+import { getUserDetail, updateUser, assignDevice, getAdminVehicles } from "@/lib/api";
 import { relativeTime } from "@/lib/utils";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -58,12 +58,6 @@ interface AllVehicle {
   assignedUserId: number | null;
 }
 
-interface AllUser {
-  id: number;
-  name: string | null;
-  email: string;
-}
-
 const STATUS_DOT: Record<string, string> = {
   online: "bg-trackeo-online",
   idle: "bg-trackeo-idle",
@@ -86,23 +80,21 @@ export default function UserDetailPage() {
 
   const [assignOpen, setAssignOpen] = useState(false);
   const [allVehicles, setAllVehicles] = useState<AllVehicle[]>([]);
-  const [allUsers, setAllUsers] = useState<AllUser[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [assigning, setAssigning] = useState(false);
 
-  async function fetchUser() {
+  const fetchUser = useCallback(async () => {
     const r = await getUserDetail(userId);
     setUser(r.data);
-  }
+  }, [userId]);
 
   useEffect(() => {
     fetchUser().finally(() => setLoading(false));
-  }, [userId]);
+  }, [fetchUser]);
 
   async function openAssignDialog() {
-    const [vRes, uRes] = await Promise.all([getAdminVehicles(), getUsers()]);
+    const vRes = await getAdminVehicles();
     setAllVehicles(vRes.data);
-    setAllUsers(uRes.data);
     setSelectedVehicleId("");
     setAssignOpen(true);
   }

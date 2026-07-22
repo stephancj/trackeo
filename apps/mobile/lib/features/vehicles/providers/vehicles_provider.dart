@@ -56,10 +56,27 @@ class VehiclesNotifier extends AutoDisposeAsyncNotifier<List<Vehicle>> {
     }
   }
 
+  Future<Vehicle> claimVehicle({
+    required String serialNumber,
+    String? name,
+    String? plate,
+  }) async {
+    final vehicle = await ref.read(vehicleRepositoryProvider).claimVehicle(
+          serialNumber: serialNumber,
+          name: name,
+          plate: plate,
+        );
+    final currentVehicles = state.valueOrNull ?? [];
+    state = AsyncValue.data([
+      ...currentVehicles.where((item) => item.id != vehicle.id),
+      vehicle,
+    ]);
+    return vehicle;
+  }
+
   Future<void> updateVehicle(int id, Map<String, dynamic> data) async {
-    final updated = await ref
-        .read(vehicleRepositoryProvider)
-        .updateVehicle(id, data);
+    final updated =
+        await ref.read(vehicleRepositoryProvider).updateVehicle(id, data);
     // Silent update of the list
     final currentVehicles = state.valueOrNull ?? [];
     state = AsyncValue.data(
@@ -72,8 +89,8 @@ class VehiclesNotifier extends AutoDisposeAsyncNotifier<List<Vehicle>> {
 /// L'API publique est identique : AsyncValue of List of Vehicle.
 final vehiclesProvider =
     AsyncNotifierProvider.autoDispose<VehiclesNotifier, List<Vehicle>>(
-      VehiclesNotifier.new,
-    );
+  VehiclesNotifier.new,
+);
 
 // ── Filtres ─────────────────────────────────────────────────────────────────
 
@@ -90,6 +107,9 @@ final mapFilterProvider = StateProvider<VehicleFilter>(
 );
 
 final vehicleSearchProvider = StateProvider<String>((ref) => '');
+
+/// Recherche propre à la carte, indépendante de la liste véhicules.
+final mapSearchProvider = StateProvider<String>((ref) => '');
 
 /// Véhicules filtrés par statut et recherche textuelle.
 final filteredVehiclesProvider = Provider<AsyncValue<List<Vehicle>>>((ref) {

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/app_version.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../reports/views/reports_view.dart';
 import 'alert_settings_view.dart';
+import 'delete_account_view.dart';
 import '../../../../core/navigation/trackeo_route.dart';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -164,27 +164,14 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
               _MenuSection(
                 children: [
                   _MenuTile(
-                    icon: Icons.bar_chart_rounded,
-                    iconBg: AppColors.pastelBlue,
-                    iconColor: AppColors.statusIdle,
-                    title: 'Rapports de conduite',
-                    subtitle: 'Trajets, vitesse, inactivité',
-                    onTap: () => Navigator.push(
-                      context,
-                      TrackeoRoute(
-                          builder: (_) => const ReportsView()),
-                    ),
-                  ),
-                  _MenuTile(
                     icon: Icons.notifications_active_rounded,
                     iconBg: AppColors.pastelGreen,
                     iconColor: AppColors.primary,
-                    title: 'Alertes',
-                    subtitle: 'Push, WhatsApp, seuils',
+                    title: 'Notifications et alertes',
+                    subtitle: 'Push, WhatsApp et seuils',
                     onTap: () => Navigator.push(
                       context,
-                      TrackeoRoute(
-                          builder: (_) => const AlertSettingsView()),
+                      TrackeoRoute(builder: (_) => const AlertSettingsView()),
                     ),
                   ),
                 ],
@@ -192,7 +179,25 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
 
               const SizedBox(height: 28),
 
-              // Logout button (destructive, outside the group)
+              _SectionLabel('COMPTE'),
+              _MenuSection(
+                children: [
+                  _MenuTile(
+                    icon: Icons.delete_outline_rounded,
+                    iconBg: AppColors.pastelRed,
+                    iconColor: AppColors.statusAlert,
+                    title: 'Supprimer mon compte',
+                    subtitle: 'Efface définitivement vos données',
+                    onTap: () => Navigator.push(
+                      context,
+                      TrackeoRoute(builder: (_) => const DeleteAccountView()),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _LogoutTile(onTap: () => _showLogoutDialog(context)),

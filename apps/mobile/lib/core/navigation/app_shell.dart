@@ -5,8 +5,9 @@ import '../../features/vehicles/views/fleet_list_view.dart';
 import '../../features/map/views/map_view.dart';
 import '../../features/alerts/views/alerts_view.dart';
 import '../../features/settings/views/settings_view.dart';
+import '../../features/reports/views/reports_view.dart';
 
-/// Index de l'onglet actif : 0=List, 1=Map, 2=Alerts, 3=Settings
+/// Index : 0=Véhicules, 1=Carte, 2=Alertes, 3=Rapports, 4=Réglages.
 final activeTabProvider = StateProvider<int>((ref) => 0);
 
 class AppShell extends ConsumerWidget {
@@ -23,6 +24,7 @@ class AppShell extends ConsumerWidget {
           FleetListView(),
           MapView(),
           AlertsView(),
+          ReportsView(),
           SettingsView(),
         ],
       ),
@@ -80,14 +82,6 @@ class _TrackeoBottomNav extends StatelessWidget {
                 activeTab: activeTab,
                 onTap: () => onTabChanged(1),
               ),
-              // FAB central
-              Expanded(
-                child: Center(
-                  child: _AnimatedFab(
-                    onTap: () => _showAddVehicleSnackbar(context),
-                  ),
-                ),
-              ),
               _NavItem(
                 pageIndex: 2,
                 icon: Icons.notifications_outlined,
@@ -98,89 +92,22 @@ class _TrackeoBottomNav extends StatelessWidget {
               ),
               _NavItem(
                 pageIndex: 3,
+                icon: Icons.bar_chart_outlined,
+                activeIcon: Icons.bar_chart_rounded,
+                label: 'Rapports',
+                activeTab: activeTab,
+                onTap: () => onTabChanged(3),
+              ),
+              _NavItem(
+                pageIndex: 4,
                 icon: Icons.settings_outlined,
                 activeIcon: Icons.settings,
                 label: 'Réglages',
                 activeTab: activeTab,
-                onTap: () => onTabChanged(3),
+                onTap: () => onTabChanged(4),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  void _showAddVehicleSnackbar(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ajout de véhicule — disponible en V2'),
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-}
-
-// ── Animated FAB ─────────────────────────────────────────────────────────────
-
-class _AnimatedFab extends StatefulWidget {
-  final VoidCallback onTap;
-  const _AnimatedFab({required this.onTap});
-
-  @override
-  State<_AnimatedFab> createState() => _AnimatedFabState();
-}
-
-class _AnimatedFabState extends State<_AnimatedFab>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 80),
-      reverseDuration: const Duration(milliseconds: 220),
-    );
-    _scale = Tween<double>(begin: 1.0, end: 0.88).animate(
-      CurvedAnimation(parent: _ctrl, curve: AppMotion.quint),
-    );
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) => _ctrl.reverse(),
-      onTapCancel: () => _ctrl.reverse(),
-      child: AnimatedBuilder(
-        animation: _scale,
-        builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
-        child: Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
       ),
     );
@@ -258,39 +185,44 @@ class _NavItemState extends State<_NavItem>
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedBuilder(
-              animation: _scale,
-              builder: (_, child) =>
-                  Transform.scale(scale: _scale.value, child: child),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 150),
-                transitionBuilder: (child, anim) =>
-                    ScaleTransition(scale: anim, child: child),
-                child: Icon(
-                  isActive ? widget.activeIcon : widget.icon,
-                  key: ValueKey(isActive),
-                  color: isActive ? AppColors.primary : AppColors.textHint,
-                  size: 22,
+      child: Semantics(
+        button: true,
+        selected: isActive,
+        label: widget.label,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedBuilder(
+                animation: _scale,
+                builder: (_, child) =>
+                    Transform.scale(scale: _scale.value, child: child),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 150),
+                  transitionBuilder: (child, anim) =>
+                      ScaleTransition(scale: anim, child: child),
+                  child: Icon(
+                    isActive ? widget.activeIcon : widget.icon,
+                    key: ValueKey(isActive),
+                    color: isActive ? AppColors.primary : AppColors.textHint,
+                    size: 22,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 2),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 150),
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                color: isActive ? AppColors.primary : AppColors.textHint,
+              const SizedBox(height: 2),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 150),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                  color: isActive ? AppColors.primary : AppColors.textHint,
+                ),
+                child: Text(widget.label),
               ),
-              child: Text(widget.label),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

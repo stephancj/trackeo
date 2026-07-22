@@ -88,24 +88,37 @@ function VehicleDrillDown({ vehicles }: { vehicles: VehicleOption[] }) {
 
   useEffect(() => {
     if (!selectedId) return;
-    setLoading(true);
-    setData(null);
-    const { from, to } = periodToRange(period);
-    const fetcher =
-      tab === "activity"
-        ? getVehicleActivitySummary(selectedId, period)
-        : tab === "trips"
-        ? getVehicleTripLog(selectedId, from, to)
-        : tab === "violations"
-        ? getVehicleSpeedViolations(selectedId, from, to)
-        : tab === "geofences"
-        ? getVehicleGeofenceActivity(selectedId, from, to)
-        : getVehicleIdleTime(selectedId, from, to);
+    let cancelled = false;
 
-    fetcher
-      .then((r) => setData(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    async function loadReport() {
+      setLoading(true);
+      setData(null);
+      const { from, to } = periodToRange(period);
+      const fetcher =
+        tab === "activity"
+          ? getVehicleActivitySummary(selectedId!, period)
+          : tab === "trips"
+          ? getVehicleTripLog(selectedId!, from, to)
+          : tab === "violations"
+          ? getVehicleSpeedViolations(selectedId!, from, to)
+          : tab === "geofences"
+          ? getVehicleGeofenceActivity(selectedId!, from, to)
+          : getVehicleIdleTime(selectedId!, from, to);
+
+      try {
+        const response = await fetcher;
+        if (!cancelled) setData(response.data);
+      } catch {
+        if (!cancelled) setData(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadReport();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedId, tab, period]);
 
   const DRILL_TABS: {

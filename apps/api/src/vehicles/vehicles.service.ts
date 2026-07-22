@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DevicesService } from '../devices/devices.service';
@@ -6,6 +12,7 @@ import { PositionsService, PositionDto } from '../positions/positions.service';
 import { VehicleDto, VehiclePositionDto, VehicleStatus } from './vehicle.dto';
 import { Device } from '../devices/device.entity';
 import { DeviceAssignment } from '../admin/device-assignment.entity';
+import { ClaimVehicleDto } from './dto/claim-vehicle.dto';
 
 @Injectable()
 export class VehiclesService {
@@ -46,6 +53,67 @@ export class VehiclesService {
     const deviceIds = new Set(assignments.map((a) => a.deviceId));
     const all = await this.findAll();
     return all.filter((v) => deviceIds.has(v.id));
+  }
+
+  /** Active si nécessaire puis associe un traceur au compte utilisateur. */
+  async claimVehicle(
+    userId: number,
+    dto: ClaimVehicleDto,
+  ): Promise<VehicleDto> {
+    const serialNumber = dto.serialNumber.replace(/\s/g, '').trim();
+    let device = await this.devicesService.findByUniqueId(serialNumber);
+
+    if (device) {
+      if (device.disabled) {
+        throw new ForbiddenException('Cet appareil est désactivé.');
+      }
+      const existingAssignment = await this.assignmentRepo.findOne({
+        where: { deviceId: device.id },
+      });
+      if (existingAssignment) {
+        if (existingAssignment.userId !== userId) {
+          throw new ConflictException(
+            'Cet appareil est déjà associé à un autre compte.',
+          );
+        }
+        return this.buildVehicleDto(device);
+      }
+    }
+
+    if (!device) {
+      if (!/^\d{15}$/.test(serialNumber)) {
+        throw new BadRequestException(
+          'Pour un nouveau traceur, saisissez son IMEI à 15 chiffres.',
+        );
+      }
+      device = await this.devicesService.provision({
+        uniqueId: serialNumber,
+        name: dto.name?.trim() || `Véhicule ${serialNumber.slice(-6)}`,
+        plate: dto.plate?.trim().toUpperCase(),
+      });
+    }
+
+    try {
+      await this.assignmentRepo.save(
+        this.assignmentRepo.create({ deviceId: device.id, userId }),
+      );
+    } catch {
+      throw new ConflictException(
+        'Cet appareil vient d’être associé à un autre compte.',
+      );
+    }
+
+    if (dto.name?.trim() || dto.plate?.trim()) {
+      const updated = await this.devicesService.update(device.id, {
+        name: dto.name?.trim() || device.name,
+        attributes: dto.plate?.trim()
+          ? { plate: dto.plate.trim().toUpperCase() }
+          : undefined,
+      });
+      return this.buildVehicleDto(updated);
+    }
+
+    return this.buildVehicleDto(device);
   }
 
   /**
@@ -195,7 +263,7 @@ export class VehiclesService {
     if (raw >= 2 && raw <= 100) return Math.round(raw);
     // GT06 / Li-Ion voltage [3.0V, 4.5V] → percentage
     if (raw >= 3.0 && raw <= 4.5) {
-      return Math.max(0, Math.min(100, Math.round((raw - 3.5) / 0.7 * 100)));
+      return Math.max(0, Math.min(100, Math.round(((raw - 3.5) / 0.7) * 100)));
     }
     return null;
   }

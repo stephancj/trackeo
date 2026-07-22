@@ -16,16 +16,7 @@ class AlertDetailSheet extends ConsumerStatefulWidget {
   const AlertDetailSheet({super.key, required this.alert});
 
   /// Ouvre la fiche détail d'une alerte en bottom sheet.
-  /// Si l'alerte est "open", elle est automatiquement acquittée à l'ouverture.
-  static Future<void> show(
-    BuildContext context,
-    WidgetRef ref,
-    AlertModel alert,
-  ) {
-    // Acquittement immédiat si l'alerte est non lue (optimiste)
-    if (alert.status == 'open') {
-      ref.read(alertsProvider.notifier).ackAlert(alert.id);
-    }
+  static Future<void> show(BuildContext context, AlertModel alert) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -231,9 +222,21 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
 
   Future<void> _ack() async {
     setState(() => _isAcking = true);
-    await ref.read(alertsProvider.notifier).ackAlert(_alert.id);
-    setState(() => _isAcking = false);
-    if (mounted) Navigator.pop(context);
+    try {
+      await ref.read(alertsProvider.notifier).ackAlert(_alert.id);
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isAcking = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de marquer cette alerte comme lue.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.statusAlert,
+          ),
+        );
+      }
+    }
   }
 
   @override

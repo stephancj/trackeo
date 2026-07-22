@@ -63,6 +63,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      - ./apps/api/.env
     environment:
       NODE_ENV: production
       DB_HOST: postgres
@@ -70,6 +72,7 @@ services:
       DB_USER: trackeo
       DB_PASS: Password_1234
       DB_NAME: traccar_db
+      TRACCAR_API_URL: http://traccar:8082
       PORT: 3000
     ports:
       - "3000:3000"

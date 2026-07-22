@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/navigation/app_shell.dart';
 import '../../../core/utils/app_time.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
 import '../../vehicles/models/vehicle_model.dart';
@@ -52,23 +53,10 @@ class ReportsView extends ConsumerStatefulWidget {
   ConsumerState<ReportsView> createState() => _ReportsViewState();
 }
 
-class _ReportsViewState extends ConsumerState<ReportsView>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _ReportsViewState extends ConsumerState<ReportsView> {
   String _period = '7d';
+  int _reportIndex = 0;
   int? _selectedVehicleId;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 5, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   ({DateTime from, DateTime to}) get _dateRange {
     final now = DateTime.now();
@@ -121,61 +109,84 @@ class _ReportsViewState extends ConsumerState<ReportsView>
             onChanged: (p) => setState(() => _period = p),
           ),
 
-          // ── Tab bar ───────────────────────────────────────────────────
-          Container(
-            color: AppColors.surface,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondary,
-              indicatorColor: AppColors.primary,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              labelStyle: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-              tabs: const [
-                Tab(text: 'Activité'),
-                Tab(text: 'Trajets'),
-                Tab(text: 'Vitesse'),
-                Tab(text: 'Inactivité'),
-                Tab(text: 'Zones'),
-              ],
-            ),
+          _ReportTypePicker(
+            selectedIndex: _reportIndex,
+            onChanged: (index) => setState(() => _reportIndex = index),
           ),
 
-          // ── Tab content ───────────────────────────────────────────────
+          // ── Contenu du rapport sélectionné ─────────────────────────────
           Expanded(
             child: _selectedVehicleId == null
                 ? const _EmptyVehicle()
-                : TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _ActivityTab(
+                : switch (_reportIndex) {
+                    1 => _TripLogTab(
+                        vehicleId: _selectedVehicleId!,
+                        dateRange: _dateRange,
+                      ),
+                    2 => _SpeedTab(
+                        vehicleId: _selectedVehicleId!,
+                        dateRange: _dateRange,
+                      ),
+                    3 => _IdleTab(
+                        vehicleId: _selectedVehicleId!,
+                        dateRange: _dateRange,
+                      ),
+                    4 => _GeofenceTab(
                         vehicleId: _selectedVehicleId!,
                         period: _period,
                       ),
-                      _TripLogTab(
-                        vehicleId: _selectedVehicleId!,
-                        dateRange: _dateRange,
-                      ),
-                      _SpeedTab(
-                        vehicleId: _selectedVehicleId!,
-                        dateRange: _dateRange,
-                      ),
-                      _IdleTab(
-                        vehicleId: _selectedVehicleId!,
-                        dateRange: _dateRange,
-                      ),
-                      _GeofenceTab(
+                    _ => _ActivityTab(
                         vehicleId: _selectedVehicleId!,
                         period: _period,
                       ),
-                    ],
-                  ),
+                  },
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Type de rapport ──────────────────────────────────────────────────────────
+
+class _ReportTypePicker extends StatelessWidget {
+  const _ReportTypePicker({
+    required this.selectedIndex,
+    required this.onChanged,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+
+  static const labels = [
+    'Résumé d’activité',
+    'Trajets',
+    'Excès de vitesse',
+    'Inactivité',
+    'Activité des zones',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: DropdownButtonFormField<int>(
+        initialValue: selectedIndex,
+        decoration: const InputDecoration(
+          labelText: 'Rapport affiché',
+          prefixIcon: Icon(Icons.assessment_outlined),
+        ),
+        items: List.generate(
+          labels.length,
+          (index) => DropdownMenuItem(
+            value: index,
+            child: Text(labels[index]),
+          ),
+        ),
+        onChanged: (value) {
+          if (value != null) onChanged(value);
+        },
       ),
     );
   }
@@ -289,7 +300,9 @@ class _Chip extends StatelessWidget {
     return GestureDetector(
       onTap: () => onTap(value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        constraints: const BoxConstraints(minHeight: 44),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary
@@ -311,21 +324,26 @@ class _Chip extends StatelessWidget {
 
 // ── Empty states ──────────────────────────────────────────────────────────────
 
-class _EmptyVehicle extends StatelessWidget {
+class _EmptyVehicle extends ConsumerWidget {
   const _EmptyVehicle();
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.directions_car_outlined,
+          const Icon(Icons.directions_car_outlined,
               size: 48, color: AppColors.textHint),
-          SizedBox(height: 12),
-          Text(
-            'Aucun véhicule assigné',
+          const SizedBox(height: 12),
+          const Text(
+            'Ajoutez un véhicule pour consulter ses rapports.',
             style: TextStyle(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => ref.read(activeTabProvider.notifier).state = 0,
+            child: const Text('Aller aux véhicules'),
           ),
         ],
       ),

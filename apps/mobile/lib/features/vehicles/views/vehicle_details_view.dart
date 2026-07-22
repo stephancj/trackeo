@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -173,37 +172,7 @@ class VehicleDetailsView extends ConsumerWidget {
                   const SizedBox(height: 20),
                 ],
 
-                // ── Premium Lock Row ──────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _FeatureCard(
-                    icon: Icons.lock_outline_rounded,
-                    iconColor: AppColors.textHint,
-                    iconBg: AppColors.divider.withValues(alpha: 0.3),
-                    title: 'Verrouillage à distance',
-                    subtitle: 'Disponible avec un plan Premium',
-                    trailing: Tooltip(
-                      message: 'Disponible avec un plan Premium',
-                      child: Switch.adaptive(
-                        value: false,
-                        onChanged: null,
-                        activeColor: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // ── Emergency Button ──────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _EmergencyButton(
-                    onTap: () => HapticFeedback.heavyImpact(),
-                  ),
-                ),
-
-                const SizedBox(height: 40),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -219,8 +188,6 @@ class VehicleDetailsView extends ConsumerWidget {
   ) async {
     final nameController = TextEditingController(text: vehicle.name);
     final plateController = TextEditingController(text: vehicle.plate ?? '');
-    final serialController = TextEditingController(text: vehicle.serialNumber);
-    final imageController = TextEditingController(text: vehicle.imageUrl ?? '');
 
     await showModalBottomSheet(
       context: context,
@@ -229,8 +196,7 @@ class VehicleDetailsView extends ConsumerWidget {
       builder: (ctx) => _EditVehicleSheet(
         nameController: nameController,
         plateController: plateController,
-        serialController: serialController,
-        imageController: imageController,
+        serialNumber: vehicle.serialNumber,
         onSave: () async {
           Navigator.pop(ctx);
           try {
@@ -238,11 +204,7 @@ class VehicleDetailsView extends ConsumerWidget {
               vehicle.id,
               {
                 'name': nameController.text,
-                'uniqueId': serialController.text,
-                'attributes': {
-                  'plate': plateController.text,
-                  'imageUrl': imageController.text,
-                },
+                'attributes': {'plate': plateController.text},
               },
             );
             if (context.mounted) {
@@ -264,11 +226,11 @@ class VehicleDetailsView extends ConsumerWidget {
                 ),
               );
             }
-          } catch (e) {
+          } catch (_) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Erreur : $e'),
+                  content: const Text('Impossible de modifier le véhicule.'),
                   backgroundColor: Colors.red,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -598,7 +560,8 @@ class _MapCard extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.45),
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.45),
                                 blurRadius: 10,
                                 spreadRadius: 2,
                               ),
@@ -689,176 +652,18 @@ class _MapCard extends StatelessWidget {
   }
 }
 
-// ── Feature Card ──────────────────────────────────────────────────────────────
-
-class _FeatureCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBg;
-  final String title;
-  final String subtitle;
-  final Widget trailing;
-
-  const _FeatureCard({
-    required this.icon,
-    required this.iconColor,
-    required this.iconBg,
-    required this.title,
-    required this.subtitle,
-    required this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.6)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textHint,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          trailing,
-        ],
-      ),
-    );
-  }
-}
-
-// ── Emergency Button ──────────────────────────────────────────────────────────
-
-class _EmergencyButton extends StatefulWidget {
-  final VoidCallback onTap;
-  const _EmergencyButton({required this.onTap});
-
-  @override
-  State<_EmergencyButton> createState() => _EmergencyButtonState();
-}
-
-class _EmergencyButtonState extends State<_EmergencyButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _pulse;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat();
-    _pulse = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _pulse,
-      builder: (context, child) => Transform.scale(
-        scale: _pulse.value,
-        child: child,
-      ),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.statusAlert,
-                AppColors.statusAlert.withValues(alpha: 0.85),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.statusAlert.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.power_settings_new_rounded,
-                color: Colors.white,
-                size: 22,
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Coupure d\'urgence',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ── Edit Vehicle Bottom Sheet ─────────────────────────────────────────────────
 
 class _EditVehicleSheet extends StatelessWidget {
   final TextEditingController nameController;
   final TextEditingController plateController;
-  final TextEditingController serialController;
-  final TextEditingController imageController;
+  final String serialNumber;
   final VoidCallback onSave;
 
   const _EditVehicleSheet({
     required this.nameController,
     required this.plateController,
-    required this.serialController,
-    required this.imageController,
+    required this.serialNumber,
     required this.onSave,
   });
 
@@ -918,18 +723,33 @@ class _EditVehicleSheet extends StatelessWidget {
               icon: Icons.badge_rounded,
             ),
             const SizedBox(height: 14),
-            _SheetField(
-              controller: serialController,
-              label: 'Numéro de série / IMEI',
-              hint: '',
-              icon: Icons.fingerprint_rounded,
-            ),
-            const SizedBox(height: 14),
-            _SheetField(
-              controller: imageController,
-              label: 'URL de la photo',
-              hint: 'https://...',
-              icon: Icons.image_outlined,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.fingerprint_rounded,
+                    color: AppColors.textHint,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('IMEI', style: AppTextStyles.label),
+                        Text(serialNumber, style: AppTextStyles.cardTitle),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.lock_outline_rounded,
+                      color: AppColors.textHint, size: 18),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
 
