@@ -1207,7 +1207,7 @@ class _VehicleCard extends ConsumerWidget {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.primaryDark,
                     minimumSize: const Size(0, 50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

@@ -213,9 +213,10 @@ class VehicleDetailsView extends ConsumerWidget {
                   content: const Row(
                     children: [
                       Icon(Icons.check_circle_rounded,
-                          color: Colors.white, size: 18),
+                          color: AppColors.primaryDark, size: 18),
                       SizedBox(width: 10),
-                      Text('Véhicule mis à jour'),
+                      Text('Véhicule mis à jour',
+                          style: TextStyle(color: AppColors.primaryDark)),
                     ],
                   ),
                   backgroundColor: AppColors.primary,
@@ -569,7 +570,7 @@ class _MapCard extends StatelessWidget {
                           ),
                           child: const Icon(
                             Icons.directions_car,
-                            color: Colors.white,
+                            color: AppColors.primaryDark,
                             size: 22,
                           ),
                         ),
@@ -760,7 +761,7 @@ class _EditVehicleSheet extends StatelessWidget {
                 onPressed: onSave,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.primaryDark,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

@@ -61,9 +61,11 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+                Icon(Icons.check_circle_outline,
+                    color: AppColors.primaryDark, size: 18),
                 SizedBox(width: 10),
-                Text('Profil mis à jour'),
+                Text('Profil mis à jour',
+                    style: TextStyle(color: AppColors.primaryDark)),
               ],
             ),
             behavior: SnackBarBehavior.floating,
@@ -480,7 +482,7 @@ class _ProfileCard extends StatelessWidget {
                       onPressed: isSaving ? null : onSave,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppColors.primaryDark,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),

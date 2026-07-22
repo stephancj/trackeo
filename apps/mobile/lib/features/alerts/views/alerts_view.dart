@@ -803,7 +803,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.primaryDark,
                 ),
               ),
             ),
@@ -1286,7 +1286,7 @@ class _GeofenceActionsSheetState extends ConsumerState<_GeofenceActionsSheet> {
               onPressed: _isSaving ? null : _applyVehicles,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.primaryDark,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),

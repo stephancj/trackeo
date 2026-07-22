@@ -29,8 +29,18 @@ class _ActivityCalendarSheetState extends ConsumerState<ActivityCalendarSheet> {
   late DateTime _month; // 1er du mois affiché
 
   static const _monthNames = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+    'Janvier',
+    'Février',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Août',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Décembre',
   ];
   static const _weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -223,7 +233,7 @@ class _DayCell extends StatelessWidget {
 
     Color numColor;
     if (isSelected) {
-      numColor = Colors.white;
+      numColor = AppColors.primaryDark;
     } else if (isFuture) {
       numColor = AppColors.textHint.withValues(alpha: 0.5);
     } else if (!hasDot) {
@@ -254,8 +264,9 @@ class _DayCell extends StatelessWidget {
                 '$day',
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight:
-                      (isSelected || isToday) ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: (isSelected || isToday)
+                      ? FontWeight.w700
+                      : FontWeight.w500,
                   color: numColor,
                 ),
               ),
@@ -267,7 +278,7 @@ class _DayCell extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: hasDot
                       ? (isSelected
-                          ? Colors.white.withValues(alpha: 0.9)
+                          ? AppColors.primaryDark.withValues(alpha: 0.8)
                           : dotColor)
                       : Colors.transparent,
                 ),

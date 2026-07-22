@@ -959,7 +959,7 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
                                 : _saveGeofence),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppColors.primaryDark,
                           disabledBackgroundColor: AppColors.primary.withValues(
                             alpha: 0.5,
                           ),

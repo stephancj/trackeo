@@ -5,13 +5,11 @@ class AppColors {
   AppColors._();
 
   // ── Brand ──────────────────────────────────────────────────────────────────
-  /// Vert d'action accessible avec texte blanc (contraste WCAG AA).
-  static const Color primary = Color(0xFF16835D);
-
-  /// Vert menthe de marque, réservé aux surfaces et statuts non textuels.
+  /// Vert menthe officiel du logo Trackeo.
+  static const Color primary = Color(0xFF4ECB8D);
   static const Color brandMint = Color(0xFF4ECB8D);
 
-  /// Charcoal foncé — texte du logo, titres, icônes
+  /// Charcoal du logo. Utilisé sur le vert pour un contraste WCAG AA.
   static const Color primaryDark = Color(0xFF333549);
 
   // ── Layout ────────────────────────────────────────────────────────────────
@@ -188,7 +186,7 @@ class AppTheme {
         useMaterial3: true,
         colorScheme: ColorScheme.light(
           primary: AppColors.primary,
-          onPrimary: Colors.white,
+          onPrimary: AppColors.primaryDark,
           secondary: AppColors.primaryDark,
           onSecondary: Colors.white,
           surface: AppColors.surface,
@@ -239,7 +237,7 @@ class AppTheme {
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.primaryDark,
             disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
             minimumSize: const Size(double.infinity, 52),
             shape:

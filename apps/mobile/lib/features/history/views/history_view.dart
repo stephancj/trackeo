@@ -1016,8 +1016,8 @@ class _TripCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final startAddr =
-        ref.watch(reverseGeocodeProvider(LatLng(trip.start.lat, trip.start.lon)));
+    final startAddr = ref
+        .watch(reverseGeocodeProvider(LatLng(trip.start.lat, trip.start.lon)));
     final endAddr =
         ref.watch(reverseGeocodeProvider(LatLng(trip.end.lat, trip.end.lon)));
 
@@ -1052,7 +1052,7 @@ class _TripCard extends ConsumerWidget {
               child: Text(
                 '${trip.index}',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.primaryDark,
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
                 ),
@@ -1080,9 +1080,8 @@ class _TripCard extends ConsumerWidget {
                             ? Icons.my_location_rounded
                             : Icons.chevron_right_rounded,
                         size: 18,
-                        color: selected
-                            ? AppColors.primary
-                            : AppColors.textHint,
+                        color:
+                            selected ? AppColors.primary : AppColors.textHint,
                       ),
                     ],
                   ),

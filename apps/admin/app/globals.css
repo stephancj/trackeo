@@ -47,8 +47,8 @@
   --radius-4xl: calc(var(--radius) + 16px);
 
   /* Trackeo custom semantic colors */
-  --color-trackeo-primary: #16835D;
-  --color-trackeo-primary-dark: #106A4A;
+  --color-trackeo-primary: #4ECB8D;
+  --color-trackeo-primary-dark: #333549;
   --color-trackeo-dark: #333549;
   --color-trackeo-online: #4ECB8D;
   --color-trackeo-idle: #5B8DEF;
@@ -90,9 +90,9 @@
   --popover: #FFFFFF;
   --popover-foreground: #1F2937;
 
-  /* Primary action — accessible with white text */
-  --primary: #16835D;
-  --primary-foreground: #FFFFFF;
+  /* Primary action — logo mint with accessible charcoal text */
+  --primary: #4ECB8D;
+  --primary-foreground: #333549;
 
   /* Secondary — light gray */
   --secondary: #F0F1F3;
@@ -112,7 +112,7 @@
   /* Borders & inputs */
   --border: #E5E7EB;
   --input: #E5E7EB;
-  --ring: #16835D;
+  --ring: #4ECB8D;
 
   /* Charts — Trackeo palette */
   --chart-1: #4ECB8D;
@@ -124,8 +124,8 @@
   /* Sidebar */
   --sidebar: #FFFFFF;
   --sidebar-foreground: #656D7A;
-  --sidebar-primary: #16835D;
-  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-primary: #4ECB8D;
+  --sidebar-primary-foreground: #333549;
   --sidebar-accent: #E8F8F2;
   --sidebar-accent-foreground: #333549;
   --sidebar-border: #E5E7EB;
