@@ -89,9 +89,14 @@ export class UsersService {
     }
 
     await this.userRepo.manager.transaction(async (manager) => {
-      await manager.query('DELETE FROM subscriptions WHERE user_id = $1', [
-        userId,
-      ]);
+      const subscriptionTable = await manager.query(
+        "SELECT to_regclass('public.subscriptions') IS NOT NULL AS exists",
+      );
+      if (subscriptionTable[0]?.exists) {
+        await manager.query('DELETE FROM subscriptions WHERE user_id = $1', [
+          userId,
+        ]);
+      }
       await manager.query('DELETE FROM alerts WHERE owner_id = $1', [userId]);
       await manager.query('DELETE FROM geofences WHERE user_id = $1', [userId]);
       await manager.query('DELETE FROM device_assignments WHERE user_id = $1', [
