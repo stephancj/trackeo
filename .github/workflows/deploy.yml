@@ -19,6 +19,10 @@ on:
           - infra
           - all
 
+concurrency:
+  group: trackeo-production-deployment
+  cancel-in-progress: false
+
 jobs:
   # ===========================================
   # DETECT CHANGES & COMPUTE DEPLOY TARGETS
@@ -108,7 +112,8 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
-            git pull origin main &&
+            git fetch origin main &&
+            git reset --hard origin/main &&
             cat \$(ls apps/api/migrations/*.sql | sort) | docker-compose exec -T postgres psql -v ON_ERROR_STOP=1 -U trackeo -d traccar_db &&
             docker ps -a --filter 'name=trackeo-api' -q | xargs -r docker rm -f &&
             DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d --build --no-deps api
@@ -182,8 +187,11 @@ jobs:
   # ===========================================
   deploy-admin:
     name: Deploy Admin
-    needs: check-changes
-    if: needs.check-changes.outputs.deploy_admin == 'true'
+    needs: [check-changes, deploy-api]
+    if: >-
+      always() &&
+      needs.check-changes.outputs.deploy_admin == 'true' &&
+      (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: webfactory/ssh-agent@v0.8.0
@@ -194,7 +202,8 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
-            git pull origin main &&
+            git fetch origin main &&
+            git reset --hard origin/main &&
             docker ps -a --filter 'name=trackeo-admin' -q | xargs -r docker rm -f &&
             DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d --build --no-deps admin
           "
@@ -268,8 +277,12 @@ jobs:
   # ===========================================
   deploy-infra:
     name: Deploy Infrastructure
-    needs: check-changes
-    if: needs.check-changes.outputs.deploy_infra == 'true'
+    needs: [check-changes, deploy-api, deploy-admin]
+    if: >-
+      always() &&
+      needs.check-changes.outputs.deploy_infra == 'true' &&
+      (needs.deploy-api.result == 'success' || needs.deploy-api.result == 'skipped') &&
+      (needs.deploy-admin.result == 'success' || needs.deploy-admin.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - uses: webfactory/ssh-agent@v0.8.0
@@ -280,7 +293,8 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
-            git pull origin main &&
+            git fetch origin main &&
+            git reset --hard origin/main &&
             docker-compose pull &&
             DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d
           "
