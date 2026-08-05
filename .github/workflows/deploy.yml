@@ -124,7 +124,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} '
             for i in 1 2 3 4 5 6; do
               sleep 10
-              if curl -sf https://api.trackeo.zenkai.mg/health 2>/dev/null || curl -sf https://api.trackeo.zenkai.mg/ 2>/dev/null; then
+              if curl -sf https://api.iooeh.com/health 2>/dev/null || curl -sf https://api.iooeh.com/ 2>/dev/null; then
                 echo "API is healthy"
                 exit 0
               fi
@@ -305,7 +305,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} '
             for i in 1 2 3 4 5 6; do
               sleep 10
-              if curl -sf https://api.trackeo.zenkai.mg/health 2>/dev/null || curl -sf https://api.trackeo.zenkai.mg/ 2>/dev/null; then
+              if curl -sf https://api.iooeh.com/health 2>/dev/null || curl -sf https://api.iooeh.com/ 2>/dev/null; then
                 echo "Infrastructure is healthy"
                 exit 0
               fi

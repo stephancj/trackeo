@@ -5,7 +5,7 @@
  *   npx ts-node scripts/test-speed-alert.ts
  *
  * Variables d'environnement optionnelles:
- *   TRACCAR_HOST  (défaut: traccar.trackeo.zenkai.mg)
+ *   TRACCAR_HOST  (défaut: traccar.iooeh.com)
  *   TRACCAR_PORT  (défaut: 15055)
  *   DEVICE_ID     (défaut: trackeo-sim-001)
  *   SPEED_KMH     (défaut: 135)

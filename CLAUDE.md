@@ -1,4 +1,4 @@
-# CLAUDE.md — Trackeo GPS Tracking Monorepo (Production: zenkai.mg)
+# CLAUDE.md — iooeh GPS Tracking Monorepo (Production: iooeh.com)
 
 ## Vue d'ensemble du projet
 
@@ -372,13 +372,13 @@ TOTAL_POINTS=30
 | API NestJS | 3000 | REST API `/api/*` |
 | Flutter Web | 8080 | PWA dev (`flutter run -d chrome`) |
 
-### Production (VPS zenkai.mg)
+### Production (VPS iooeh.com)
 
 | Service | URL | Port interne |
 |---|---|---|
-| Web App (Flutter PWA) | https://trackeo.zenkai.mg | 80/443 (Nginx) |
-| API NestJS | https://api.trackeo.zenkai.mg/api | 3000 |
-| Traccar UI | https://traccar.trackeo.zenkai.mg | 8082 |
+| Web App (Flutter PWA) | https://app.iooeh.com | 80/443 (Nginx) |
+| API NestJS | https://api.iooeh.com/api | 3000 |
+| Traccar UI | https://traccar.iooeh.com | 8082 |
 | PostgreSQL | - | 5432 (non exposé) |
 | Traccar (OsmAnd) | - | 15055 (simulation) |
 | Traccar (autres protocoles) | - | 5001-5150 |
