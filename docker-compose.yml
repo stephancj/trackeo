@@ -43,7 +43,7 @@ services:
         condition: service_healthy
     ports:
       - "8082:8082" # Web UI
-      - "5055:5055" # OsmAnd protocol (simulation)
+      - "15055:5055" # OsmAnd protocol (production / Traccar Client)
       - "5001-5150:5001-5150/tcp" # Other device protocols
       - "5001-5150:5001-5150/udp"
     volumes:
