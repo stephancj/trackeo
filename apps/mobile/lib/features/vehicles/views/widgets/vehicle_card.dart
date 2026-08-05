@@ -124,7 +124,7 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                       height: 48,
                       decoration: BoxDecoration(
                         color: _iconBgColor,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(15),
                       ),
                       child: Icon(_vehicleIcon, color: _iconColor, size: 24),
                     ),
@@ -153,7 +153,18 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                         ],
                       ),
                     ),
-                    StatusBadge(status: widget.vehicle.status),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        StatusBadge(status: widget.vehicle.status),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: AppColors.textHint,
+                          size: 20,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
                 if (widget.vehicle.sleepMode != null) ...[
@@ -272,7 +283,7 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                               ),
                             )
                           : const Text(
-                              'Location unknown',
+                              'Position indisponible',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textHint,

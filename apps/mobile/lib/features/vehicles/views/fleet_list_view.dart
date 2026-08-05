@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/navigation/app_shell.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/vehicle_model.dart';
 import '../providers/vehicles_provider.dart';
 import 'widgets/vehicle_card.dart';
@@ -45,6 +46,8 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
   Widget build(BuildContext context) {
     final vehiclesAsync = ref.watch(vehiclesProvider);
     final allVehicles = vehiclesAsync.valueOrNull ?? const <Vehicle>[];
+    final user = ref.watch(authProvider).user;
+    final firstName = _firstName(user?.name, user?.email);
 
     // Un seul véhicule → pas de recherche ni de filtres : écran épuré et premium.
     if (vehiclesAsync.hasValue && allVehicles.length == 1) {
@@ -54,6 +57,7 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
           child: _SingleVehicleScreen(
             vehicle: allVehicles.first,
             onAddVehicle: _addVehicle,
+            firstName: firstName,
           ),
         ),
       );
@@ -68,48 +72,30 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── En-tête ────────────────────────────────────────────────────
+            _DashboardGreeting(firstName: firstName, onAdd: _addVehicle),
+            const SizedBox(height: 16),
+            vehiclesAsync.when(
+              data: (vehicles) => _FleetOverview(vehicles: vehicles),
+              loading: () => const _FleetOverviewSkeleton(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 22),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: vehiclesAsync.when(
-                      data: (v) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Mes Véhicules',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                          Text(
-                            '${v.where((x) => x.status != VehicleStatus.offline).length} véhicule(s) actif(s)',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      loading: () => const SizedBox(height: 44),
-                      error: (e, st) => const SizedBox(height: 44),
-                    ),
+                  const Expanded(
+                    child: Text('Vos véhicules',
+                        style: AppTextStyles.sectionTitle),
                   ),
-                  IconButton(
-                    tooltip: 'Ajouter un véhicule',
-                    onPressed: _addVehicle,
-                    icon: const Icon(Icons.add_circle_outline_rounded),
+                  Text(
+                    '${allVehicles.length} au total',
+                    style: AppTextStyles.bodySecondary,
                   ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
             // ── Barre de recherche ─────────────────────────────────────────
             Padding(
@@ -228,6 +214,268 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
 }
 
 // ── Widgets internes ────────────────────────────────────────────────────────
+
+String _firstName(String? name, String? email) {
+  final source = name?.trim().isNotEmpty == true
+      ? name!.trim()
+      : (email?.split('@').first ?? '');
+  if (source.isEmpty) return '';
+  final value = source.split(RegExp(r'[\s._-]+')).first;
+  return value[0].toUpperCase() + value.substring(1).toLowerCase();
+}
+
+class _DashboardGreeting extends StatelessWidget {
+  final String firstName;
+  final VoidCallback onAdd;
+
+  const _DashboardGreeting({required this.firstName, required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    final greeting = firstName.isEmpty ? 'Bonjour' : 'Bonjour, $firstName';
+    final initial = firstName.isEmpty ? 'I' : firstName[0].toUpperCase();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 16, 0),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: AppColors.primaryDark,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  greeting,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    height: 1.1,
+                    letterSpacing: -0.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Voici l’état de vos véhicules.',
+                  style: AppTextStyles.bodySecondary,
+                ),
+              ],
+            ),
+          ),
+          IconButton.filled(
+            tooltip: 'Ajouter un véhicule',
+            onPressed: onAdd,
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.pastelGreen,
+              foregroundColor: AppColors.primaryDark,
+              minimumSize: const Size(44, 44),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: const Icon(Icons.add_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FleetOverview extends StatelessWidget {
+  final List<Vehicle> vehicles;
+
+  const _FleetOverview({required this.vehicles});
+
+  @override
+  Widget build(BuildContext context) {
+    final moving =
+        vehicles.where((v) => v.status == VehicleStatus.online).length;
+    final idle = vehicles.where((v) => v.status == VehicleStatus.idle).length;
+    final offline =
+        vehicles.where((v) => v.status == VehicleStatus.offline).length;
+
+    final (title, subtitle, icon) =
+        switch ((vehicles.isEmpty, offline, moving)) {
+      (true, _, _) => (
+          'Votre flotte commence ici',
+          'Ajoutez un véhicule pour suivre sa position.',
+          Icons.add_road_rounded,
+        ),
+      (false, > 0, _) => (
+          '$offline ${offline == 1 ? 'véhicule à vérifier' : 'véhicules à vérifier'}',
+          'Aucune position récente reçue.',
+          Icons.wifi_off_rounded,
+        ),
+      (false, 0, > 0) => (
+          '$moving ${moving == 1 ? 'véhicule en mouvement' : 'véhicules en mouvement'}',
+          'Les positions sont mises à jour automatiquement.',
+          Icons.near_me_rounded,
+        ),
+      _ => (
+          'Tout est calme',
+          'Vos véhicules sont connectés et à l’arrêt.',
+          Icons.check_rounded,
+        ),
+    };
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.primaryDark,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryDark.withValues(alpha: 0.18),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -34,
+            top: -42,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.1),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: AppColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.68),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (vehicles.isNotEmpty) ...[
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      _OverviewMetric(label: 'En route', value: moving),
+                      _OverviewMetric(label: 'Arrêtés', value: idle),
+                      _OverviewMetric(label: 'Hors ligne', value: offline),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverviewMetric extends StatelessWidget {
+  final String label;
+  final int value;
+
+  const _OverviewMetric({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$value',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              height: 1,
+              fontWeight: FontWeight.w700,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.58),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FleetOverviewSkeleton extends StatelessWidget {
+  const _FleetOverviewSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 132,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.divider,
+        borderRadius: BorderRadius.circular(22),
+      ),
+    );
+  }
+}
 
 // L4 — Barre de recherche avec debounce 300 ms pour éviter les rebuilds à chaque frappe.
 class _SearchBar extends ConsumerStatefulWidget {
@@ -486,10 +734,12 @@ class _ErrorState extends StatelessWidget {
 class _SingleVehicleScreen extends ConsumerWidget {
   final Vehicle vehicle;
   final VoidCallback onAddVehicle;
+  final String firstName;
 
   const _SingleVehicleScreen({
     required this.vehicle,
     required this.onAddVehicle,
+    required this.firstName,
   });
 
   String get _statusLine {
@@ -516,44 +766,23 @@ class _SingleVehicleScreen extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.only(bottom: 28),
         children: [
-          // En-tête adaptatif
+          _DashboardGreeting(firstName: firstName, onAdd: onAddVehicle),
+          const SizedBox(height: 16),
+          _FleetOverview(vehicles: [vehicle]),
+          const SizedBox(height: 24),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Mon véhicule',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _statusLine,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
+                const Expanded(
+                  child:
+                      Text('Votre véhicule', style: AppTextStyles.sectionTitle),
                 ),
-                IconButton(
-                  tooltip: 'Ajouter un véhicule',
-                  onPressed: onAddVehicle,
-                  icon: const Icon(Icons.add_circle_outline_rounded),
-                ),
+                Text(_statusLine, style: AppTextStyles.bodySecondary),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Carte véhicule (mise en avant)
           _SlideInCard(
