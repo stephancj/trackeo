@@ -243,9 +243,16 @@ const steps = [
           <h3>Les événements importants remontent au même endroit.</h3>
           <p class="feature-text">
             Veille, entrée ou sortie de zone, excès de vitesse, batterie faible
-            ou SOS&nbsp;: retrouvez tout dans l&apos;application et choisissez vos
-            canaux — push, WhatsApp et, prochainement, email.
+            ou SOS&nbsp;: retrouvez tout dans l&apos;application et choisissez comment
+            iooeh doit vous prévenir.
           </p>
+          <div class="feature-channels" aria-label="Canaux de notification des alertes">
+            <span class="feature-channels-label mono">Canaux</span>
+            <span>Application</span>
+            <span>Push</span>
+            <span>WhatsApp</span>
+            <span>Email <small>bientôt</small></span>
+          </div>
           <div class="feature-visual visual-zone" aria-hidden="true">
             <div class="zone-ring">
               <span class="zone-pin"></span>
@@ -256,7 +263,7 @@ const steps = [
               <span class="alert-tag tag-red">Batterie &lt; 20 %</span>
               <span class="alert-tag tag-ink">SOS</span>
             </div>
-            <p class="visual-note mono">Application · Push · WhatsApp · Email bientôt</p>
+            <p class="visual-note mono">5 types d&apos;alertes configurables</p>
           </div>
         </article>
 
@@ -320,12 +327,6 @@ const steps = [
             Laissez simplement votre email. Vous recevrez l&apos;annonce de lancement
             et les informations utiles pour connecter votre premier véhicule.
           </p>
-          <div class="channel-line" aria-label="Canaux d’alerte prévus">
-            <span>Dans l&apos;app</span>
-            <span>Push</span>
-            <span>WhatsApp</span>
-            <span>Email</span>
-          </div>
         </div>
 
         <div class="waitlist-panel">
@@ -1373,22 +1374,33 @@ const steps = [
     color: color-mix(in srgb, var(--paper) 72%, var(--ink-3));
   }
 
-  .channel-line {
+  .feature-channels {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
-    margin-top: 0.2rem;
   }
 
-  .channel-line span {
+  .feature-channels > span:not(.feature-channels-label) {
     padding: 0.38rem 0.65rem;
-    border: 1px solid rgba(255,255,255,0.12);
+    border: 1px solid var(--line);
     border-radius: 0.55rem;
-    color: rgba(244,245,247,0.72);
-    background: rgba(255,255,255,0.04);
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    letter-spacing: 0.06em;
+    color: var(--ink-2);
+    background: var(--paper);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .feature-channels-label {
+    color: var(--ink-3);
+    font-size: 0.58rem;
+  }
+
+  .feature-channels small {
+    margin-left: 0.2rem;
+    color: var(--brand-strong);
+    font-size: 0.6rem;
+    font-weight: 700;
   }
 
   .waitlist-panel {
