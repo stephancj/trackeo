@@ -5,9 +5,9 @@ const APP_URL = 'https://app.iooeh.com';
 
 const stats = [
   { value: '10 s', label: 'entre chaque position' },
-  { value: '4 alertes', label: 'zone · vitesse · batterie · SOS' },
+  { value: 'Veille', label: 'alerte si le véhicule bouge' },
+  { value: '5 alertes', label: 'veille · zone · vitesse · batterie · SOS' },
   { value: '30 jours', label: "d'historique et de rapports" },
-  { value: '0 installation', label: "s'ouvre dans le navigateur" },
 ];
 
 const steps = [
@@ -18,13 +18,13 @@ const steps = [
   },
   {
     number: '02',
-    title: 'Retrouvez votre véhicule',
-    text: 'Il apparaît dans votre espace iooeh, avec son nom, sa plaque et son état en couleur.',
+    title: 'Ouvrez votre espace',
+    text: 'Le dashboard s’adapte : guide de démarrage, vue détaillée d’un véhicule ou aperçu de toute la flotte.',
   },
   {
     number: '03',
-    title: 'Suivez, l’esprit libre',
-    text: 'Carte en direct, alertes et historique : tout est au même endroit, sur tous vos écrans.',
+    title: 'Suivez ou mettez en veille',
+    text: 'Consultez la carte en direct ou armez la veille quand le véhicule est arrêté. iooeh vous alerte s’il est déplacé.',
   },
 ];
 ---
@@ -44,7 +44,7 @@ const steps = [
         <a href="#demarrage">Comment ça marche</a>
       </nav>
 
-      <a href="#acces" class="btn btn-dark btn-compact">Accès pilote</a>
+      <a href={APP_URL} class="btn btn-dark btn-compact">Ouvrir l&apos;app</a>
     </div>
   </header>
 
@@ -53,25 +53,25 @@ const steps = [
     <section class="hero shell">
       <div class="hero-slab">
         <div class="hero-copy">
-          <p class="live-badge hero-fx"><span class="live-dot" aria-hidden="true"></span> Lancement bientôt — Antananarivo</p>
+          <p class="live-badge hero-fx"><span class="live-dot" aria-hidden="true"></span> Disponible sur le web — Madagascar</p>
 
           <h1 class="hero-fx hero-fx-1">
-            Vos véhicules, <em class="hl">en&nbsp;direct</em>, où que vous soyez.
+            Vos véhicules <em class="hl">suivis</em>, même quand ils sont à l&apos;arrêt.
           </h1>
 
           <p class="hero-sub hero-fx hero-fx-2">
-            iooeh affiche chaque véhicule sur la carte, vous prévient quand ça
-            compte — sortie de zone, excès de vitesse, batterie faible — et garde
-            l&apos;historique de chaque trajet.
+            Suivez chaque déplacement en direct. À l&apos;arrêt, activez la veille
+            antivol&nbsp;: si le véhicule bouge, iooeh crée immédiatement une alerte
+            et vous montre où il se trouve.
           </p>
 
           <div class="hero-actions hero-fx hero-fx-3">
-            <a href="#fonctions" class="btn btn-mint">Voir les fonctions</a>
-            <a href="#acces" class="btn btn-ghost">L&apos;accès pilote</a>
+            <a href={APP_URL} class="btn btn-mint">Créer un compte</a>
+            <a href="#fonctions" class="btn btn-ghost">Découvrir iooeh</a>
           </div>
 
           <p class="hero-trust mono hero-fx hero-fx-4">
-            Position toutes les 10 s · Alertes WhatsApp + push · Ouverture progressive
+            PWA sur iPhone &amp; Android · Aucune app à télécharger · Position toutes les 10 s
           </p>
         </div>
 
@@ -141,10 +141,10 @@ const steps = [
           </svg>
 
           <div class="chip chip-alert">
-            <span class="chip-icon chip-icon-zone"></span>
+            <span class="chip-icon chip-icon-danger"></span>
             <span class="chip-body">
-              <strong>Entrée de zone — Dépôt</strong>
-              <span class="mono">WhatsApp envoyé · il y a 8 s</span>
+              <strong>Mouvement détecté en veille</strong>
+              <span class="mono">46 m du point d&apos;arrêt · maintenant</span>
             </span>
           </div>
 
@@ -181,22 +181,50 @@ const steps = [
     <section class="section shell" id="fonctions">
       <div class="section-head" data-fx>
         <p class="kicker mono">Ce que fait iooeh</p>
-        <h2>Trois choses, faites correctement.</h2>
+        <h2>Suivre quand ça roule. Surveiller quand ça s&apos;arrête.</h2>
         <p class="section-sub">
-          Pas un tableau de bord de plus. Juste ce qu&apos;il faut pour savoir,
-          être prévenu et vérifier.
+          Une vue claire pour comprendre l&apos;état de chaque véhicule, agir au bon
+          moment et retrouver les faits après chaque trajet.
         </p>
       </div>
 
       <div class="feature-grid">
+        <!-- 01 — sleep mode -->
+        <article class="feature-card feature-card-wide feature-card-security" data-fx>
+          <p class="feature-no mono">01 — Veille antivol</p>
+          <h3>À l&apos;arrêt, votre véhicule reste sous surveillance.</h3>
+          <p class="feature-text">
+            Activez la veille depuis la fiche du véhicule. iooeh mémorise son
+            point d&apos;arrêt et déclenche une alerte dès qu&apos;un déplacement est
+            détecté. L&apos;état reste visible jusqu&apos;à votre vérification.
+          </p>
+          <div class="feature-visual visual-sleep" aria-hidden="true">
+            <div class="sleep-orbit sleep-orbit-outer"></div>
+            <div class="sleep-orbit sleep-orbit-inner"></div>
+            <span class="sleep-origin"></span>
+            <span class="sleep-vehicle"></span>
+            <svg class="sleep-route" viewBox="0 0 360 180" preserveAspectRatio="none">
+              <path d="M 132 112 C 178 106, 186 62, 242 68" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="7 8" />
+            </svg>
+            <div class="sleep-status">
+              <span class="sleep-lock">✓</span>
+              <span><strong>Veille activée</strong><small>Point d&apos;arrêt mémorisé</small></span>
+            </div>
+            <div class="sleep-alert">
+              <span class="sleep-alert-dot"></span>
+              <span><strong>Mouvement détecté</strong><small>Déplacement à 46 m</small></span>
+            </div>
+          </div>
+        </article>
+
         <!-- 01 — live map -->
         <article class="feature-card" data-fx>
-          <p class="feature-no mono">01 — Carte en direct</p>
-          <h3>Toute la flotte sur une carte, avec son état réel.</h3>
+          <p class="feature-no mono">02 — Dashboard &amp; direct</p>
+          <h3>La bonne vue, quel que soit le nombre de véhicules.</h3>
           <p class="feature-text">
-            Chaque véhicule porte une couleur : il roule, il est à l&apos;arrêt,
-            ou il ne répond plus. Position, vitesse et batterie se mettent à jour
-            toutes seules.
+            Aucun véhicule&nbsp;? iooeh vous guide. Un seul&nbsp;? Il va droit à
+            l&apos;essentiel. Une flotte&nbsp;? Les statuts et la recherche donnent une
+            vue d&apos;ensemble immédiate.
           </p>
           <div class="feature-visual visual-live" aria-hidden="true">
             <span class="vdot vdot-mint"></span>
@@ -212,12 +240,12 @@ const steps = [
 
         <!-- 02 — zones & alerts -->
         <article class="feature-card" data-fx>
-          <p class="feature-no mono">02 — Zones &amp; alertes</p>
-          <h3>Dessinez une zone, iooeh monte la garde.</h3>
+          <p class="feature-no mono">03 — Zones &amp; alertes</p>
+          <h3>Les événements importants remontent au même endroit.</h3>
           <p class="feature-text">
-            Un cercle autour du dépôt, de la maison ou du chantier. Un véhicule
-            entre ou sort&nbsp;? Le message part sur l&apos;application et sur
-            WhatsApp.
+            Veille, entrée ou sortie de zone, excès de vitesse, batterie faible
+            ou SOS&nbsp;: filtrez les alertes, ouvrez leur détail et retrouvez le
+            véhicule concerné.
           </p>
           <div class="feature-visual visual-zone" aria-hidden="true">
             <div class="zone-ring">
@@ -229,13 +257,13 @@ const steps = [
               <span class="alert-tag tag-red">Batterie &lt; 20 %</span>
               <span class="alert-tag tag-ink">SOS</span>
             </div>
-            <p class="visual-note mono">Push + WhatsApp</p>
+            <p class="visual-note mono">Toutes les alertes, une seule vue</p>
           </div>
         </article>
 
         <!-- 03 — history & reports -->
-        <article class="feature-card" data-fx>
-          <p class="feature-no mono">03 — Historique &amp; rapports</p>
+        <article class="feature-card feature-card-report" data-fx>
+          <p class="feature-no mono">04 — Historique &amp; rapports</p>
           <h3>Chaque trajet se rejoue, chaque journée se résume.</h3>
           <p class="feature-text">
             Distance, temps de conduite, arrêts, vitesse max — par véhicule, sur
@@ -286,17 +314,16 @@ const steps = [
         <span class="cta-cross cta-cross-tl mono" aria-hidden="true">+</span>
         <span class="cta-cross cta-cross-br mono" aria-hidden="true">+</span>
 
-        <p class="live-badge"><span class="live-dot" aria-hidden="true"></span> Accès pilote — ouverture progressive</p>
-        <h2>Bientôt, vous n&apos;aurez plus à deviner.</h2>
+        <p class="live-badge"><span class="live-dot" aria-hidden="true"></span> iooeh est disponible</p>
+        <h2>Votre véhicule peut déjà vous parler.</h2>
         <p class="cta-sub">
-          iooeh s&apos;ouvre d&apos;abord à un petit groupe de véhicules à
-          Antananarivo, pour soigner le démarrage. L&apos;ouverture plus large
-          suivra — et sera annoncée ici.
+          Créez votre compte depuis votre navigateur, connectez votre véhicule et
+          retrouvez le suivi, la veille, les alertes et l&apos;historique dans un seul espace.
         </p>
         <div class="cta-actions">
-          <a href={APP_URL} class="btn btn-ghost">Déjà pilote&nbsp;? Se connecter</a>
+          <a href={APP_URL} class="btn btn-mint">Ouvrir iooeh</a>
         </div>
-        <p class="cta-note mono">iooeh.com — l&apos;ouverture sera annoncée sur cette page</p>
+        <p class="cta-note mono">Compatible Safari iPhone · Chrome Android · Ordinateur</p>
       </div>
     </section>
   </main>
@@ -667,6 +694,12 @@ const steps = [
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue) 25%, transparent);
   }
 
+  .chip-icon-danger {
+    background: var(--red);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--red) 24%, transparent);
+    animation: alert-pulse 1.8s var(--ease) infinite;
+  }
+
   .chip-icon-live {
     background: var(--brand);
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 25%, transparent);
@@ -760,7 +793,7 @@ const steps = [
   /* ============ features ============ */
   .feature-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.1rem;
   }
 
@@ -795,6 +828,68 @@ const steps = [
     max-width: 20ch;
   }
 
+  .feature-card-wide,
+  .feature-card-report {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 0.78fr) minmax(24rem, 1.22fr);
+    grid-template-areas:
+      'number visual'
+      'title visual'
+      'copy visual';
+    column-gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+    padding: clamp(1.6rem, 3vw, 2.4rem);
+  }
+
+  .feature-card-wide .feature-no,
+  .feature-card-report .feature-no {
+    grid-area: number;
+  }
+
+  .feature-card-wide h3,
+  .feature-card-report h3 {
+    grid-area: title;
+    font-size: clamp(1.55rem, 2.6vw, 2.25rem);
+    max-width: 15ch;
+  }
+
+  .feature-card-wide .feature-text,
+  .feature-card-report .feature-text {
+    grid-area: copy;
+    max-width: 46ch;
+  }
+
+  .feature-card-wide .feature-visual,
+  .feature-card-report .feature-visual {
+    grid-area: visual;
+    width: 100%;
+    height: 100%;
+    min-height: 17rem;
+    margin-top: 0;
+  }
+
+  .feature-card-security {
+    color: var(--paper);
+    background:
+      radial-gradient(100% 130% at 90% 0%, color-mix(in srgb, var(--brand) 13%, transparent), transparent 48%),
+      var(--ink);
+    border-color: color-mix(in srgb, var(--ink) 86%, white);
+    box-shadow: var(--shadow-hard);
+  }
+
+  .feature-card-security:hover {
+    border-color: color-mix(in srgb, var(--brand) 42%, var(--ink));
+  }
+
+  .feature-card-security h3 {
+    color: var(--paper);
+  }
+
+  .feature-card-security .feature-text {
+    color: color-mix(in srgb, var(--paper) 70%, var(--ink-3));
+  }
+
   .feature-text {
     font-size: 0.93rem;
     line-height: 1.65;
@@ -819,6 +914,132 @@ const steps = [
     text-align: center;
     color: var(--ink-2);
     font-size: 0.62rem;
+  }
+
+  /* 01 — sleep mode */
+  .visual-sleep {
+    background:
+      linear-gradient(0deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+      radial-gradient(circle at 36% 60%, rgba(78, 203, 141, 0.13), transparent 34%),
+      color-mix(in srgb, var(--ink-deep) 86%, black);
+    background-size: 2.5rem 2.5rem, 2.5rem 2.5rem, auto, auto;
+    border-color: rgba(255,255,255,0.1);
+  }
+
+  .sleep-orbit {
+    position: absolute;
+    left: 33%;
+    top: 59%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    border: 1px dashed color-mix(in srgb, var(--brand) 55%, transparent);
+  }
+
+  .sleep-orbit-outer {
+    width: 10rem;
+    height: 10rem;
+    animation: breathe 3.2s var(--ease) infinite;
+  }
+
+  .sleep-orbit-inner {
+    width: 5.6rem;
+    height: 5.6rem;
+    background: color-mix(in srgb, var(--brand) 8%, transparent);
+  }
+
+  .sleep-origin,
+  .sleep-vehicle {
+    position: absolute;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    border: 3px solid var(--paper);
+    box-shadow: 0 5px 18px rgba(0,0,0,0.42);
+  }
+
+  .sleep-origin {
+    left: calc(33% - 0.5rem);
+    top: calc(59% - 0.5rem);
+    background: var(--brand);
+  }
+
+  .sleep-vehicle {
+    left: 68%;
+    top: 34%;
+    background: var(--red);
+  }
+
+  .sleep-route {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    color: color-mix(in srgb, var(--red) 72%, white);
+  }
+
+  .sleep-status,
+  .sleep-alert {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.72rem 0.85rem;
+    border-radius: 0.9rem;
+    border: 1px solid rgba(255,255,255,0.11);
+    background: rgba(24,25,35,0.82);
+    box-shadow: 0 16px 35px rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+  }
+
+  .sleep-status {
+    left: 1rem;
+    top: 1rem;
+  }
+
+  .sleep-alert {
+    right: 1rem;
+    bottom: 1rem;
+    border-color: color-mix(in srgb, var(--red) 30%, rgba(255,255,255,0.11));
+  }
+
+  .sleep-status > span:last-child,
+  .sleep-alert > span:last-child {
+    display: grid;
+    gap: 0.18rem;
+  }
+
+  .sleep-status strong,
+  .sleep-alert strong {
+    color: var(--paper);
+    font-size: 0.82rem;
+  }
+
+  .sleep-status small,
+  .sleep-alert small {
+    color: rgba(244,245,247,0.56);
+    font-size: 0.68rem;
+  }
+
+  .sleep-lock {
+    display: grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--brand) 18%, transparent);
+    color: var(--brand);
+    font-weight: 800;
+  }
+
+  .sleep-alert-dot {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 45%, transparent);
+    animation: alert-pulse 1.8s var(--ease) infinite;
   }
 
   /* 01 — live */
@@ -1248,6 +1469,26 @@ const steps = [
       grid-template-columns: 1fr;
     }
 
+    .feature-card-wide,
+    .feature-card-report {
+      grid-column: auto;
+      display: flex;
+      padding: 1.6rem 1.6rem 1.4rem;
+    }
+
+    .feature-card-wide h3,
+    .feature-card-report h3 {
+      font-size: 1.55rem;
+      max-width: 20ch;
+    }
+
+    .feature-card-wide .feature-visual,
+    .feature-card-report .feature-visual {
+      min-height: 15rem;
+      height: 15rem;
+      margin-top: 0.4rem;
+    }
+
     .steps {
       grid-template-columns: 1fr;
       gap: 2rem;
@@ -1303,6 +1544,16 @@ const steps = [
       height: auto;
       gap: 1rem;
       padding-bottom: 3.4rem;
+    }
+
+    .sleep-status {
+      left: 0.7rem;
+      top: 0.7rem;
+    }
+
+    .sleep-alert {
+      right: 0.7rem;
+      bottom: 0.7rem;
     }
 
     .zone-ring {
