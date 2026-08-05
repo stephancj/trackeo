@@ -7,6 +7,7 @@ import { Subscription } from '../admin/subscription.entity';
 import { Geofence } from '../geofences/entities/geofence.entity';
 import { Alert } from '../alerts/entities/alert.entity';
 import { VehicleSleepMode } from '../vehicles/vehicle-sleep-mode.entity';
+import { WaitlistSubscriber } from '../waitlist/waitlist-subscriber.entity';
 import * as pg from 'pg';
 
 // Force parsing of 'timestamp without time zone' (OID 1114) as UTC.
@@ -28,6 +29,7 @@ export default (): TypeOrmModuleOptions => ({
     Geofence,
     Alert,
     VehicleSleepMode,
+    WaitlistSubscriber,
   ],
   // migrations exclues du runtime — lancées manuellement via `npm run migration:run`
   synchronize: false,

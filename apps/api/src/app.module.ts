@@ -14,6 +14,7 @@ import { AlertsModule } from './alerts/alerts.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import databaseConfig from './config/database.config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { WaitlistModule } from './waitlist/waitlist.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     GeofencesModule,
     AlertsModule,
     NotificationsModule,
+    WaitlistModule,
   ],
   controllers: [AppController],
   providers: [AppService],

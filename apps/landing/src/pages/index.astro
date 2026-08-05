@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 
 const APP_URL = 'https://app.iooeh.com';
+const WAITLIST_URL = 'https://api.iooeh.com/waitlist';
 
 const stats = [
   { value: '10 s', label: 'entre chaque position' },
@@ -44,7 +45,7 @@ const steps = [
         <a href="#demarrage">Comment ça marche</a>
       </nav>
 
-      <a href={APP_URL} class="btn btn-dark btn-compact">Accès pilote</a>
+      <a href="#waitlist" class="btn btn-dark btn-compact">Être prévenu</a>
     </div>
   </header>
 
@@ -53,8 +54,6 @@ const steps = [
     <section class="hero shell">
       <div class="hero-slab">
         <div class="hero-copy">
-          <p class="live-badge hero-fx"><span class="live-dot" aria-hidden="true"></span> Bientôt disponible — Madagascar</p>
-
           <h1 class="hero-fx hero-fx-1">
             Vos véhicules <em class="hl">suivis</em>, même quand ils sont à l&apos;arrêt.
           </h1>
@@ -67,7 +66,7 @@ const steps = [
 
           <div class="hero-actions hero-fx hero-fx-3">
             <a href="#fonctions" class="btn btn-mint">Découvrir iooeh</a>
-            <a href={APP_URL} class="btn btn-ghost">Déjà pilote&nbsp;? Se connecter</a>
+            <a href="#waitlist" class="btn btn-ghost">Me prévenir au lancement</a>
           </div>
 
           <p class="hero-trust mono hero-fx hero-fx-4">
@@ -244,8 +243,8 @@ const steps = [
           <h3>Les événements importants remontent au même endroit.</h3>
           <p class="feature-text">
             Veille, entrée ou sortie de zone, excès de vitesse, batterie faible
-            ou SOS&nbsp;: filtrez les alertes, ouvrez leur détail et retrouvez le
-            véhicule concerné.
+            ou SOS&nbsp;: retrouvez tout dans l&apos;application et choisissez vos
+            canaux — push, WhatsApp et, prochainement, email.
           </p>
           <div class="feature-visual visual-zone" aria-hidden="true">
             <div class="zone-ring">
@@ -257,7 +256,7 @@ const steps = [
               <span class="alert-tag tag-red">Batterie &lt; 20 %</span>
               <span class="alert-tag tag-ink">SOS</span>
             </div>
-            <p class="visual-note mono">Toutes les alertes, une seule vue</p>
+            <p class="visual-note mono">Application · Push · WhatsApp · Email bientôt</p>
           </div>
         </article>
 
@@ -309,22 +308,49 @@ const steps = [
     </section>
 
     <!-- ============ FINAL CTA ============ -->
-    <section class="section shell" id="acces">
+    <section class="section shell" id="waitlist">
       <div class="cta-slab" data-fx>
         <span class="cta-cross cta-cross-tl mono" aria-hidden="true">+</span>
         <span class="cta-cross cta-cross-br mono" aria-hidden="true">+</span>
 
-        <p class="live-badge"><span class="live-dot" aria-hidden="true"></span> Lancement prochain — accès pilote</p>
-        <h2>Bientôt, votre véhicule pourra vous parler.</h2>
-        <p class="cta-sub">
-          iooeh finalise son lancement à Madagascar. Le suivi, la veille, les
-          alertes et l&apos;historique seront réunis dans un seul espace, accessible
-          depuis votre navigateur.
-        </p>
-        <div class="cta-actions">
-          <a href={APP_URL} class="btn btn-ghost">Accès réservé aux pilotes</a>
+        <div class="cta-copy">
+          <p class="cta-kicker mono">Lancement en préparation</p>
+          <h2>On vous écrit quand iooeh ouvre.</h2>
+          <p class="cta-sub">
+            Laissez simplement votre email. Vous recevrez l&apos;annonce de lancement
+            et les informations utiles pour connecter votre premier véhicule.
+          </p>
+          <div class="channel-line" aria-label="Canaux d’alerte prévus">
+            <span>Dans l&apos;app</span>
+            <span>Push</span>
+            <span>WhatsApp</span>
+            <span>Email</span>
+          </div>
         </div>
-        <p class="cta-note mono">Ouverture publique annoncée prochainement sur iooeh.com</p>
+
+        <div class="waitlist-panel">
+          <form class="waitlist-form" data-waitlist-form data-endpoint={WAITLIST_URL} novalidate>
+            <label for="waitlist-email">Votre adresse email</label>
+            <div class="waitlist-row">
+              <input
+                id="waitlist-email"
+                name="email"
+                type="email"
+                inputmode="email"
+                autocomplete="email"
+                placeholder="vous@exemple.com"
+                maxlength="320"
+                required
+              />
+              <button type="submit" class="btn btn-mint waitlist-submit">Rejoindre la liste</button>
+            </div>
+            <p class="waitlist-status" data-waitlist-status aria-live="polite"></p>
+          </form>
+          <p class="waitlist-privacy">
+            Un email pour le lancement, puis uniquement les nouvelles importantes.
+            <a href="/privacy">Confidentialité</a>
+          </p>
+        </div>
       </div>
     </section>
   </main>
@@ -536,23 +562,6 @@ const steps = [
     color: var(--paper);
     position: relative;
     z-index: 2;
-  }
-
-  .live-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    align-self: flex-start;
-    padding: 0.45rem 0.9rem;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    background: rgba(255, 255, 255, 0.05);
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--paper) 82%, var(--brand));
   }
 
   .live-dot {
@@ -1314,9 +1323,9 @@ const steps = [
   .cta-slab {
     position: relative;
     display: grid;
-    justify-items: center;
-    text-align: center;
-    gap: 1.1rem;
+    grid-template-columns: minmax(0, 0.85fr) minmax(22rem, 1.15fr);
+    align-items: center;
+    gap: clamp(2rem, 6vw, 5rem);
     padding: clamp(2.6rem, 6vw, 4.2rem) clamp(1.4rem, 4vw, 3rem);
     border-radius: 1.75rem;
     overflow: hidden;
@@ -1342,6 +1351,21 @@ const steps = [
     font-size: clamp(2.1rem, 4.4vw, 3.4rem);
   }
 
+  .cta-copy,
+  .waitlist-panel {
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta-copy {
+    display: grid;
+    gap: 1.1rem;
+  }
+
+  .cta-kicker {
+    color: var(--brand);
+  }
+
   .cta-sub {
     font-size: 1rem;
     line-height: 1.7;
@@ -1349,13 +1373,115 @@ const steps = [
     color: color-mix(in srgb, var(--paper) 72%, var(--ink-3));
   }
 
-  .cta-actions {
-    margin-top: 0.4rem;
+  .channel-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.2rem;
   }
 
-  .cta-note {
-    color: color-mix(in srgb, var(--paper) 45%, var(--ink-3));
-    font-size: 0.64rem;
+  .channel-line span {
+    padding: 0.38rem 0.65rem;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 0.55rem;
+    color: rgba(244,245,247,0.72);
+    background: rgba(255,255,255,0.04);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+  }
+
+  .waitlist-panel {
+    padding: clamp(1.25rem, 3vw, 1.8rem);
+    border-radius: 1.2rem;
+    border: 1px solid rgba(255,255,255,0.13);
+    background: rgba(255,255,255,0.075);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.08),
+      0 22px 50px rgba(15,16,24,0.25);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .waitlist-form {
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .waitlist-form label {
+    color: var(--paper);
+    font-size: 0.86rem;
+    font-weight: 600;
+  }
+
+  .waitlist-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.6rem;
+  }
+
+  .waitlist-row input {
+    min-width: 0;
+    height: 3.25rem;
+    padding: 0 1rem;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 0.8rem;
+    outline: none;
+    background: rgba(17,18,27,0.55);
+    color: var(--paper);
+    transition:
+      border-color 220ms var(--ease),
+      box-shadow 220ms var(--ease),
+      background-color 220ms var(--ease);
+  }
+
+  .waitlist-row input::placeholder {
+    color: rgba(244,245,247,0.4);
+  }
+
+  .waitlist-row input:focus {
+    border-color: color-mix(in srgb, var(--brand) 75%, white);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 16%, transparent);
+    background: rgba(17,18,27,0.72);
+  }
+
+  .waitlist-submit {
+    min-height: 3.25rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .waitlist-submit:disabled {
+    cursor: wait;
+    opacity: 0.72;
+    transform: none;
+  }
+
+  .waitlist-status {
+    min-height: 1.25rem;
+    color: rgba(244,245,247,0.68);
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .waitlist-status.is-success {
+    color: var(--brand);
+  }
+
+  .waitlist-status.is-error {
+    color: #f4a3a3;
+  }
+
+  .waitlist-privacy {
+    margin-top: 0.8rem;
+    color: rgba(244,245,247,0.48);
+    font-size: 0.72rem;
+    line-height: 1.55;
+  }
+
+  .waitlist-privacy a {
+    color: rgba(244,245,247,0.76);
+    text-underline-offset: 0.18rem;
   }
 
   .cta-cross {
@@ -1498,6 +1624,10 @@ const steps = [
     .steps::before {
       display: none;
     }
+
+    .cta-slab {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 720px) {
@@ -1568,6 +1698,14 @@ const steps = [
       justify-content: center;
     }
 
+    .waitlist-row {
+      grid-template-columns: 1fr;
+    }
+
+    .waitlist-submit {
+      width: 100%;
+    }
+
     .footer-row {
       flex-direction: column;
     }
@@ -1591,4 +1729,54 @@ const steps = [
   );
 
   els.forEach((el) => io.observe(el));
+
+  const waitlistForm = document.querySelector('[data-waitlist-form]');
+
+  if (waitlistForm instanceof HTMLFormElement) {
+    const emailInput = waitlistForm.querySelector('input[name="email"]');
+    const submitButton = waitlistForm.querySelector('button[type="submit"]');
+    const status = waitlistForm.querySelector('[data-waitlist-status]');
+    const endpoint = waitlistForm.dataset.endpoint;
+
+    waitlistForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (
+        !(emailInput instanceof HTMLInputElement) ||
+        !(submitButton instanceof HTMLButtonElement) ||
+        !(status instanceof HTMLElement) ||
+        !endpoint
+      ) return;
+
+      if (!waitlistForm.checkValidity()) {
+        waitlistForm.reportValidity();
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = 'Inscription…';
+      status.textContent = '';
+      status.className = 'waitlist-status';
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailInput.value }),
+        });
+
+        if (!response.ok) throw new Error('waitlist_request_failed');
+
+        emailInput.disabled = true;
+        submitButton.textContent = 'Adresse enregistrée';
+        status.textContent = 'Votre adresse est bien enregistrée. On vous écrira au lancement.';
+        status.classList.add('is-success');
+      } catch {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Rejoindre la liste';
+        status.textContent = 'Impossible d’enregistrer votre adresse pour le moment. Réessayez dans quelques instants.';
+        status.classList.add('is-error');
+      }
+    });
+  }
 </script>

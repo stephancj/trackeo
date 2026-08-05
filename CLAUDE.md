@@ -398,6 +398,7 @@ TOTAL_POINTS=30
 | `PATCH` | `/api/auth/profile` | Met à jour le profil (name, phone) |
 | `PATCH` | `/api/auth/alert-settings` | Met à jour les paramètres d'alerte |
 | `POST` | `/api/auth/push-token` | Enregistre le subscription ID OneSignal |
+| `POST` | `/api/waitlist` | Inscription publique idempotente à la liste d'attente du lancement |
 | `GET` | `/api/vehicles` | Liste tous les véhicules avec statut + dernière position |
 | `GET` | `/api/vehicles/:id/position` | Dernière position d'un véhicule (polling 10s) |
 | `PATCH` | `/api/vehicles/:id` | Mise à jour complète (nom, plaque, IMEI, photo) |
@@ -578,6 +579,17 @@ CREATE TABLE subscriptions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 -- PLAN_VEHICLE_LIMITS : free=1, basic=5, premium=999
+
+-- Liste d'attente lancement (migration 012_waitlist.sql — implémenté)
+CREATE TABLE waitlist_subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(320) NOT NULL UNIQUE,
+  source VARCHAR(64) NOT NULL DEFAULT 'landing',
+  status VARCHAR(24) NOT NULL DEFAULT 'subscribed',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  unsubscribed_at TIMESTAMPTZ
+);
 ```
 
 ---
