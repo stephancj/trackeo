@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["6B673XM2ST.com.trackeo.client.app"],
+        "components": [
+          { "/": "/payment/return", "comment": "Retour de paiement PAPI" },
+          { "/": "/track/*", "comment": "Liens de suivi publics" }
+        ]
+      }
+    ]
+  }
+}

@@ -180,6 +180,10 @@ jobs:
       - name: Deploy static files
         run: |
           scp -o StrictHostKeyChecking=no -r web/* ${{ secrets.VPS_HOST }}:/opt/trackeo/web/
+          if [ -d web/.well-known ]; then
+            ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "mkdir -p /opt/trackeo/web/.well-known"
+            scp -o StrictHostKeyChecking=no -r web/.well-known/* ${{ secrets.VPS_HOST }}:/opt/trackeo/web/.well-known/
+          fi
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "chmod -R 755 /opt/trackeo/web && chown -R www-data:www-data /opt/trackeo/web"
 
   # ===========================================
@@ -295,6 +299,9 @@ jobs:
             cd /opt/trackeo &&
             git fetch origin main &&
             git reset --hard origin/main &&
+            if [ -f /etc/nginx/sites-available/trackeo ]; then cp infra/nginx/trackeo.conf /etc/nginx/sites-available/trackeo; fi &&
+            if [ -f /etc/nginx/sites-available/trackeo.conf ]; then cp infra/nginx/trackeo.conf /etc/nginx/sites-available/trackeo.conf; fi &&
+            nginx -t && systemctl reload nginx &&
             docker-compose pull &&
             docker ps -a --filter 'name=trackeo-traccar' -q | xargs -r docker rm -f &&
             DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d

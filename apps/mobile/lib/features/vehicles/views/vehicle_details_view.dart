@@ -9,6 +9,8 @@ import '../providers/vehicles_provider.dart';
 import '../../../core/providers/geocoding_provider.dart';
 import '../../../core/navigation/app_shell.dart';
 import 'widgets/status_badge.dart';
+import '../../entitlements/providers/entitlements_provider.dart';
+import '../../security/providers/security_provider.dart';
 
 class VehicleDetailsView extends ConsumerWidget {
   final Vehicle vehicle;
@@ -170,6 +172,13 @@ class VehicleDetailsView extends ConsumerWidget {
                   child: _SleepModePanel(vehicle: vehicle),
                 ),
 
+                const SizedBox(height: 12),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _SecurityActionsPanel(vehicle: vehicle),
+                ),
+
                 const SizedBox(height: 20),
 
                 // ── Map Preview ───────────────────────────────────────────
@@ -258,6 +267,144 @@ class VehicleDetailsView extends ConsumerWidget {
   }
 }
 
+class _SecurityActionsPanel extends ConsumerStatefulWidget {
+  final Vehicle vehicle;
+  const _SecurityActionsPanel({required this.vehicle});
+  @override
+  ConsumerState<_SecurityActionsPanel> createState() =>
+      _SecurityActionsPanelState();
+}
+
+class _SecurityActionsPanelState extends ConsumerState<_SecurityActionsPanel> {
+  bool busy = false;
+  Future<void> _run(String kind) async {
+    if (busy) return;
+    if (kind == 'theft') {
+      final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                      title: const Text('Signaler ce véhicule volé ?'),
+                      content: const Text(
+                          'Un incident critique sera créé. Vous disposerez de 60 secondes pour annuler un faux signalement.'),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Annuler')),
+                        FilledButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Confirmer le vol'))
+                      ])) ??
+          false;
+      if (!confirmed) return;
+    }
+    setState(() => busy = true);
+    try {
+      final repo = ref.read(securityRepositoryProvider);
+      if (kind == 'sos') await repo.sos(widget.vehicle.id);
+      if (kind == 'theft') {
+        final incident = await repo.theft(widget.vehicle.id);
+        if (mounted) {
+          final cancel = await showDialog<bool>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (ctx) => AlertDialog(
+                          title: const Text('Mode vol activé'),
+                          content: const Text(
+                              'Le support a été alerté. En cas de faux signalement, vous pouvez encore annuler pendant 60 secondes.'),
+                          actions: [
+                            TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Annuler le signalement')),
+                            FilledButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Continuer'))
+                          ])) ??
+              false;
+          if (cancel) {
+            await repo.cancelTheft(incident['id'] as String);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Signalement annulé.')));
+            }
+          }
+        }
+      }
+      if (kind == 'share') {
+        final result = await repo.createLink(widget.vehicle.id, 60);
+        if (mounted) {
+          await showDialog<void>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                      title: const Text('Lien de suivi créé'),
+                      content: SelectableText(result['url'] as String),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Fermer'))
+                      ]));
+        }
+      }
+      if (mounted && kind == 'sos') {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('SOS transmis au support.')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Action indisponible pour votre plan ou votre véhicule.')));
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rights = ref.watch(entitlementsProvider).valueOrNull;
+    return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.divider)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Sécurité & partage',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+                child: OutlinedButton.icon(
+                    onPressed: busy || !(rights?.has('sos_alerts') ?? false)
+                        ? null
+                        : () => _run('sos'),
+                    icon: const Icon(Icons.sos_rounded),
+                    label: const Text('SOS'))),
+            const SizedBox(width: 8),
+            Expanded(
+                child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.statusAlert),
+                    onPressed: busy || !(rights?.has('theft_mode') ?? false)
+                        ? null
+                        : () => _run('theft'),
+                    icon: const Icon(Icons.shield_rounded),
+                    label: const Text('Mode vol')))
+          ]),
+          const SizedBox(height: 8),
+          SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                  onPressed:
+                      busy || !(rights?.has('public_tracking_links') ?? false)
+                          ? null
+                          : () => _run('share'),
+                  icon: const Icon(Icons.share_location_rounded),
+                  label: const Text('Partager le suivi pendant 1 heure')))
+        ]));
+  }
+}
+
 class _SleepModePanel extends ConsumerStatefulWidget {
   final Vehicle vehicle;
   const _SleepModePanel({required this.vehicle});
@@ -310,10 +457,13 @@ class _SleepModePanelState extends ConsumerState<_SleepModePanel> {
 
   @override
   Widget build(BuildContext context) {
+    final rights = ref.watch(entitlementsProvider).valueOrNull;
+    final sleepIncluded = rights?.has('sleep_mode') ?? true;
     final mode = widget.vehicle.sleepMode;
     final isActive = mode?.active == true;
     final isTriggered = mode?.triggered == true;
-    final canEnable = widget.vehicle.status == VehicleStatus.idle &&
+    final canEnable = sleepIncluded &&
+        widget.vehicle.status == VehicleStatus.idle &&
         widget.vehicle.position != null;
     final color = isTriggered
         ? AppColors.statusAlert
@@ -378,9 +528,11 @@ class _SleepModePanelState extends ConsumerState<_SleepModePanel> {
                           ? 'Le véhicule a quitté son point de veille. Consultez sa position et désactivez la veille après vérification.'
                           : isActive
                               ? 'Une alerte sera envoyée au-delà de ${mode!.movementThresholdM} m du point actuel.'
-                              : canEnable
-                                  ? 'Surveille le véhicule à l’arrêt et vous alerte s’il est déplacé.'
-                                  : 'Disponible lorsque le véhicule est arrêté et transmet sa position.',
+                              : !sleepIncluded
+                                  ? 'Disponible avec les plans Basic et Premium.'
+                                  : canEnable
+                                      ? 'Surveille le véhicule à l’arrêt et vous alerte s’il est déplacé.'
+                                      : 'Disponible lorsque le véhicule est arrêté et transmet sa position.',
                       style: const TextStyle(
                         fontSize: 13,
                         height: 1.4,

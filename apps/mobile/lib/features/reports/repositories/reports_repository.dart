@@ -14,6 +14,9 @@ abstract class ReportsRepository {
       int vehicleId, DateTime from, DateTime to);
   Future<List<GeofenceActivityEntry>> getGeofenceActivity(
       int vehicleId, String period);
+  Future<TripLogEntry> getPlayback(String tripId);
+  Future<List<int>> exportTrips(
+      int vehicleId, DateTime from, DateTime to, String format);
 }
 
 class RemoteReportsRepository implements ReportsRepository {
@@ -33,17 +36,37 @@ class RemoteReportsRepository implements ReportsRepository {
   @override
   Future<List<TripLogEntry>> getTripLog(
       int vehicleId, DateTime from, DateTime to) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/vehicles/$vehicleId/reports/trip-log',
+    final response = await _dio.get<List<dynamic>>(
+      '/trips/device/$vehicleId',
       queryParameters: {
         'from': from.toIso8601String(),
         'to': to.toIso8601String(),
       },
     );
-    final trips = (response.data!['trips'] as List<dynamic>?) ?? [];
+    final trips = response.data ?? [];
     return trips
         .map((e) => TripLogEntry.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<TripLogEntry> getPlayback(String tripId) async {
+    final response =
+        await _dio.get<Map<String, dynamic>>('/trips/$tripId/playback');
+    return TripLogEntry.fromJson(response.data!);
+  }
+
+  @override
+  Future<List<int>> exportTrips(
+      int vehicleId, DateTime from, DateTime to, String format) async {
+    final response = await _dio.get<List<int>>(
+        '/trips/device/$vehicleId/export.$format',
+        queryParameters: {
+          'from': from.toIso8601String(),
+          'to': to.toIso8601String()
+        },
+        options: Options(responseType: ResponseType.bytes));
+    return response.data!;
   }
 
   @override
@@ -58,8 +81,7 @@ class RemoteReportsRepository implements ReportsRepository {
         'threshold': threshold,
       },
     );
-    final violations =
-        (response.data!['violations'] as List<dynamic>?) ?? [];
+    final violations = (response.data!['violations'] as List<dynamic>?) ?? [];
     return violations
         .map((e) => SpeedViolation.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -88,8 +110,7 @@ class RemoteReportsRepository implements ReportsRepository {
       '/vehicles/$vehicleId/reports/geofence-activity',
       queryParameters: {'period': period},
     );
-    final geofences =
-        (response.data!['geofences'] as List<dynamic>?) ?? [];
+    final geofences = (response.data!['geofences'] as List<dynamic>?) ?? [];
     return geofences
         .map((e) => GeofenceActivityEntry.fromJson(e as Map<String, dynamic>))
         .toList();

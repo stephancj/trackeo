@@ -6,6 +6,9 @@ import '../../auth/providers/auth_provider.dart';
 import 'alert_settings_view.dart';
 import 'delete_account_view.dart';
 import '../../../../core/navigation/trackeo_route.dart';
+import '../../entitlements/providers/entitlements_provider.dart';
+import '../../entitlements/models/entitlements_model.dart';
+import '../../payments/views/payments_view.dart';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -109,6 +112,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
+    final entitlements = ref.watch(entitlementsProvider);
     final displayName =
         (user?.name?.isNotEmpty ?? false) ? user!.name! : user?.email ?? '';
 
@@ -159,12 +163,29 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 onSave: _saveProfile,
               ),
 
+              entitlements.when(
+                data: (rights) => _SubscriptionCard(entitlements: rights),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+
               const SizedBox(height: 28),
 
               // ── Fonctionnalités ───────────────────────────────────────────
               _SectionLabel('FONCTIONNALITÉS'),
               _MenuSection(
                 children: [
+                  _MenuTile(
+                    icon: Icons.credit_card_rounded,
+                    iconBg: AppColors.pastelBlue,
+                    iconColor: AppColors.primaryDark,
+                    title: 'Abonnement et paiement',
+                    subtitle: 'Plans et paiement sécurisé PAPI.mg',
+                    onTap: () => Navigator.push(
+                      context,
+                      TrackeoRoute(builder: (_) => const PaymentsView()),
+                    ),
+                  ),
                   _MenuTile(
                     icon: Icons.notifications_active_rounded,
                     iconBg: AppColors.pastelGreen,
@@ -276,6 +297,98 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       ),
     );
   }
+}
+
+class _SubscriptionCard extends StatelessWidget {
+  final Entitlements entitlements;
+  const _SubscriptionCard({required this.entitlements});
+
+  @override
+  Widget build(BuildContext context) {
+    final vehicleLimit = entitlements.limit('max_vehicles');
+    final zoneLimit = entitlements.limit('max_geofences');
+    final historyDays = entitlements.limit('history_retention_days');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppColors.primaryDark,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.workspace_premium_rounded,
+                      color: AppColors.primary, size: 21),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Plan ${entitlements.planName}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700)),
+                      Text(
+                        entitlements.status == 'trial'
+                            ? 'Période d’essai'
+                            : entitlements.status == 'active'
+                                ? 'Abonnement actif'
+                                : 'Accès ${entitlements.status}',
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.62),
+                            fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _PlanLimit(
+                    label:
+                        '$vehicleLimit véhicule${vehicleLimit > 1 ? 's' : ''}'),
+                _PlanLimit(label: '$zoneLimit zone${zoneLimit > 1 ? 's' : ''}'),
+                _PlanLimit(label: '$historyDays j d’historique'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanLimit extends StatelessWidget {
+  final String label;
+  const _PlanLimit({required this.label});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Text(label,
+            style: const TextStyle(color: Colors.white, fontSize: 11.5)),
+      );
 }
 
 // ── Profile Card ──────────────────────────────────────────────────────────────

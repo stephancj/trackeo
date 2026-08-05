@@ -6,6 +6,7 @@ import { User, UserRole } from '../users/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './jwt.strategy';
+import { EntitlementsService } from '../entitlements/entitlements.service';
 
 export interface AuthResponse {
   access_token: string;
@@ -23,6 +24,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly entitlementsService: EntitlementsService,
   ) {}
 
   async login(dto: LoginDto): Promise<AuthResponse> {
@@ -50,6 +52,7 @@ export class AuthService {
       phone: dto.phone,
       role: UserRole.USER,
     });
+    await this.entitlementsService.ensureDefaultSubscription(user.id);
     return this.buildResponse(user);
   }
 

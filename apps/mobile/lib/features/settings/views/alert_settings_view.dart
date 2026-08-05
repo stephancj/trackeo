@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../entitlements/providers/entitlements_provider.dart';
 
 class AlertSettingsView extends ConsumerStatefulWidget {
   const AlertSettingsView({super.key});
@@ -48,6 +49,11 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
     final hasPhone = user?.phone?.isNotEmpty == true;
+    final rights = ref.watch(entitlementsProvider).valueOrNull;
+    final lowBatteryIncluded = rights?.has('low_battery_alerts') ?? true;
+    final speedIncluded = rights?.has('speed_alerts') ?? true;
+    final pushIncluded = rights?.has('push_notifications') ?? true;
+    final whatsappIncluded = rights?.has('whatsapp_notifications') ?? true;
 
     if (!_initialized && user != null) {
       _alertsEnabled = user.alertsEnabled;
@@ -96,12 +102,12 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
             _buildSectionHeader('TYPES D\'ALERTES',
                 subtitle: 'Ce qui déclenche une alerte'),
             const SizedBox(height: 12),
-            _buildAlertTypes(),
+            _buildAlertTypes(lowBatteryIncluded, speedIncluded),
             const SizedBox(height: 28),
             _buildSectionHeader('CANAUX',
                 subtitle: 'Comment vous êtes prévenu'),
             const SizedBox(height: 12),
-            _buildNotificationMethods(hasPhone),
+            _buildNotificationMethods(hasPhone, pushIncluded, whatsappIncluded),
             const SizedBox(height: 32),
           ],
         ),
@@ -220,7 +226,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
     );
   }
 
-  Widget _buildAlertTypes() {
+  Widget _buildAlertTypes(bool lowBatteryIncluded, bool speedIncluded) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -239,7 +245,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
               HapticFeedback.selectionClick();
               setState(() => _lowBattery = v);
             },
-            isEnabled: _alertsEnabled,
+            isEnabled: _alertsEnabled && lowBatteryIncluded,
           ),
           const Divider(height: 1, indent: 64, color: AppColors.divider),
           _buildSettingItem(
@@ -253,7 +259,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
               HapticFeedback.selectionClick();
               setState(() => _speedLimit = v);
             },
-            isEnabled: _alertsEnabled,
+            isEnabled: _alertsEnabled && speedIncluded,
           ),
         ],
       ),
@@ -373,7 +379,11 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
     );
   }
 
-  Widget _buildNotificationMethods(bool hasPhone) {
+  Widget _buildNotificationMethods(
+    bool hasPhone,
+    bool pushIncluded,
+    bool whatsappIncluded,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -394,7 +404,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
               HapticFeedback.selectionClick();
               setState(() => _pushNotification = v);
             },
-            isEnabled: _alertsEnabled,
+            isEnabled: _alertsEnabled && pushIncluded,
           ),
           const Divider(height: 1, indent: 64, color: AppColors.divider),
           _buildSettingItem(
@@ -410,8 +420,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
               HapticFeedback.selectionClick();
               setState(() => _whatsAppNotification = v);
             },
-            isEnabled: _alertsEnabled && hasPhone,
-            showWarning: !hasPhone,
+            isEnabled: _alertsEnabled && hasPhone && whatsappIncluded,
+            showWarning: !hasPhone || !whatsappIncluded,
           ),
         ],
       ),

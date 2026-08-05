@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Put,
   Delete,
   Param,
   Body,
@@ -16,7 +17,16 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { AdminService } from './admin.service';
-import { CreateUserDto, UpdateUserDto } from './admin.dto';
+import {
+  CreateFeatureDto,
+  CreatePlanDto,
+  CreateUserDto,
+  ReplacePlanFeaturesDto,
+  UpdateFeatureDto,
+  UpdatePlanDto,
+  UpdateSubscriptionDto,
+  UpdateUserDto,
+} from './admin.dto';
 
 /**
  * Routes admin — accessibles uniquement aux users avec role = 'admin'.
@@ -39,6 +49,70 @@ import { CreateUserDto, UpdateUserDto } from './admin.dto';
 @Roles('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
+
+  // ── Commercial catalogue ────────────────────────────────────────────────
+
+  @Get('features')
+  listFeatures() {
+    return this.adminService.listFeatures();
+  }
+
+  @Post('features')
+  createFeature(@Body() body: CreateFeatureDto) {
+    return this.adminService.createFeature(body);
+  }
+
+  @Patch('features/:id')
+  updateFeature(@Param('id') id: string, @Body() body: UpdateFeatureDto) {
+    return this.adminService.updateFeature(id, body);
+  }
+
+  @Delete('features/:id')
+  deactivateFeature(@Param('id') id: string) {
+    return this.adminService.deactivateFeature(id);
+  }
+
+  @Get('plans')
+  listPlans() {
+    return this.adminService.listPlans();
+  }
+
+  @Get('plans/:id')
+  getPlan(@Param('id') id: string) {
+    return this.adminService.getPlan(id);
+  }
+
+  @Post('plans')
+  createPlan(@Body() body: CreatePlanDto) {
+    return this.adminService.createPlan({
+      ...body,
+      priceMonthly: String(body.priceMonthly),
+    });
+  }
+
+  @Patch('plans/:id')
+  updatePlan(@Param('id') id: string, @Body() body: UpdatePlanDto) {
+    const { priceMonthly, ...rest } = body;
+    return this.adminService.updatePlan(id, {
+      ...rest,
+      ...(priceMonthly !== undefined
+        ? { priceMonthly: String(priceMonthly) }
+        : {}),
+    });
+  }
+
+  @Delete('plans/:id')
+  deactivatePlan(@Param('id') id: string) {
+    return this.adminService.deactivatePlan(id);
+  }
+
+  @Put('plans/:id/features')
+  replacePlanFeatures(
+    @Param('id') id: string,
+    @Body() body: ReplacePlanFeaturesDto,
+  ) {
+    return this.adminService.replacePlanFeatures(id, body.features);
+  }
 
   // ── Users ────────────────────────────────────────────────────────────────
 
@@ -135,9 +209,7 @@ export class AdminController {
   }
 
   @Get('reports/vehicles')
-  getVehicleReports(
-    @Query('period') period: 'today' | '7d' | '30d' = '7d',
-  ) {
+  getVehicleReports(@Query('period') period: 'today' | '7d' | '30d' = '7d') {
     return this.adminService.getVehicleReports(period);
   }
 
@@ -158,7 +230,9 @@ export class AdminController {
     @Query('to') to: string,
   ) {
     const now = new Date();
-    const fromDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const fromDate = from
+      ? new Date(from)
+      : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
     const toDate = to ? new Date(to) : now;
     return this.adminService.getVehicleTripLog(deviceId, fromDate, toDate);
   }
@@ -172,10 +246,17 @@ export class AdminController {
     @Query('threshold') threshold?: string,
   ) {
     const now = new Date();
-    const fromDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const fromDate = from
+      ? new Date(from)
+      : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
     const toDate = to ? new Date(to) : now;
     const thresholdKmh = threshold ? parseInt(threshold, 10) : 120;
-    return this.adminService.getVehicleSpeedViolations(deviceId, fromDate, toDate, thresholdKmh);
+    return this.adminService.getVehicleSpeedViolations(
+      deviceId,
+      fromDate,
+      toDate,
+      thresholdKmh,
+    );
   }
 
   /** Temps d'immobilisation moteur allumé pour un véhicule */
@@ -186,7 +267,9 @@ export class AdminController {
     @Query('to') to: string,
   ) {
     const now = new Date();
-    const fromDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const fromDate = from
+      ? new Date(from)
+      : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
     const toDate = to ? new Date(to) : now;
     return this.adminService.getVehicleIdleTime(deviceId, fromDate, toDate);
   }
@@ -199,9 +282,15 @@ export class AdminController {
     @Query('to') to: string,
   ) {
     const now = new Date();
-    const fromDate = from ? new Date(from) : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+    const fromDate = from
+      ? new Date(from)
+      : new Date(now.getTime() - 7 * 24 * 3600 * 1000);
     const toDate = to ? new Date(to) : now;
-    return this.adminService.getVehicleGeofenceActivity(deviceId, fromDate, toDate);
+    return this.adminService.getVehicleGeofenceActivity(
+      deviceId,
+      fromDate,
+      toDate,
+    );
   }
 
   // ── Subscriptions ─────────────────────────────────────────────────────────
@@ -215,15 +304,8 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   upsertSubscription(
     @Param('userId', ParseIntPipe) userId: number,
-    @Body()
-    body: {
-      plan?: string;
-      status?: string;
-      nextBillingDate?: string | null;
-      trialEndsAt?: string | null;
-      notes?: string | null;
-    },
+    @Body() body: UpdateSubscriptionDto,
   ) {
-    return this.adminService.upsertSubscription(userId, body as Parameters<AdminService['upsertSubscription']>[1]);
+    return this.adminService.upsertSubscription(userId, body);
   }
 }

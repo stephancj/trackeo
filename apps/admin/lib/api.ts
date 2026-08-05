@@ -53,6 +53,11 @@ export const deleteGeofence = (id: string) => api.delete(`/admin/geofences/${id}
 // Alerts
 export const getAlerts = () => api.get("/admin/alerts");
 export const ackAlert = (id: string) => api.patch(`/admin/alerts/${id}`);
+export const getIncidents = () => api.get("/admin/incidents");
+export const updateIncident = (id: string, status: string, note?: string) =>
+  api.patch(`/admin/incidents/${id}`, { status, note });
+export const getIncidentEvents = (id: string) =>
+  api.get(`/admin/incidents/${id}/events`);
 
 // Reports — fleet overview
 export const getReportsOverview = () => api.get("/admin/reports/overview");
@@ -101,6 +106,7 @@ export const getSubscriptions = () => api.get("/admin/subscriptions");
 export const upsertSubscription = (
   userId: number,
   data: {
+    planId?: string;
     plan?: string;
     status?: string;
     nextBillingDate?: string | null;
@@ -108,3 +114,52 @@ export const upsertSubscription = (
     notes?: string | null;
   }
 ) => api.patch(`/admin/subscriptions/${userId}`, data);
+
+// Commercial catalogue
+export type FeatureValueType = "boolean" | "number" | "string";
+
+export interface FeatureDefinition {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  category: string;
+  valueType: FeatureValueType;
+  unit: string | null;
+  isActive: boolean;
+  displayOrder: number;
+}
+
+export interface PlanFeatureDefinition {
+  id: string;
+  featureId: string;
+  enabled: boolean;
+  value: boolean | number | string | null;
+  feature: FeatureDefinition;
+}
+
+export interface CommercialPlan {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  priceMonthly: string;
+  currency: string;
+  isActive: boolean;
+  displayOrder: number;
+  planFeatures: PlanFeatureDefinition[];
+}
+
+export const getFeatures = () => api.get<FeatureDefinition[]>("/admin/features");
+export const createFeature = (data: unknown) => api.post("/admin/features", data);
+export const updateFeature = (id: string, data: unknown) => api.patch(`/admin/features/${id}`, data);
+export const deactivateFeature = (id: string) => api.delete(`/admin/features/${id}`);
+
+export const getPlans = () => api.get<CommercialPlan[]>("/admin/plans");
+export const createPlan = (data: unknown) => api.post("/admin/plans", data);
+export const updatePlan = (id: string, data: unknown) => api.patch(`/admin/plans/${id}`, data);
+export const deactivatePlan = (id: string) => api.delete(`/admin/plans/${id}`);
+export const replacePlanFeatures = (
+  id: string,
+  features: Array<{ featureId: string; enabled: boolean; value?: boolean | number | string | null }>,
+) => api.put(`/admin/plans/${id}/features`, { features });

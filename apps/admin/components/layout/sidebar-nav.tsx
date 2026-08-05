@@ -17,6 +17,10 @@ import {
   Map,
   Search,
   LayoutDashboard,
+  Boxes,
+  Layers3,
+  CreditCard,
+  ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -62,7 +66,11 @@ export function SidebarNav() {
       icon: Bell,
       badge: openAlerts > 0 ? openAlerts : undefined,
     },
+    { href: "/incidents", label: "Incidents sécurité", icon: ShieldAlert },
     { href: "/reports", label: "Rapports", icon: BarChart2 },
+    { href: "/features", label: "Fonctionnalités", icon: Boxes },
+    { href: "/plans", label: "Plans", icon: Layers3 },
+    { href: "/subscriptions", label: "Abonnements", icon: CreditCard },
     { href: "/settings", label: "Configuration", icon: Settings },
   ];
 

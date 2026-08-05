@@ -150,6 +150,8 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
       case 'speed_limit':
         return AppColors.statusAlert;
       case 'sleep_movement':
+      case 'theft':
+      case 'sos':
         return AppColors.statusAlert;
       default:
         return AppColors.primary;
@@ -168,6 +170,10 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
         return Icons.speed_rounded;
       case 'sleep_movement':
         return Icons.warning_amber_rounded;
+      case 'theft':
+        return Icons.shield_rounded;
+      case 'sos':
+        return Icons.sos_rounded;
       default:
         return Icons.notifications_rounded;
     }
@@ -185,6 +191,10 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
         return 'Excès de vitesse';
       case 'sleep_movement':
         return 'Mouvement en veille';
+      case 'theft':
+        return 'Vol déclaré';
+      case 'sos':
+        return 'SOS';
       default:
         return _alert.type;
     }
@@ -202,6 +212,10 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
         return 'Vitesse';
       case 'sleep_movement':
         return 'Veille antivol';
+      case 'theft':
+        return 'Sécurité · Vol';
+      case 'sos':
+        return 'Sécurité · SOS';
       default:
         return _alert.type;
     }

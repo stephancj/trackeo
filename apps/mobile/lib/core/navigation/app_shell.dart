@@ -6,6 +6,7 @@ import '../../features/map/views/map_view.dart';
 import '../../features/alerts/views/alerts_view.dart';
 import '../../features/settings/views/settings_view.dart';
 import '../../features/reports/views/reports_view.dart';
+import '../../features/entitlements/views/feature_gate.dart';
 
 /// Index : 0=Véhicules, 1=Carte, 2=Alertes, 3=Rapports, 4=Réglages.
 final activeTabProvider = StateProvider<int>((ref) => 0);
@@ -24,7 +25,19 @@ class AppShell extends ConsumerWidget {
           FleetListView(),
           MapView(),
           AlertsView(),
-          ReportsView(),
+          FeatureGate(
+            anyOf: [
+              'activity_reports',
+              'trip_reports',
+              'speed_reports',
+              'idle_reports',
+              'geofence_reports',
+            ],
+            title: 'Rapports avancés',
+            description:
+                'Les rapports détaillés sont disponibles avec les plans Basic et Premium.',
+            child: ReportsView(),
+          ),
           SettingsView(),
         ],
       ),

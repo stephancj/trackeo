@@ -15,6 +15,10 @@ import { NotificationsModule } from './notifications/notifications.module';
 import databaseConfig from './config/database.config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WaitlistModule } from './waitlist/waitlist.module';
+import { EntitlementsModule } from './entitlements/entitlements.module';
+import { SecurityModule } from './security/security.module';
+import { PaymentsModule } from './payments/payments.module';
+import { TripsModule } from './trips/trips.module';
 
 @Module({
   imports: [
@@ -33,6 +37,10 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     AlertsModule,
     NotificationsModule,
     WaitlistModule,
+    EntitlementsModule,
+    SecurityModule,
+    PaymentsModule,
+    TripsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

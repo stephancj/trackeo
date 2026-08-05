@@ -50,6 +50,7 @@ class ActivitySummary extends Equatable {
 }
 
 class TripLogEntry extends Equatable {
+  final String? id;
   final DateTime startTime;
   final DateTime endTime;
   final double startLat;
@@ -60,8 +61,10 @@ class TripLogEntry extends Equatable {
   final int durationMin;
   final double maxSpeedKmh;
   final int pointCount;
+  final List<TripPoint> path;
 
   const TripLogEntry({
+    this.id,
     required this.startTime,
     required this.endTime,
     required this.startLat,
@@ -72,9 +75,11 @@ class TripLogEntry extends Equatable {
     required this.durationMin,
     required this.maxSpeedKmh,
     required this.pointCount,
+    this.path = const [],
   });
 
   factory TripLogEntry.fromJson(Map<String, dynamic> json) => TripLogEntry(
+        id: json['id'] as String?,
         startTime: DateTime.parse(json['startTime'] as String),
         endTime: DateTime.parse(json['endTime'] as String),
         startLat: (json['startLat'] as num).toDouble(),
@@ -82,13 +87,35 @@ class TripLogEntry extends Equatable {
         endLat: (json['endLat'] as num).toDouble(),
         endLon: (json['endLon'] as num).toDouble(),
         distanceKm: (json['distanceKm'] as num).toDouble(),
-        durationMin: (json['durationMin'] as num).toInt(),
+        durationMin: json['durationMin'] != null
+            ? (json['durationMin'] as num).toInt()
+            : ((json['durationSec'] as num?)?.toInt() ?? 0) ~/ 60,
         maxSpeedKmh: (json['maxSpeedKmh'] as num).toDouble(),
         pointCount: (json['pointCount'] as num).toInt(),
+        path: ((json['path'] as List<dynamic>?) ?? const [])
+            .map((e) => TripPoint.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList(),
       );
 
   @override
   List<Object?> get props => [startTime, endTime, distanceKm, durationMin];
+}
+
+class TripPoint {
+  final double lat;
+  final double lon;
+  final DateTime at;
+  final double speedKmh;
+  const TripPoint(
+      {required this.lat,
+      required this.lon,
+      required this.at,
+      required this.speedKmh});
+  factory TripPoint.fromJson(Map<String, dynamic> json) => TripPoint(
+      lat: (json['lat'] as num).toDouble(),
+      lon: (json['lon'] as num).toDouble(),
+      at: DateTime.parse(json['at'] as String),
+      speedKmh: (json['speedKmh'] as num?)?.toDouble() ?? 0);
 }
 
 class SpeedViolation extends Equatable {
@@ -193,6 +220,5 @@ class GeofenceActivityEntry extends Equatable {
       );
 
   @override
-  List<Object?> get props =>
-      [geofenceId, enterCount, exitCount, lastEventAt];
+  List<Object?> get props => [geofenceId, enterCount, exitCount, lastEventAt];
 }

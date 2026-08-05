@@ -7,6 +7,7 @@ import { DeviceAssignment } from '../admin/device-assignment.entity';
 import { VehiclesService } from './vehicles.service';
 import { VehiclesController } from './vehicles.controller';
 import { VehicleSleepMode } from './vehicle-sleep-mode.entity';
+import { EntitlementsModule } from '../entitlements/entitlements.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { VehicleSleepMode } from './vehicle-sleep-mode.entity';
     PositionsModule, // fournit PositionsService
     AlertsModule, // fournit AlertsService (geofence activity report)
     TypeOrmModule.forFeature([DeviceAssignment, VehicleSleepMode]),
+    EntitlementsModule,
   ],
   controllers: [VehiclesController],
   providers: [VehiclesService],

@@ -1,13 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { DeviceAssignment } from './device-assignment.entity';
 import {
-  Subscription,
-  SubscriptionPlan,
-  SubscriptionStatus,
-  PLAN_VEHICLE_LIMITS,
-} from './subscription.entity';
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
+import { DeviceAssignment } from './device-assignment.entity';
+import { Subscription, SubscriptionStatus } from './subscription.entity';
 import { UsersService } from '../users/users.service';
 import { DevicesService } from '../devices/devices.service';
 import { VehiclesService } from '../vehicles/vehicles.service';
@@ -16,6 +15,10 @@ import { AlertsService } from '../alerts/alerts.service';
 import { PositionsService } from '../positions/positions.service';
 import { CreateUserDto, UpdateUserDto } from './admin.dto';
 import { UserRole } from '../users/user.entity';
+import { Feature, FeatureValueType } from '../entitlements/feature.entity';
+import { Plan } from '../entitlements/plan.entity';
+import { PlanFeature } from '../entitlements/plan-feature.entity';
+import { EntitlementsService } from '../entitlements/entitlements.service';
 
 @Injectable()
 export class AdminService {
@@ -24,13 +27,156 @@ export class AdminService {
     private readonly assignmentRepo: Repository<DeviceAssignment>,
     @InjectRepository(Subscription)
     private readonly subscriptionRepo: Repository<Subscription>,
+    @InjectRepository(Feature)
+    private readonly featureRepo: Repository<Feature>,
+    @InjectRepository(Plan)
+    private readonly planRepo: Repository<Plan>,
+    @InjectRepository(PlanFeature)
+    private readonly planFeatureRepo: Repository<PlanFeature>,
     private readonly usersService: UsersService,
     private readonly devicesService: DevicesService,
     private readonly vehiclesService: VehiclesService,
     private readonly geofencesService: GeofencesService,
     private readonly alertsService: AlertsService,
     private readonly positionsService: PositionsService,
+    private readonly entitlementsService: EntitlementsService,
   ) {}
+
+  // ── Feature catalogue & plans ────────────────────────────────────────────
+
+  listFeatures() {
+    return this.featureRepo.find({
+      order: { category: 'ASC', displayOrder: 'ASC', name: 'ASC' },
+    });
+  }
+
+  async createFeature(data: Partial<Feature>) {
+    const code = String(data.code ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_');
+    if (!code) throw new NotFoundException('Feature code is required');
+    return this.featureRepo.save(this.featureRepo.create({ ...data, code }));
+  }
+
+  async updateFeature(id: string, data: Partial<Feature>) {
+    const feature = await this.featureRepo.findOne({ where: { id } });
+    if (!feature) throw new NotFoundException(`Feature ${id} not found`);
+    Object.assign(feature, data, { code: feature.code });
+    return this.featureRepo.save(feature);
+  }
+
+  async deactivateFeature(id: string) {
+    return this.updateFeature(id, { isActive: false });
+  }
+
+  listPlans() {
+    return this.planRepo.find({
+      relations: { planFeatures: { feature: true } },
+      order: { displayOrder: 'ASC', name: 'ASC' },
+    });
+  }
+
+  async getPlan(id: string) {
+    const plan = await this.planRepo.findOne({
+      where: { id },
+      relations: { planFeatures: { feature: true } },
+    });
+    if (!plan) throw new NotFoundException(`Plan ${id} not found`);
+    return plan;
+  }
+
+  async createPlan(data: Partial<Plan>) {
+    const code = String(data.code ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_');
+    return this.planRepo.save(this.planRepo.create({ ...data, code }));
+  }
+
+  async updatePlan(id: string, data: Partial<Plan>) {
+    const plan = await this.getPlan(id);
+    Object.assign(plan, data, {
+      code: plan.code,
+      planFeatures: plan.planFeatures,
+    });
+    return this.planRepo.save(plan);
+  }
+
+  async deactivatePlan(id: string) {
+    const subscriptions = await this.subscriptionRepo.count({
+      where: { planId: id },
+    });
+    if (subscriptions > 0) {
+      throw new NotFoundException(
+        'Ce plan est encore utilisé par des abonnements.',
+      );
+    }
+    return this.updatePlan(id, { isActive: false });
+  }
+
+  async replacePlanFeatures(
+    planId: string,
+    inputs: Array<{
+      featureId: string;
+      enabled: boolean;
+      value?: boolean | number | string | null;
+    }>,
+  ) {
+    await this.getPlan(planId);
+    const ids = inputs.map((item) => item.featureId);
+    const features = ids.length
+      ? await this.featureRepo.find({ where: { id: In(ids) } })
+      : [];
+    if (features.length !== new Set(ids).size)
+      throw new NotFoundException('Une fonctionnalité est introuvable.');
+    const featureMap = new Map(
+      features.map((feature) => [feature.id, feature]),
+    );
+
+    const rows = inputs.map((input) => {
+      const feature = featureMap.get(input.featureId)!;
+      let value = input.value ?? null;
+      if (feature.valueType === FeatureValueType.NUMBER) {
+        value = Number(value);
+        if (!Number.isFinite(value) || Number(value) < 0) {
+          throw new NotFoundException(
+            `Valeur numérique invalide pour ${feature.name}.`,
+          );
+        }
+      } else if (feature.valueType === FeatureValueType.BOOLEAN) {
+        value = true;
+      } else if (value != null) {
+        value = String(value);
+      }
+      return this.planFeatureRepo.create({
+        planId,
+        featureId: feature.id,
+        enabled: input.enabled,
+        value,
+      });
+    });
+
+    await this.planFeatureRepo.manager.transaction(async (manager) => {
+      await manager.delete(PlanFeature, { planId });
+      if (rows.length) await manager.save(PlanFeature, rows);
+    });
+
+    const maxVehicles = rows.find(
+      (row) => featureMap.get(row.featureId)?.code === 'max_vehicles',
+    );
+    if (maxVehicles && typeof maxVehicles.value === 'number') {
+      await this.subscriptionRepo.update(
+        { planId },
+        { vehicleLimit: maxVehicles.value },
+      );
+    }
+    const subscribers = await this.subscriptionRepo.find({ where: { planId } });
+    subscribers.forEach((subscription) =>
+      this.entitlementsService.invalidate(subscription.userId),
+    );
+    return this.getPlan(planId);
+  }
 
   // ── Users ────────────────────────────────────────────────────────────────
 
@@ -55,12 +201,14 @@ export class AdminService {
   }
 
   async createUser(dto: CreateUserDto) {
-    return this.usersService.create({
+    const user = await this.usersService.create({
       email: dto.email,
       password: dto.password,
       name: dto.name,
       role: dto.role ?? UserRole.USER,
     });
+    await this.entitlementsService.ensureDefaultSubscription(user.id);
+    return user;
   }
 
   async updateUser(userId: number, dto: UpdateUserDto) {
@@ -121,7 +269,9 @@ export class AdminService {
       return {
         ...v,
         assignedUserId: assignment?.userId ?? null,
-        assignedUserName: assignment ? (userMap.get(assignment.userId) ?? null) : null,
+        assignedUserName: assignment
+          ? (userMap.get(assignment.userId) ?? null)
+          : null,
         openAlertsCount: openAlertsByDevice.get(v.id) ?? 0,
       };
     });
@@ -269,9 +419,7 @@ export class AdminService {
     ]);
 
     const userMap = new Map(users.map((u) => [u.id, u.name ?? u.email]));
-    const periodAlerts = allAlerts.filter(
-      (a) => new Date(a.createdAt) >= from,
-    );
+    const periodAlerts = allAlerts.filter((a) => new Date(a.createdAt) >= from);
 
     const results = await Promise.all(
       vehicles.map(async (v) => {
@@ -308,12 +456,19 @@ export class AdminService {
 
   /** Liste tous les users avec leur abonnement (crée un enregistrement free/trial si absent) */
   async listSubscriptions() {
-    const [users, subs] = await Promise.all([
+    const [users, plans] = await Promise.all([
       this.usersService.findAll(),
-      this.subscriptionRepo.find(),
+      this.planRepo.find(),
     ]);
+    await Promise.all(
+      users.map((user) =>
+        this.entitlementsService.ensureDefaultSubscription(user.id),
+      ),
+    );
+    const subs = await this.subscriptionRepo.find();
 
     const subMap = new Map(subs.map((s) => [s.userId, s]));
+    const planMap = new Map(plans.map((plan) => [plan.id, plan]));
 
     return users.map((u) => {
       const sub = subMap.get(u.id);
@@ -323,7 +478,14 @@ export class AdminService {
         email: u.email,
         phone: u.phone,
         isActive: u.isActive,
-        subscription: sub ?? null,
+        subscription: sub
+          ? {
+              ...sub,
+              planDetails: sub.planId
+                ? (planMap.get(sub.planId) ?? null)
+                : null,
+            }
+          : null,
       };
     });
   }
@@ -332,7 +494,8 @@ export class AdminService {
   async upsertSubscription(
     userId: number,
     data: {
-      plan?: SubscriptionPlan;
+      planId?: string;
+      plan?: string;
       status?: SubscriptionStatus;
       nextBillingDate?: string | null;
       trialEndsAt?: string | null;
@@ -342,20 +505,30 @@ export class AdminService {
     const user = await this.usersService.findByIdAdmin(userId);
     if (!user) throw new NotFoundException(`User ${userId} not found`);
 
-    let sub = await this.subscriptionRepo.findOne({ where: { userId } });
+    const sub =
+      await this.entitlementsService.ensureDefaultSubscription(userId);
 
-    if (!sub) {
-      sub = this.subscriptionRepo.create({
-        userId,
-        plan: SubscriptionPlan.FREE,
-        status: SubscriptionStatus.TRIAL,
-        vehicleLimit: PLAN_VEHICLE_LIMITS[SubscriptionPlan.FREE],
+    if (data.planId || data.plan) {
+      const targetPlan = data.planId
+        ? await this.planRepo.findOne({
+            where: { id: data.planId, isActive: true },
+          })
+        : await this.planRepo.findOne({
+            where: { code: data.plan!, isActive: true },
+          });
+      if (!targetPlan)
+        throw new BadRequestException('Plan invalide ou inactif.');
+      sub.planId = targetPlan.id;
+      sub.plan = targetPlan.code;
+      const allFeatures = await this.planFeatureRepo.find({
+        where: { planId: targetPlan.id },
+        relations: { feature: true },
       });
-    }
-
-    if (data.plan) {
-      sub.plan = data.plan;
-      sub.vehicleLimit = PLAN_VEHICLE_LIMITS[data.plan];
+      const vehicleGrant = allFeatures.find(
+        (item) => item.feature?.code === 'max_vehicles',
+      );
+      sub.vehicleLimit =
+        typeof vehicleGrant?.value === 'number' ? vehicleGrant.value : 0;
     }
     if (data.status) sub.status = data.status;
     if (data.nextBillingDate !== undefined)
@@ -366,12 +539,17 @@ export class AdminService {
       sub.trialEndsAt = data.trialEndsAt ? new Date(data.trialEndsAt) : null;
     if (data.notes !== undefined) sub.notes = data.notes ?? null;
 
-    return this.subscriptionRepo.save(sub);
+    const saved = await this.subscriptionRepo.save(sub);
+    this.entitlementsService.invalidate(userId);
+    return saved;
   }
 
   // ── Detailed vehicle reports ──────────────────────────────────────────────
 
-  private periodToDates(period: 'today' | '7d' | '30d'): { from: Date; to: Date } {
+  private periodToDates(period: 'today' | '7d' | '30d'): {
+    from: Date;
+    to: Date;
+  } {
     const now = new Date();
     let from: Date;
     if (period === 'today') {
@@ -425,7 +603,9 @@ export class AdminService {
   async getVehicleIdleTime(deviceId: number, from: Date, to: Date) {
     const episodes = await this.positionsService
       .getIdleTime(deviceId, from, to)
-      .catch((): Awaited<ReturnType<typeof this.positionsService.getIdleTime>> => []);
+      .catch(
+        (): Awaited<ReturnType<typeof this.positionsService.getIdleTime>> => [],
+      );
     const totalIdleMinutes = episodes.reduce((s, e) => s + e.durationMin, 0);
     return { deviceId, from, to, totalIdleMinutes, episodes };
   }

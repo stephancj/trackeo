@@ -6,18 +6,28 @@ import {
   CreateGeofenceDto,
   UpdateGeofenceDto,
 } from './dto/create-geofence.dto';
+import { EntitlementsService } from '../entitlements/entitlements.service';
 
 @Injectable()
 export class GeofencesService {
   constructor(
     @InjectRepository(Geofence)
     private readonly geofencesRepository: Repository<Geofence>,
+    private readonly entitlementsService: EntitlementsService,
   ) {}
 
   async create(
     userId: number,
     createGeofenceDto: CreateGeofenceDto,
   ): Promise<Geofence> {
+    await this.entitlementsService.assertFeature(userId, 'geofence_alerts');
+    await this.entitlementsService.assertCanAddGeofence(userId);
+    if (createGeofenceDto.alertViaWhatsapp) {
+      await this.entitlementsService.assertFeature(
+        userId,
+        'whatsapp_notifications',
+      );
+    }
     const geofence = this.geofencesRepository.create({
       ...createGeofenceDto,
       userId,
@@ -53,6 +63,12 @@ export class GeofencesService {
     userId: number,
     updateGeofenceDto: UpdateGeofenceDto,
   ): Promise<Geofence> {
+    if (updateGeofenceDto.alertViaWhatsapp) {
+      await this.entitlementsService.assertFeature(
+        userId,
+        'whatsapp_notifications',
+      );
+    }
     const geofence = await this.findOne(id, userId);
     Object.assign(geofence, updateGeofenceDto);
     return this.geofencesRepository.save(geofence);

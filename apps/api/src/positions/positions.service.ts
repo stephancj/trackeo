@@ -251,11 +251,11 @@ export class PositionsService {
       // Déplacement net (diagonale de la bounding box) : robuste au jitter GPS
       // d'un véhicule stationné, dont la distance cumulée gonfle alors qu'il
       // n'a pas bougé. < 150 m ⇒ stationné, pas un trajet.
-      const spanM =
-        this.haversine(minLat, minLon, maxLat, maxLon) * 1000;
+      const spanM = this.haversine(minLat, minLon, maxLat, maxLon) * 1000;
       if (spanM < 150) return;
       const durationMin = Math.round(
-        (seg[seg.length - 1].deviceTime.getTime() - seg[0].deviceTime.getTime()) /
+        (seg[seg.length - 1].deviceTime.getTime() -
+          seg[0].deviceTime.getTime()) /
           60000,
       );
       trips.push({
@@ -329,7 +329,8 @@ export class PositionsService {
       } else {
         if (inViolation && episodeStart) {
           const dur = Math.round(
-            (pos.deviceTime.getTime() - episodeStart.deviceTime.getTime()) / 1000,
+            (pos.deviceTime.getTime() - episodeStart.deviceTime.getTime()) /
+              1000,
           );
           violations.push({
             startTime: episodeStart.deviceTime,
@@ -355,7 +356,8 @@ export class PositionsService {
         lon: episodeStart.longitude,
         maxSpeedKmh: Math.round(maxSpd * 10) / 10,
         durationSec: Math.round(
-          (last.deviceTime.getTime() - episodeStart.deviceTime.getTime()) / 1000,
+          (last.deviceTime.getTime() - episodeStart.deviceTime.getTime()) /
+            1000,
         ),
       });
     }
@@ -402,7 +404,8 @@ export class PositionsService {
       // Check gap from previous point
       let gapOk = true;
       if (i > 0) {
-        const gap = pos.deviceTime.getTime() - positions[i - 1].deviceTime.getTime();
+        const gap =
+          pos.deviceTime.getTime() - positions[i - 1].deviceTime.getTime();
         if (gap > MAX_GAP_MS) gapOk = false;
       }
 
@@ -413,7 +416,9 @@ export class PositionsService {
         }
       } else {
         if (inIdle && idleStart) {
-          const dur = positions[i - 1].deviceTime.getTime() - idleStart.deviceTime.getTime();
+          const dur =
+            positions[i - 1].deviceTime.getTime() -
+            idleStart.deviceTime.getTime();
           if (dur >= MIN_DURATION_MS) {
             episodes.push({
               startTime: idleStart.deviceTime,
@@ -492,7 +497,12 @@ export class PositionsService {
     };
   }
 
-  private haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  private haversine(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;

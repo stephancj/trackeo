@@ -46,9 +46,11 @@ class _StatCardSkeleton extends StatelessWidget {
         children: [
           const SkeletonCircle(size: 28),
           const SizedBox(height: 10),
-          SkeletonBox(width: 52, height: 18, borderRadius: BorderRadius.circular(4)),
+          SkeletonBox(
+              width: 52, height: 18, borderRadius: BorderRadius.circular(4)),
           const SizedBox(height: 6),
-          SkeletonBox(width: 72, height: 10, borderRadius: BorderRadius.circular(4)),
+          SkeletonBox(
+              width: 72, height: 10, borderRadius: BorderRadius.circular(4)),
         ],
       ),
     );
@@ -139,11 +141,20 @@ class _ReportItemSkeleton extends StatelessWidget {
           // Bottom stats row
           Row(
             children: [
-              SkeletonBox(width: 56, height: 11, borderRadius: BorderRadius.circular(4)),
+              SkeletonBox(
+                  width: 56,
+                  height: 11,
+                  borderRadius: BorderRadius.circular(4)),
               const SizedBox(width: 20),
-              SkeletonBox(width: 48, height: 11, borderRadius: BorderRadius.circular(4)),
+              SkeletonBox(
+                  width: 48,
+                  height: 11,
+                  borderRadius: BorderRadius.circular(4)),
               const SizedBox(width: 20),
-              SkeletonBox(width: 48, height: 11, borderRadius: BorderRadius.circular(4)),
+              SkeletonBox(
+                  width: 48,
+                  height: 11,
+                  borderRadius: BorderRadius.circular(4)),
             ],
           ),
         ],

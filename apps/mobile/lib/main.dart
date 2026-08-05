@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:app_links/app_links.dart';
+import 'dart:async';
 import 'core/theme/app_theme.dart';
 import 'core/navigation/app_shell.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/views/login_view.dart';
+import 'features/payments/views/payment_return_view.dart';
+import 'features/security/views/public_tracking_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,17 +35,72 @@ void main() async {
   );
 }
 
-class IooehApp extends ConsumerWidget {
+class IooehApp extends ConsumerStatefulWidget {
   const IooehApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<IooehApp> createState() => _IooehAppState();
+}
+
+class _IooehAppState extends ConsumerState<IooehApp> {
+  final navigatorKey = GlobalKey<NavigatorState>();
+  StreamSubscription<Uri>? linksSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    linksSubscription = AppLinks().uriLinkStream.listen((uri) {
+      if (uri.host != 'app.iooeh.com') return;
+      final route = uri.hasQuery ? '${uri.path}?${uri.query}' : uri.path;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        navigatorKey.currentState?.pushNamed(route);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    linksSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'iooeh',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      onGenerateRoute: (settings) {
+        final uri = Uri.parse(settings.name ?? '/');
+        if (uri.path.startsWith('/track/')) {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => PublicTrackingView(
+              token: uri.pathSegments.length > 1 ? uri.pathSegments[1] : '',
+            ),
+          );
+        }
+        if (uri.path == '/payment/return') {
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => PaymentReturnView(
+              reference: uri.queryParameters['reference'] ?? '',
+              hintedStatus: uri.queryParameters['status'] ?? 'pending',
+            ),
+          );
+        }
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => switch (auth.status) {
+            AuthStatus.loading => const _SplashScreen(),
+            AuthStatus.authenticated => const AppShell(),
+            AuthStatus.unauthenticated => const LoginView(),
+          },
+        );
+      },
       home: switch (auth.status) {
         AuthStatus.loading => const _SplashScreen(),
         AuthStatus.authenticated => const AppShell(),

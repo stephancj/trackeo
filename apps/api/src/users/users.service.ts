@@ -7,12 +7,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './user.entity';
+import { EntitlementsService } from '../entitlements/entitlements.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly entitlementsService: EntitlementsService,
   ) {}
 
   /** Recherche par email ou téléphone (inclut le hash pour la validation). */
@@ -155,6 +157,30 @@ export class UsersService {
       alertViaWhatsapp?: boolean;
     },
   ): Promise<User | null> {
+    if (data.alertViaPush === true) {
+      await this.entitlementsService.assertFeature(
+        userId,
+        'push_notifications',
+      );
+    }
+    if (data.alertViaWhatsapp === true) {
+      await this.entitlementsService.assertFeature(
+        userId,
+        'whatsapp_notifications',
+      );
+    }
+    if (data.alertLowBattery === true) {
+      await this.entitlementsService.assertFeature(
+        userId,
+        'low_battery_alerts',
+      );
+    }
+    if (data.alertSpeedLimit === true) {
+      await this.entitlementsService.assertFeature(userId, 'speed_alerts');
+    }
+    if (data.alertSos === true) {
+      await this.entitlementsService.assertFeature(userId, 'sos_alerts');
+    }
     await this.userRepo.update(userId, data);
     return this.findById(userId);
   }

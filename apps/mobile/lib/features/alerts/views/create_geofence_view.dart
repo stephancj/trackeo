@@ -12,6 +12,7 @@ import '../providers/geofences_provider.dart';
 import '../models/geofence_model.dart';
 import '../models/geofence_type.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
+import '../../entitlements/providers/entitlements_provider.dart';
 
 class CreateGeofenceView extends ConsumerStatefulWidget {
   /// Pass a [geofence] to open in edit mode, null to create a new one.
@@ -324,6 +325,28 @@ class _CreateGeofenceViewState extends ConsumerState<CreateGeofenceView>
             borderRadius: BorderRadius.circular(12),
           ),
         ),
+      );
+      return;
+    }
+
+    if (!_isEditing) {
+      final rights = await ref.read(entitlementsProvider.future);
+      final zoneCount = ref.read(geofencesProvider).valueOrNull?.length ?? 0;
+      final limit = rights.limit('max_geofences');
+      if (zoneCount >= limit) {
+        _showSnack(
+          'Votre plan ${rights.planName} autorise $limit zone${limit > 1 ? 's' : ''}.',
+          Colors.orange.shade700,
+        );
+        return;
+      }
+    }
+
+    final rights = await ref.read(entitlementsProvider.future);
+    if (_alertViaWhatsapp && !rights.has('whatsapp_notifications')) {
+      _showSnack(
+        'WhatsApp n’est pas inclus dans votre plan.',
+        Colors.orange.shade700,
       );
       return;
     }

@@ -14,6 +14,7 @@ import { Device } from '../devices/device.entity';
 import { DeviceAssignment } from '../admin/device-assignment.entity';
 import { ClaimVehicleDto } from './dto/claim-vehicle.dto';
 import { VehicleSleepMode } from './vehicle-sleep-mode.entity';
+import { EntitlementsService } from '../entitlements/entitlements.service';
 
 @Injectable()
 export class VehiclesService {
@@ -24,6 +25,7 @@ export class VehiclesService {
     private readonly assignmentRepo: Repository<DeviceAssignment>,
     @InjectRepository(VehicleSleepMode)
     private readonly sleepModeRepo: Repository<VehicleSleepMode>,
+    private readonly entitlementsService: EntitlementsService,
   ) {}
 
   /**
@@ -82,6 +84,8 @@ export class VehiclesService {
         return this.buildVehicleDto(device);
       }
     }
+
+    await this.entitlementsService.assertCanAddVehicle(userId);
 
     if (!device) {
       if (!/^\d{15}$/.test(serialNumber)) {
@@ -150,6 +154,7 @@ export class VehiclesService {
     deviceId: number,
     ownerId: number,
   ): Promise<VehicleSleepMode> {
+    await this.entitlementsService.assertFeature(ownerId, 'sleep_mode');
     const vehicle = await this.findOne(deviceId);
     if (!vehicle.position || vehicle.status === 'offline') {
       throw new BadRequestException(

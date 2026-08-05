@@ -8,6 +8,14 @@ import { Geofence } from '../geofences/entities/geofence.entity';
 import { Alert } from '../alerts/entities/alert.entity';
 import { VehicleSleepMode } from '../vehicles/vehicle-sleep-mode.entity';
 import { WaitlistSubscriber } from '../waitlist/waitlist-subscriber.entity';
+import { Feature } from '../entitlements/feature.entity';
+import { Plan } from '../entitlements/plan.entity';
+import { PlanFeature } from '../entitlements/plan-feature.entity';
+import { SecurityIncident } from '../security/incident.entity';
+import { IncidentEvent } from '../security/incident-event.entity';
+import { PublicTrackingLink } from '../security/tracking-link.entity';
+import { Payment } from '../payments/payment.entity';
+import { Trip } from '../trips/trip.entity';
 import * as pg from 'pg';
 
 // Force parsing of 'timestamp without time zone' (OID 1114) as UTC.
@@ -30,6 +38,14 @@ export default (): TypeOrmModuleOptions => ({
     Alert,
     VehicleSleepMode,
     WaitlistSubscriber,
+    Feature,
+    Plan,
+    PlanFeature,
+    SecurityIncident,
+    IncidentEvent,
+    PublicTrackingLink,
+    Payment,
+    Trip,
   ],
   // migrations exclues du runtime — lancées manuellement via `npm run migration:run`
   synchronize: false,

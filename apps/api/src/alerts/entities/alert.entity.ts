@@ -12,6 +12,7 @@ export enum AlertType {
   LOW_BATTERY = 'low_battery',
   SPEED_LIMIT = 'speed_limit',
   SLEEP_MOVEMENT = 'sleep_movement',
+  THEFT = 'theft',
 }
 
 @Entity({ name: 'alerts' })

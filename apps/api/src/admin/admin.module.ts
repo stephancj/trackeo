@@ -10,10 +10,21 @@ import { VehiclesModule } from '../vehicles/vehicles.module';
 import { GeofencesModule } from '../geofences/geofences.module';
 import { AlertsModule } from '../alerts/alerts.module';
 import { PositionsModule } from '../positions/positions.module';
+import { EntitlementsModule } from '../entitlements/entitlements.module';
+import { Feature } from '../entitlements/feature.entity';
+import { Plan } from '../entitlements/plan.entity';
+import { PlanFeature } from '../entitlements/plan-feature.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DeviceAssignment, Subscription]),
+    TypeOrmModule.forFeature([
+      DeviceAssignment,
+      Subscription,
+      Feature,
+      Plan,
+      PlanFeature,
+    ]),
+    EntitlementsModule,
     UsersModule,
     DevicesModule,
     VehiclesModule,

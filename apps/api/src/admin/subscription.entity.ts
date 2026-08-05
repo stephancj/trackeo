@@ -35,12 +35,16 @@ export class Subscription {
   @Column({ name: 'user_id', unique: true })
   userId: number;
 
+  /** Relation normalisée vers `plans`; `plan` reste durant la transition. */
+  @Column({ name: 'plan_id', type: 'uuid', nullable: true })
+  planId: string | null;
+
   @Column({
     type: 'varchar',
     length: 50,
     default: SubscriptionPlan.FREE,
   })
-  plan: SubscriptionPlan;
+  plan: SubscriptionPlan | string;
 
   @Column({
     type: 'varchar',

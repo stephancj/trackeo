@@ -205,9 +205,7 @@ export class AlertsService {
     // Message format: "${vehicle.name} est entré dans la zone ${fence.name}"
     //                 "${vehicle.name} a quitté la zone ${fence.name}"
     return fences.map((fence) => {
-      const fenceAlerts = alerts.filter((a) =>
-        a.message?.includes(fence.name),
-      );
+      const fenceAlerts = alerts.filter((a) => a.message?.includes(fence.name));
       const enterCount = fenceAlerts.filter(
         (a) => a.type === AlertType.GEOFENCE_ENTER,
       ).length;

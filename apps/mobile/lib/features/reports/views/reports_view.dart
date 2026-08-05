@@ -8,6 +8,10 @@ import '../../vehicles/models/vehicle_model.dart';
 import '../models/report_models.dart';
 import '../providers/reports_provider.dart';
 import 'widgets/report_skeletons.dart';
+import '../repositories/reports_repository.dart';
+import '../../../core/platform/report_download.dart';
+import '../../../core/navigation/trackeo_route.dart';
+import 'trip_playback_view.dart';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -721,14 +725,64 @@ class _TripLogTab extends ConsumerWidget {
           return ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
-            itemCount: trips.length,
+            itemCount: trips.length + 1,
             separatorBuilder: (context, index) => const SizedBox(height: 10),
-            itemBuilder: (_, i) => _TripCard(trip: trips[i], index: i + 1),
+            itemBuilder: (_, i) => i == 0
+                ? _ExportBar(vehicleId: vehicleId, range: dateRange)
+                : _TripCard(trip: trips[i - 1], index: i),
           );
         },
       ),
     );
   }
+}
+
+class _ExportBar extends ConsumerStatefulWidget {
+  final int vehicleId;
+  final ({DateTime from, DateTime to}) range;
+  const _ExportBar({required this.vehicleId, required this.range});
+  @override
+  ConsumerState<_ExportBar> createState() => _ExportBarState();
+}
+
+class _ExportBarState extends ConsumerState<_ExportBar> {
+  String? loading;
+  Future<void> download(String format) async {
+    setState(() => loading = format);
+    try {
+      final bytes = await ref.read(reportsRepositoryProvider).exportTrips(
+          widget.vehicleId, widget.range.from, widget.range.to, format);
+      final ok = await saveReport(bytes, 'trajets-${widget.vehicleId}.$format',
+          format == 'pdf' ? 'application/pdf' : 'text/csv');
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Téléchargement disponible dans la PWA web.')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Export indisponible pour ce plan.')));
+      }
+    } finally {
+      if (mounted) setState(() => loading = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        const Expanded(
+            child:
+                Text('Exports', style: TextStyle(fontWeight: FontWeight.w800))),
+        OutlinedButton.icon(
+            onPressed: loading == null ? () => download('csv') : null,
+            icon: const Icon(Icons.table_view_rounded, size: 17),
+            label: const Text('CSV')),
+        const SizedBox(width: 8),
+        FilledButton.icon(
+            onPressed: loading == null ? () => download('pdf') : null,
+            icon: const Icon(Icons.picture_as_pdf_rounded, size: 17),
+            label: const Text('PDF'))
+      ]);
 }
 
 class _TripCard extends StatelessWidget {
@@ -739,85 +793,94 @@ class _TripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'Trajet $index',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: trip.id == null
+          ? null
+          : () => Navigator.push(context,
+              TrackeoRoute(builder: (_) => TripPlaybackView(trip: trip))),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Trajet $index',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
-              ),
-              const Spacer(),
-              Text(
-                _fmtDate(trip.startTime),
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.trip_origin, size: 14, color: AppColors.primary),
-              const SizedBox(width: 6),
-              Text(
-                'Départ  ${trip.startLat.toStringAsFixed(4)}, ${trip.startLon.toStringAsFixed(4)}',
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(Icons.place, size: 14, color: AppColors.statusAlert),
-              const SizedBox(width: 6),
-              Text(
-                'Arrivée  ${trip.endLat.toStringAsFixed(4)}, ${trip.endLon.toStringAsFixed(4)}',
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _TripStat(
-                icon: Icons.route,
-                label: _fmtDist(trip.distanceKm),
-              ),
-              const SizedBox(width: 16),
-              _TripStat(
-                icon: Icons.timer_outlined,
-                label: _fmtDuration(trip.durationMin),
-              ),
-              const SizedBox(width: 16),
-              _TripStat(
-                icon: Icons.speed,
-                label: '${trip.maxSpeedKmh.toInt()} km/h max',
-              ),
-            ],
-          ),
-        ],
+                const Spacer(),
+                Text(
+                  _fmtDate(trip.startTime),
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.trip_origin,
+                    size: 14, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'Départ  ${trip.startLat.toStringAsFixed(4)}, ${trip.startLon.toStringAsFixed(4)}',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.place, size: 14, color: AppColors.statusAlert),
+                const SizedBox(width: 6),
+                Text(
+                  'Arrivée  ${trip.endLat.toStringAsFixed(4)}, ${trip.endLon.toStringAsFixed(4)}',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _TripStat(
+                  icon: Icons.route,
+                  label: _fmtDist(trip.distanceKm),
+                ),
+                const SizedBox(width: 16),
+                _TripStat(
+                  icon: Icons.timer_outlined,
+                  label: _fmtDuration(trip.durationMin),
+                ),
+                const SizedBox(width: 16),
+                _TripStat(
+                  icon: Icons.speed,
+                  label: '${trip.maxSpeedKmh.toInt()} km/h max',
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

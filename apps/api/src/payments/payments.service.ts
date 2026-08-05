@@ -1,0 +1,206 @@
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { Repository } from 'typeorm';
+import { Subscription, SubscriptionStatus } from '../admin/subscription.entity';
+import { EntitlementsService } from '../entitlements/entitlements.service';
+import { Plan } from '../entitlements/plan.entity';
+import { UsersService } from '../users/users.service';
+import { CreatePaymentDto, PapiNotificationDto } from './payments.dto';
+import { Payment, PaymentStatus } from './payment.entity';
+
+@Injectable()
+export class PaymentsService {
+  private readonly endpoint = 'https://app.papi.mg/dashboard/api/payment-links';
+  constructor(
+    @InjectRepository(Payment)
+    private readonly paymentRepo: Repository<Payment>,
+    @InjectRepository(Plan) private readonly planRepo: Repository<Plan>,
+    @InjectRepository(Subscription)
+    private readonly subscriptionRepo: Repository<Subscription>,
+    private readonly users: UsersService,
+    private readonly entitlements: EntitlementsService,
+  ) {}
+
+  async create(userId: number, dto: CreatePaymentDto) {
+    await this.entitlements.assertFeature(userId, 'online_payments');
+    const apiKey = process.env.PAPI_API_KEY;
+    if (!apiKey)
+      throw new ServiceUnavailableException(
+        'Le paiement PAPI n’est pas encore configuré.',
+      );
+    const [plan, user] = await Promise.all([
+      this.planRepo.findOne({ where: { id: dto.planId, isActive: true } }),
+      this.users.findById(userId),
+    ]);
+    if (!plan || !user)
+      throw new NotFoundException('Plan ou utilisateur introuvable.');
+    const amount = Math.round(Number(plan.priceMonthly));
+    if (amount < 300)
+      throw new BadRequestException(
+        'Ce plan ne nécessite pas de paiement PAPI.',
+      );
+    const reference = `IOOEH-${randomUUID()}`;
+    const publicApp = process.env.PUBLIC_APP_URL ?? 'https://app.iooeh.com';
+    const publicApi = process.env.PUBLIC_API_URL ?? 'https://api.iooeh.com';
+    let payment = await this.paymentRepo.save(
+      this.paymentRepo.create({
+        userId,
+        planId: plan.id,
+        reference,
+        amount,
+        currency: 'MGA',
+        status: PaymentStatus.CREATED,
+        provider: dto.provider ?? null,
+      }),
+    );
+    const testMode = process.env.PAPI_TEST_MODE !== 'false';
+    const payload = {
+      amount,
+      clientName: user.name || user.email,
+      reference,
+      description: `Abonnement iooeh ${plan.name}`.slice(0, 255),
+      successUrl: `${publicApp}/payment/return?reference=${encodeURIComponent(reference)}&status=success`,
+      failureUrl: `${publicApp}/payment/return?reference=${encodeURIComponent(reference)}&status=failed`,
+      notificationUrl: `${publicApi}/payments/papi/notification`,
+      validDuration: 30,
+      ...(dto.provider ? { provider: dto.provider } : {}),
+      payerEmail: user.email,
+      ...(user.phone ? { payerPhone: user.phone } : {}),
+      isTestMode: testMode,
+      ...(testMode ? { testReason: 'Validation intégration iooeh' } : {}),
+    };
+    const response = await fetch(this.endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Token: apiKey },
+      body: JSON.stringify(payload),
+    });
+    const raw: unknown = await response.json().catch(() => null);
+    if (
+      !response.ok ||
+      typeof raw !== 'object' ||
+      raw === null ||
+      !('data' in raw)
+    ) {
+      payment.status = PaymentStatus.FAILED;
+      payment.failureMessage = `PAPI HTTP ${response.status}`;
+      await this.paymentRepo.save(payment);
+      throw new BadGatewayException(
+        'PAPI n’a pas pu créer le lien de paiement.',
+      );
+    }
+    const data = (raw as { data: Record<string, unknown> }).data;
+    if (
+      typeof data.paymentLink !== 'string' ||
+      typeof data.notificationToken !== 'string'
+    )
+      throw new BadGatewayException('Réponse PAPI incomplète.');
+    payment.status = PaymentStatus.PENDING;
+    payment.paymentLink = data.paymentLink;
+    payment.papiNotificationToken = data.notificationToken;
+    payment.expiresAt =
+      typeof data.linkExpirationDateTime === 'number'
+        ? new Date(data.linkExpirationDateTime * 1000)
+        : new Date(Date.now() + 30 * 60_000);
+    payment = await this.paymentRepo.save(payment);
+    return {
+      id: payment.id,
+      reference,
+      paymentLink: payment.paymentLink,
+      expiresAt: payment.expiresAt,
+    };
+  }
+
+  async handleNotification(dto: PapiNotificationDto) {
+    const payment = await this.paymentRepo
+      .createQueryBuilder('payment')
+      .addSelect('payment.papiNotificationToken')
+      .where('payment.reference = :reference', {
+        reference: dto.paymentReference,
+      })
+      .getOne();
+    if (
+      !payment ||
+      !payment.papiNotificationToken ||
+      !this.safeEqual(payment.papiNotificationToken, dto.notificationToken)
+    )
+      throw new BadRequestException('Notification PAPI invalide.');
+    if (
+      Number(dto.amount) !== payment.amount ||
+      dto.currency !== payment.currency
+    )
+      throw new BadRequestException('Montant ou devise incohérent.');
+    if (
+      payment.status === PaymentStatus.SUCCESS &&
+      dto.paymentStatus === 'SUCCESS'
+    )
+      return { received: true };
+    payment.paymentMethod = dto.paymentMethod ?? null;
+    payment.papiMerchantReference = dto.merchantPaymentReference ?? null;
+    payment.rawNotification = {
+      ...(dto as unknown as Record<string, unknown>),
+      notificationToken: '[redacted]',
+    };
+    if (dto.paymentStatus === 'SUCCESS') {
+      payment.status = PaymentStatus.SUCCESS;
+      payment.paidAt ??= new Date();
+      await this.activateSubscription(payment);
+    } else if (dto.paymentStatus === 'FAILED') {
+      payment.status = PaymentStatus.FAILED;
+      payment.failureMessage = dto.message ?? null;
+    } else payment.status = PaymentStatus.PENDING;
+    await this.paymentRepo.save(payment);
+    return { received: true };
+  }
+  async status(userId: number, reference: string) {
+    const p = await this.paymentRepo.findOne({ where: { userId, reference } });
+    if (!p) throw new NotFoundException('Paiement introuvable.');
+    return {
+      reference: p.reference,
+      status: p.status,
+      amount: p.amount,
+      currency: p.currency,
+      paidAt: p.paidAt,
+      planId: p.planId,
+    };
+  }
+  async history(userId: number) {
+    return this.paymentRepo.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: 50,
+    });
+  }
+  listPlans() {
+    return this.planRepo.find({
+      where: { isActive: true },
+      order: { displayOrder: 'ASC' },
+    });
+  }
+  private async activateSubscription(payment: Payment) {
+    const plan = await this.planRepo.findOneByOrFail({ id: payment.planId });
+    const sub = await this.entitlements.ensureDefaultSubscription(
+      payment.userId,
+    );
+    sub.planId = plan.id;
+    sub.plan = plan.code;
+    sub.status = SubscriptionStatus.ACTIVE;
+    sub.trialEndsAt = null;
+    const next = new Date();
+    next.setMonth(next.getMonth() + 1);
+    sub.nextBillingDate = next;
+    await this.subscriptionRepo.save(sub);
+    this.entitlements.invalidate(payment.userId);
+  }
+  private safeEqual(a: string, b: string) {
+    const aa = Buffer.from(a);
+    const bb = Buffer.from(b);
+    return aa.length === bb.length && timingSafeEqual(aa, bb);
+  }
+}

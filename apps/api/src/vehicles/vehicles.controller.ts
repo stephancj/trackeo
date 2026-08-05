@@ -19,6 +19,7 @@ import { AlertsService } from '../alerts/alerts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Device } from '../devices/device.entity';
 import { ClaimVehicleDto } from './dto/claim-vehicle.dto';
+import { EntitlementsService } from '../entitlements/entitlements.service';
 
 @Controller('vehicles')
 @UseGuards(JwtAuthGuard)
@@ -27,6 +28,7 @@ export class VehiclesController {
     private readonly vehiclesService: VehiclesService,
     private readonly positionsService: PositionsService,
     private readonly alertsService: AlertsService,
+    private readonly entitlementsService: EntitlementsService,
   ) {}
 
   /**
@@ -35,7 +37,9 @@ export class VehiclesController {
    */
   @Get()
   findAll(@Request() req: { user: { id: number } }) {
-    return this.vehiclesService.findAllForUser(req.user.id);
+    return this.entitlementsService
+      .assertFeature(req.user.id, 'live_tracking')
+      .then(() => this.vehiclesService.findAllForUser(req.user.id));
   }
 
   /** POST /api/vehicles/claim — associe un device via IMEI / numéro de série. */
@@ -56,6 +60,7 @@ export class VehiclesController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req: { user: { id: number } },
   ) {
+    await this.entitlementsService.assertFeature(req.user.id, 'live_tracking');
     await this.vehiclesService.assertOwner(id, req.user.id);
     return this.vehiclesService.findOne(id);
   }
@@ -70,6 +75,7 @@ export class VehiclesController {
     @Body() data: Partial<Device>,
     @Request() req: { user: { id: number } },
   ) {
+    await this.entitlementsService.assertFeature(req.user.id, 'live_tracking');
     await this.vehiclesService.assertOwner(id, req.user.id);
     return this.vehiclesService.update(id, data);
   }
@@ -104,6 +110,7 @@ export class VehiclesController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req: { user: { id: number } },
   ) {
+    await this.entitlementsService.assertFeature(req.user.id, 'live_tracking');
     await this.vehiclesService.assertOwner(id, req.user.id);
     const position = await this.vehiclesService.getLastPosition(id);
     if (!position) {
@@ -139,6 +146,10 @@ export class VehiclesController {
     @Query('period') period = '7d',
     @Request() req: { user: { id: number } },
   ) {
+    await this.entitlementsService.assertFeature(
+      req.user.id,
+      'activity_reports',
+    );
     await this.vehiclesService.assertOwner(id, req.user.id);
     const { from, to } = this.periodToDates(period);
     const summary = await this.positionsService
@@ -166,6 +177,7 @@ export class VehiclesController {
     @Query('to') to: string,
     @Request() req: { user: { id: number } },
   ) {
+    await this.entitlementsService.assertFeature(req.user.id, 'trip_reports');
     await this.vehiclesService.assertOwner(id, req.user.id);
     const now = new Date();
     const fromDate = from
@@ -190,6 +202,7 @@ export class VehiclesController {
     @Query('threshold') threshold: string | undefined,
     @Request() req: { user: { id: number } },
   ) {
+    await this.entitlementsService.assertFeature(req.user.id, 'speed_reports');
     await this.vehiclesService.assertOwner(id, req.user.id);
     const now = new Date();
     const fromDate = from
@@ -220,6 +233,7 @@ export class VehiclesController {
     @Query('to') to: string,
     @Request() req: { user: { id: number } },
   ) {
+    await this.entitlementsService.assertFeature(req.user.id, 'idle_reports');
     await this.vehiclesService.assertOwner(id, req.user.id);
     const now = new Date();
     const fromDate = from
@@ -251,6 +265,10 @@ export class VehiclesController {
     @Query('period') period = '7d',
     @Request() req: { user: { id: number } },
   ) {
+    await this.entitlementsService.assertFeature(
+      req.user.id,
+      'geofence_reports',
+    );
     await this.vehiclesService.assertOwner(id, req.user.id);
     const { from, to } = this.periodToDates(period);
     const geofences = await this.alertsService
@@ -274,12 +292,24 @@ export class VehiclesController {
     @Query('to') to: string,
     @Request() req: { user: { id: number } },
   ) {
+    await this.entitlementsService.assertFeature(req.user.id, 'history');
     await this.vehiclesService.assertOwner(id, req.user.id);
     const now = new Date();
-    const fromDate = from
+    const requestedFrom = from
       ? new Date(from)
       : new Date(now.getTime() - 31 * 24 * 3600 * 1000);
     const toDate = to ? new Date(to) : now;
+    if (isNaN(requestedFrom.getTime()) || isNaN(toDate.getTime())) {
+      throw new BadRequestException(
+        'Format de date invalide — utiliser ISO 8601',
+      );
+    }
+    const retentionDays = await this.entitlementsService.getNumber(
+      req.user.id,
+      'history_retention_days',
+    );
+    const earliest = new Date(Date.now() - retentionDays * 24 * 3600 * 1000);
+    const fromDate = requestedFrom < earliest ? earliest : requestedFrom;
     const days = await this.positionsService
       .getActiveDays(id, fromDate, toDate)
       .catch(() => []);
@@ -318,6 +348,9 @@ export class VehiclesController {
     if (fromDate >= toDate) {
       throw new BadRequestException('"from" doit être antérieur à "to"');
     }
+
+    await this.entitlementsService.assertFeature(req.user.id, 'history');
+    await this.entitlementsService.assertHistoryRange(req.user.id, fromDate);
 
     const limitNum = limit ? Math.min(parseInt(limit, 10), 5000) : 1000;
 

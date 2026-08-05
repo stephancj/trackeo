@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access */
 import {
   Controller,
   Post,
@@ -19,12 +18,14 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateAlertSettingsDto } from './dto/update-alert-settings.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { EntitlementsService } from '../entitlements/entitlements.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
+    private readonly entitlementsService: EntitlementsService,
   ) {}
 
   /**
@@ -51,6 +52,13 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   getProfile(@Request() req) {
     return req.user;
+  }
+
+  /** Droits effectifs du plan courant, consommés par Flutter. */
+  @Get('entitlements')
+  @UseGuards(JwtAuthGuard)
+  getEntitlements(@Request() req) {
+    return this.entitlementsService.getForUser(req.user.id as number);
   }
 
   /**

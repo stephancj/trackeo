@@ -10,6 +10,7 @@ import { AlertsModule } from '../alerts/alerts.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { UsersModule } from '../users/users.module';
 import { VehicleSleepMode } from '../vehicles/vehicle-sleep-mode.entity';
+import { EntitlementsModule } from '../entitlements/entitlements.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { VehicleSleepMode } from '../vehicles/vehicle-sleep-mode.entity';
     AlertsModule,
     NotificationsModule,
     UsersModule,
+    EntitlementsModule,
   ],
   controllers: [GeofencesController],
   providers: [GeofencesService, GeofencesCheckerService],

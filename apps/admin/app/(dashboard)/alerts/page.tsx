@@ -33,10 +33,11 @@ const TYPE_LABELS: Record<string, string> = {
   speed_limit: "Speed Limit",
   sos: "SOS",
   sleep_movement: "Mouvement en veille",
+  theft: "Vol déclaré",
 };
 
 function typeBadgeClass(type: string): "default" | "secondary" | "destructive" | "outline" {
-  if (type === "geofence_exit" || type === "sos" || type === "sleep_movement") return "destructive";
+  if (type === "geofence_exit" || type === "sos" || type === "sleep_movement" || type === "theft") return "destructive";
   if (type === "geofence_enter") return "default";
   return "secondary";
 }

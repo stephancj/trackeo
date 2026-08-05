@@ -11,6 +11,7 @@ import { UsersService } from '../users/users.service';
 import { AlertType } from '../alerts/entities/alert.entity';
 import { DeviceAssignment } from '../admin/device-assignment.entity';
 import { VehicleSleepMode } from '../vehicles/vehicle-sleep-mode.entity';
+import { EntitlementsService } from '../entitlements/entitlements.service';
 
 interface AlertSettings {
   alertsEnabled: boolean;
@@ -31,6 +32,7 @@ export class GeofencesCheckerService {
     private readonly alertsService: AlertsService,
     private readonly notificationsService: NotificationsService,
     private readonly usersService: UsersService,
+    private readonly entitlementsService: EntitlementsService,
     @InjectRepository(DeviceAssignment)
     private readonly assignmentRepo: Repository<DeviceAssignment>,
     @InjectRepository(VehicleSleepMode)
@@ -78,6 +80,13 @@ export class GeofencesCheckerService {
             fence.userId,
           );
           if (!userAlertSettings.alertsEnabled) continue;
+          if (
+            !(await this.entitlementsService.hasFeature(
+              fence.userId,
+              'geofence_alerts',
+            ))
+          )
+            continue;
 
           const distanceM = this.getDistanceFromLatLonInM(
             vehicle.position.lat,
@@ -106,7 +115,13 @@ export class GeofencesCheckerService {
               vehicle.position.lon,
             );
 
-            if (userAlertSettings.alertViaPush) {
+            if (
+              userAlertSettings.alertViaPush &&
+              (await this.entitlementsService.hasFeature(
+                fence.userId,
+                'push_notifications',
+              ))
+            ) {
               const subscriptionId = await this.getUserSubId(fence.userId);
               await this.notificationsService.sendPush({
                 externalUserId: fence.userId.toString(),
@@ -121,7 +136,14 @@ export class GeofencesCheckerService {
               });
             }
 
-            if (userAlertSettings.alertViaWhatsapp) {
+            if (
+              fence.alertViaWhatsapp &&
+              userAlertSettings.alertViaWhatsapp &&
+              (await this.entitlementsService.hasFeature(
+                fence.userId,
+                'whatsapp_notifications',
+              ))
+            ) {
               await this.sendWhatsAppIfEnabled(
                 fence.userId,
                 vehicle.name,
@@ -145,7 +167,13 @@ export class GeofencesCheckerService {
               vehicle.position.lon,
             );
 
-            if (userAlertSettings.alertViaPush) {
+            if (
+              userAlertSettings.alertViaPush &&
+              (await this.entitlementsService.hasFeature(
+                fence.userId,
+                'push_notifications',
+              ))
+            ) {
               const subscriptionId = await this.getUserSubId(fence.userId);
               await this.notificationsService.sendPush({
                 externalUserId: fence.userId.toString(),
@@ -160,7 +188,14 @@ export class GeofencesCheckerService {
               });
             }
 
-            if (userAlertSettings.alertViaWhatsapp) {
+            if (
+              fence.alertViaWhatsapp &&
+              userAlertSettings.alertViaWhatsapp &&
+              (await this.entitlementsService.hasFeature(
+                fence.userId,
+                'whatsapp_notifications',
+              ))
+            ) {
               await this.sendWhatsAppIfEnabled(
                 fence.userId,
                 vehicle.name,
@@ -216,6 +251,13 @@ export class GeofencesCheckerService {
 
       for (const mode of modes) {
         if (mode.triggeredAt) continue;
+        if (
+          !(await this.entitlementsService.hasFeature(
+            mode.ownerId,
+            'sleep_mode',
+          ))
+        )
+          continue;
         const vehicle = vehicleMap.get(mode.deviceId);
         if (!vehicle?.position || vehicle.status === 'offline') continue;
 
@@ -285,6 +327,10 @@ export class GeofencesCheckerService {
         // Low Battery Alert
         if (
           userAlertSettings.alertLowBattery &&
+          (await this.entitlementsService.hasFeature(
+            userId,
+            'low_battery_alerts',
+          )) &&
           vehicle.position.battery != null &&
           vehicle.position.battery < 20
         ) {
@@ -302,7 +348,11 @@ export class GeofencesCheckerService {
 
         // Excès de vitesse — UNE alerte par épisode, mise à jour au fil du temps
         const speedKmh = vehicle.position.speedKmh;
-        if (userAlertSettings.alertSpeedLimit && speedKmh != null) {
+        if (
+          userAlertSettings.alertSpeedLimit &&
+          (await this.entitlementsService.hasFeature(userId, 'speed_alerts')) &&
+          speedKmh != null
+        ) {
           if (speedKmh > this.SPEED_LIMIT_KMH) {
             const existing = this.speedExcessStartCache.get(vehicle.id);
             if (!existing) {
@@ -442,7 +492,10 @@ export class GeofencesCheckerService {
     message: string,
     settings: AlertSettings,
   ): Promise<void> {
-    if (settings.alertViaPush) {
+    if (
+      settings.alertViaPush &&
+      (await this.entitlementsService.hasFeature(userId, 'push_notifications'))
+    ) {
       const subscriptionId = await this.getUserSubId(userId);
       const title =
         alertType === AlertType.LOW_BATTERY
@@ -464,7 +517,13 @@ export class GeofencesCheckerService {
       });
     }
 
-    if (settings.alertViaWhatsapp) {
+    if (
+      settings.alertViaWhatsapp &&
+      (await this.entitlementsService.hasFeature(
+        userId,
+        'whatsapp_notifications',
+      ))
+    ) {
       await this.sendWhatsAppIfEnabled(
         userId,
         vehicleName,
@@ -575,7 +634,7 @@ export class GeofencesCheckerService {
     if (this.geocodeCache.has(key)) return this.geocodeCache.get(key)!;
 
     try {
-      const address = await new Promise<string>((resolve, reject) => {
+      const address = await new Promise<string>((resolve) => {
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=16`;
         https
           .get(url, { headers: { 'User-Agent': 'iooeh/1.0' } }, (res) => {
@@ -583,16 +642,28 @@ export class GeofencesCheckerService {
             res.on('data', (chunk) => (data += chunk));
             res.on('end', () => {
               try {
-                const json = JSON.parse(data);
-                const a = json.address ?? {};
+                const parsed: unknown = JSON.parse(data);
+                const json =
+                  typeof parsed === 'object' && parsed !== null
+                    ? (parsed as Record<string, unknown>)
+                    : {};
+                const rawAddress = json.address;
+                const a =
+                  typeof rawAddress === 'object' && rawAddress !== null
+                    ? (rawAddress as Record<string, unknown>)
+                    : {};
                 const parts = [
                   a.road ?? a.pedestrian ?? a.path,
                   a.suburb ?? a.neighbourhood ?? a.village ?? a.town ?? a.city,
-                ].filter(Boolean);
+                ].filter((part): part is string => typeof part === 'string');
+                const displayName =
+                  typeof json.display_name === 'string'
+                    ? json.display_name
+                    : undefined;
                 resolve(
                   parts.length > 0
                     ? parts.join(', ')
-                    : (json.display_name?.split(',')[0] ??
+                    : (displayName?.split(',')[0] ??
                         `${lat.toFixed(4)},${lon.toFixed(4)}`),
                 );
               } catch {
