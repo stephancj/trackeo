@@ -1,7 +1,8 @@
 {
     "name": "iooeh",
     "short_name": "iooeh",
-    "start_url": ".",
+    "id": "/",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#333549",
     "theme_color": "#4ECB8D",

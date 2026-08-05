@@ -215,6 +215,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Lance le prompt navigateur depuis l'action utilisateur et relie la
+  /// subscription créée au compte connecté.
+  Future<bool> subscribeToPush() async {
+    final user = state.user;
+    if (user == null) return false;
+
+    final subId = await requestOneSignalSubscription(user.id.toString());
+    if (subId == null || subId.isEmpty) return false;
+
+    await _repo.registerPushToken(subId);
+    return true;
+  }
+
+  String get pushPermissionStatus => getOneSignalPermissionStatus();
+
   String _parseError(DioException e) {
     final data = e.response?.data;
     if (data is Map && data['message'] != null) {

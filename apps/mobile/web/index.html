@@ -23,7 +23,7 @@
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="mobile">
+  <meta name="apple-mobile-web-app-title" content="iooeh">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
@@ -72,6 +72,59 @@
       return window.OneSignal?.User?.PushSubscription?.id ?? window._trackeoSubId ?? null;
     };
 
+    /**
+     * Déclenché exclusivement par le bouton Flutter. iOS n'autorise la demande
+     * native que pendant une interaction utilisateur dans une PWA installée.
+     */
+    window.trackeoSubscribePush = async function(userId, callback) {
+      if (!window.OneSignal?.Notifications) {
+        callback(null);
+        return;
+      }
+
+      try {
+        // Cet appel doit rester le premier await afin de conserver le geste utilisateur.
+        const granted = await window.OneSignal.Notifications.requestPermission();
+        if (!granted && window.Notification?.permission !== 'granted') {
+          callback(null);
+          return;
+        }
+
+        if (userId) {
+          window._trackeoUserId = userId;
+          await window.OneSignal.login(userId);
+        }
+
+        // Réactive une subscription existante qui aurait été désabonnée.
+        if (window.OneSignal?.User?.PushSubscription?.optedIn === false) {
+          await window.OneSignal.User.PushSubscription.optIn();
+        }
+
+        // La création de l'ID peut prendre quelques secondes, surtout sur iOS.
+        for (let attempt = 0; attempt < 20; attempt++) {
+          const subId = window.OneSignal?.User?.PushSubscription?.id ?? null;
+          if (subId) {
+            window._trackeoSubId = subId;
+            callback(subId);
+            return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        callback(null);
+      } catch (error) {
+        console.error('[iooeh] Push subscription failed:', error);
+        callback(null);
+      }
+    };
+
+    window.trackeoGetPushStatus = function() {
+      const subId = window.OneSignal?.User?.PushSubscription?.id ?? window._trackeoSubId;
+      const optedIn = window.OneSignal?.User?.PushSubscription?.optedIn;
+      if (subId && optedIn !== false) return 'subscribed';
+      if (typeof window.Notification === 'undefined') return 'unsupported';
+      return window.Notification.permission;
+    };
+
     OneSignalDeferred.push(async function(OneSignal) {
       await OneSignal.init({
         appId: "b08553a3-c59a-49c7-8097-a23a704527bc",
@@ -80,7 +133,7 @@
           slidedown: {
             prompts: [{
               type: "push",
-              autoPrompt: true,
+              autoPrompt: false,
               text: {
                 actionMessage: "iooeh souhaite vous envoyer des alertes de zone.",
                 acceptButton: "Autoriser",

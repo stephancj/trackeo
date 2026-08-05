@@ -12,3 +12,7 @@ void oneSignalLogoutPlatform() {
 /// Sur mobile, le subscription ID est géré nativement par le plugin.
 /// Retourne null — l'enregistrement push-token n'est pas nécessaire sur mobile (MVP web uniquement).
 String? getOneSignalSubId() => null;
+
+Future<String?> requestOneSignalSubscription(String userId) async => null;
+
+String getOneSignalPermissionStatus() => 'unsupported';

@@ -18,12 +18,21 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
   late bool _pushNotification;
   late bool _whatsAppNotification;
   bool _isSaving = false;
+  bool _isSubscribing = false;
+  String _pushPermissionStatus = 'default';
   bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
     _loadFromUser();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _pushPermissionStatus =
+            ref.read(authProvider.notifier).pushPermissionStatus;
+      });
+    });
   }
 
   void _loadFromUser() {
@@ -251,6 +260,119 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
     );
   }
 
+  Widget _buildPushSubscriptionCard() {
+    final subscribed = _pushPermissionStatus == 'subscribed';
+    final denied = _pushPermissionStatus == 'denied';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: (subscribed ? Colors.green : AppColors.primary)
+                  .withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              subscribed
+                  ? Icons.check_circle_rounded
+                  : Icons.phone_iphone_rounded,
+              color: subscribed ? Colors.green : AppColors.primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  subscribed
+                      ? 'Cet iPhone est abonné'
+                      : denied
+                          ? 'Notifications refusées'
+                          : 'Activer sur cet iPhone',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subscribed
+                      ? 'Les alertes peuvent arriver sur cet appareil'
+                      : denied
+                          ? 'À réactiver dans les Réglages iOS'
+                          : 'Autorisez les notifications de la PWA',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: denied ? Colors.orange : AppColors.textHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (subscribed)
+            const Icon(Icons.verified_rounded, color: Colors.green, size: 22)
+          else
+            FilledButton(
+              onPressed: _isSubscribing ? null : _subscribeToPush,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                minimumSize: const Size(0, 38),
+              ),
+              child: _isSubscribing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Activer'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _subscribeToPush() async {
+    setState(() => _isSubscribing = true);
+
+    var subscribed = false;
+    try {
+      subscribed = await ref.read(authProvider.notifier).subscribeToPush();
+    } catch (_) {
+      subscribed = false;
+    }
+
+    if (!mounted) return;
+    final status = ref.read(authProvider.notifier).pushPermissionStatus;
+    setState(() {
+      _isSubscribing = false;
+      _pushPermissionStatus = subscribed ? 'subscribed' : status;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          subscribed
+              ? 'Notifications activées sur cet iPhone.'
+              : status == 'denied'
+                  ? 'Autorisation refusée. Ouvrez Réglages > Notifications > iooeh.'
+                  : 'Ouvrez iooeh depuis son icône sur l’écran d’accueil, puis réessayez.',
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: subscribed ? null : Colors.orange,
+      ),
+    );
+  }
+
   Widget _buildNotificationMethods(bool hasPhone) {
     return Container(
       decoration: BoxDecoration(
@@ -259,6 +381,8 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
       ),
       child: Column(
         children: [
+          _buildPushSubscriptionCard(),
+          const Divider(height: 1, indent: 64, color: AppColors.divider),
           _buildSettingItem(
             icon: Icons.notifications_rounded,
             iconColor: AppColors.primary,

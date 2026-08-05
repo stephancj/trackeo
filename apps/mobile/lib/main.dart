@@ -16,8 +16,8 @@ void main() async {
   // OneSignal — App ID public (safe à hardcoder, pas un secret)
   const oneSignalAppId = 'b08553a3-c59a-49c7-8097-a23a704527bc';
   OneSignal.initialize(oneSignalAppId);
-  // Demande permission push (false = non-bloquant, la bannière apparaît plus tard)
-  OneSignal.Notifications.requestPermission(false);
+  // La permission est demandée depuis le bouton des paramètres. Sur iOS PWA,
+  // la boîte native doit impérativement suivre une action explicite de l'utilisateur.
 
   // M4 — Remplace l'écran rouge Flutter par un fallback propre
   ErrorWidget.builder = (FlutterErrorDetails details) {
