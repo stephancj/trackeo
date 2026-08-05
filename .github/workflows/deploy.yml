@@ -300,7 +300,8 @@ jobs:
             cd /opt/trackeo &&
             git fetch origin main &&
             git reset --hard origin/main &&
-            trackeo_nginx_target=\$(grep -rl 'server_name app.iooeh.com' /etc/nginx/sites-available /etc/nginx/conf.d 2>/dev/null | head -n 1) &&
+            trackeo_nginx_enabled=\$(grep -Rl 'server_name app.iooeh.com' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | head -n 1) &&
+            trackeo_nginx_target=\$(readlink -f \"\$trackeo_nginx_enabled\") &&
             if [ -n \"\$trackeo_nginx_target\" ]; then
               echo \"Updating active vhost source: \$trackeo_nginx_target\" &&
               cp infra/nginx/trackeo.conf \"\$trackeo_nginx_target\";
