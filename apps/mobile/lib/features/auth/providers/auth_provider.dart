@@ -150,10 +150,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> _clearSession() async {
-    await OneSignal.logout(); // Détache l'utilisateur (mobile)
-    oneSignalLogoutPlatform(); // Détache l'utilisateur (web JS direct)
+    // La déconnexion de l'app ne doit jamais dépendre du SDK push. Sur PWA,
+    // OneSignal peut ne pas être initialisé ou garder une Promise en attente.
     await TokenStorage.clear();
     state = const AuthState.unauthenticated();
+
+    // Nettoyage push best-effort, après avoir rendu la déconnexion effective.
+    try {
+      oneSignalLogoutPlatform();
+    } catch (_) {
+      // La session ioeh est déjà supprimée.
+    }
+    try {
+      await OneSignal.logout().timeout(const Duration(seconds: 2));
+    } catch (_) {
+      // Ne jamais reconnecter l'utilisateur à cause d'un SDK tiers indisponible.
+    }
   }
 
   /// Lie cet utilisateur à OneSignal pour recevoir les push ciblés.

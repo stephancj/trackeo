@@ -253,9 +253,20 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
             child: const Text('Annuler'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              ref.read(authProvider.notifier).logout();
+              try {
+                await ref.read(authProvider.notifier).logout();
+              } catch (_) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Impossible de se déconnecter. Réessayez.'),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: AppColors.statusAlert,
+                  ),
+                );
+              }
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.statusAlert),
             child: const Text('Déconnexion',
