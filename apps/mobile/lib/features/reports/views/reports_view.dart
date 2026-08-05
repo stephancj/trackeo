@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_ui.dart';
 import '../../../core/navigation/app_shell.dart';
 import '../../../core/utils/app_time.dart';
 import '../../vehicles/providers/vehicles_provider.dart';
@@ -99,23 +100,49 @@ class _ReportsViewState extends ConsumerState<ReportsView> {
       ),
       body: Column(
         children: [
-          // ── Vehicle picker (only shown when multiple vehicles) ──────────
-          if (vehicles.length > 1)
-            _VehiclePicker(
-              vehicles: vehicles,
-              selectedId: _selectedVehicleId,
-              onChanged: (id) => setState(() => _selectedVehicleId = id),
+          Container(
+            width: double.infinity,
+            color: AppColors.surface,
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Comprendre vos déplacements',
+                      style: AppTextStyles.sectionTitle,
+                    ),
+                    const SizedBox(height: 3),
+                    const Text(
+                      'Choisissez une période et le niveau de détail utile.',
+                      style: AppTextStyles.bodySecondary,
+                    ),
+                    const SizedBox(height: 14),
+                    if (vehicles.length > 1) ...[
+                      _VehiclePicker(
+                        vehicles: vehicles,
+                        selectedId: _selectedVehicleId,
+                        onChanged: (id) =>
+                            setState(() => _selectedVehicleId = id),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    _PeriodPicker(
+                      selected: _period,
+                      onChanged: (p) => setState(() => _period = p),
+                    ),
+                    const SizedBox(height: 12),
+                    _ReportTypePicker(
+                      selectedIndex: _reportIndex,
+                      onChanged: (index) =>
+                          setState(() => _reportIndex = index),
+                    ),
+                  ],
+                ),
+              ),
             ),
-
-          // ── Period chips ──────────────────────────────────────────────
-          _PeriodPicker(
-            selected: _period,
-            onChanged: (p) => setState(() => _period = p),
-          ),
-
-          _ReportTypePicker(
-            selectedIndex: _reportIndex,
-            onChanged: (index) => setState(() => _reportIndex = index),
           ),
 
           // ── Contenu du rapport sélectionné ─────────────────────────────
@@ -172,26 +199,22 @@ class _ReportTypePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: DropdownButtonFormField<int>(
-        initialValue: selectedIndex,
-        decoration: const InputDecoration(
-          labelText: 'Rapport affiché',
-          prefixIcon: Icon(Icons.assessment_outlined),
-        ),
-        items: List.generate(
-          labels.length,
-          (index) => DropdownMenuItem(
-            value: index,
-            child: Text(labels[index]),
-          ),
-        ),
-        onChanged: (value) {
-          if (value != null) onChanged(value);
-        },
+    return DropdownButtonFormField<int>(
+      initialValue: selectedIndex,
+      decoration: const InputDecoration(
+        labelText: 'Rapport affiché',
+        prefixIcon: Icon(Icons.assessment_outlined),
       ),
+      items: List.generate(
+        labels.length,
+        (index) => DropdownMenuItem(
+          value: index,
+          child: Text(labels[index]),
+        ),
+      ),
+      onChanged: (value) {
+        if (value != null) onChanged(value);
+      },
     );
   }
 }
@@ -211,37 +234,32 @@ class _VehiclePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: AppColors.divider),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: AppColors.divider),
-          ),
-          prefixIcon: const Icon(Icons.directions_car_outlined, size: 20),
+    return InputDecorator(
+      decoration: InputDecoration(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppColors.divider),
         ),
-        child: DropdownButton<int>(
-          value: selectedId,
-          isExpanded: true,
-          underline: const SizedBox.shrink(),
-          items: vehicles
-              .map((v) => DropdownMenuItem(
-                    value: v.id,
-                    child: Text(v.name, style: const TextStyle(fontSize: 14)),
-                  ))
-              .toList(),
-          onChanged: (id) {
-            if (id != null) onChanged(id);
-          },
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppColors.divider),
         ),
+        prefixIcon: const Icon(Icons.directions_car_outlined, size: 20),
+      ),
+      child: DropdownButton<int>(
+        value: selectedId,
+        isExpanded: true,
+        underline: const SizedBox.shrink(),
+        items: vehicles
+            .map((v) => DropdownMenuItem(
+                  value: v.id,
+                  child: Text(v.name, style: const TextStyle(fontSize: 14)),
+                ))
+            .toList(),
+        onChanged: (id) {
+          if (id != null) onChanged(id);
+        },
       ),
     );
   }
@@ -258,27 +276,31 @@ class _PeriodPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
       child: Row(
         children: [
-          _Chip(
-              label: "Aujourd'hui",
-              value: 'today',
-              selected: selected,
-              onTap: onChanged),
-          const SizedBox(width: 8),
-          _Chip(
-              label: '7 jours',
-              value: '7d',
-              selected: selected,
-              onTap: onChanged),
-          const SizedBox(width: 8),
-          _Chip(
-              label: '30 jours',
-              value: '30d',
-              selected: selected,
-              onTap: onChanged),
+          Expanded(
+              child: _Chip(
+                  label: "Aujourd'hui",
+                  value: 'today',
+                  selected: selected,
+                  onTap: onChanged)),
+          Expanded(
+              child: _Chip(
+                  label: '7 jours',
+                  value: '7d',
+                  selected: selected,
+                  onTap: onChanged)),
+          Expanded(
+              child: _Chip(
+                  label: '30 jours',
+                  value: '30d',
+                  selected: selected,
+                  onTap: onChanged)),
         ],
       ),
     );
@@ -308,17 +330,15 @@ class _Chip extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary
-              : AppColors.primary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(24),
+          color: isSelected ? AppColors.surface : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : AppColors.primary,
+            color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
           ),
         ),
       ),
@@ -333,24 +353,12 @@ class _EmptyVehicle extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.directions_car_outlined,
-              size: 48, color: AppColors.textHint),
-          const SizedBox(height: 12),
-          const Text(
-            'Ajoutez un véhicule pour consulter ses rapports.',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: () => ref.read(activeTabProvider.notifier).state = 0,
-            child: const Text('Aller aux véhicules'),
-          ),
-        ],
-      ),
+    return ProductEmptyState(
+      icon: Icons.directions_car_outlined,
+      title: 'Aucun véhicule à analyser',
+      message: 'Ajoutez un véhicule pour afficher ses trajets et ses rapports.',
+      actionLabel: 'Aller aux véhicules',
+      onAction: () => ref.read(activeTabProvider.notifier).state = 0,
     );
   }
 }
@@ -363,19 +371,11 @@ class _EmptyList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 48, color: AppColors.textHint),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            style:
-                const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          ),
-        ],
-      ),
+    return ProductEmptyState(
+      icon: icon,
+      title: 'Aucune donnée sur cette période',
+      message: message,
+      compact: true,
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_ui.dart';
 import '../models/vehicle_model.dart';
 import '../providers/vehicles_provider.dart';
 import '../../../core/providers/geocoding_provider.dart';
@@ -16,7 +17,7 @@ class VehicleDetailsView extends ConsumerWidget {
   final Vehicle vehicle;
   const VehicleDetailsView({super.key, required this.vehicle});
 
-  static const double _heroHeight = 280.0;
+  static const double _heroHeight = 220.0;
 
   IconData _vehicleIcon(String name) {
     final n = name.toLowerCase();
@@ -54,7 +55,6 @@ class VehicleDetailsView extends ConsumerWidget {
         ? ref.watch(reverseGeocodeProvider(LatLng(pos.lat, pos.lon)))
         : null;
     final accent = _heroAccent(vehicle.name);
-    final topPad = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -84,119 +84,134 @@ class VehicleDetailsView extends ConsumerWidget {
                 vehicle: vehicle,
                 icon: _vehicleIcon(vehicle.name),
                 accent: accent,
-                topPad: topPad,
               ),
             ),
           ),
 
           // ── Content ───────────────────────────────────────────────────────
           SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
+            child: ProductPage(
+              padding: EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
 
-                // ── Horizontal Stats Strip ─────────────────────────────────
-                SizedBox(
-                  height: 96,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      _StatPill(
-                        icon: Icons.battery_charging_full_rounded,
-                        label: 'Batterie',
-                        value: pos?.battery != null ? '${pos!.battery}%' : '--',
-                        color: (pos?.battery ?? 100) > 20
-                            ? AppColors.primary
-                            : AppColors.statusAlert,
-                        progress: (pos?.battery ?? 0) / 100,
-                      ),
-                      _StatPill(
-                        icon: Icons.speed_rounded,
-                        label: 'Vitesse',
-                        value: pos?.speedKmh != null
-                            ? '${pos!.speedKmh.toStringAsFixed(0)} km/h'
-                            : '0 km/h',
-                        color: (pos?.speedKmh ?? 0) > 120
-                            ? AppColors.statusAlert
-                            : AppColors.statusIdle,
-                        progress: ((pos?.speedKmh ?? 0) / 140).clamp(0.0, 1.0),
-                      ),
-                      _StatPill(
-                        icon: Icons.power_settings_new_rounded,
-                        label: 'Moteur',
-                        value: pos?.ignition == true ? 'Allumé' : 'Éteint',
-                        color: pos?.ignition == true
-                            ? AppColors.primary
-                            : AppColors.textHint,
-                        progress: pos?.ignition == true ? 1.0 : 0.0,
-                      ),
-                      _StatPill(
-                        icon: Icons.signal_cellular_alt_rounded,
-                        label: 'Signal',
-                        value: (pos?.rssi ?? 25) > 20 ? 'Fort' : 'Faible',
-                        color: AppColors.primary,
-                        progress: (pos?.rssi ?? 25) / 31,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // ── Status Row ─────────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      StatusBadge(status: vehicle.status),
-                      const SizedBox(width: 10),
-                      Text(
-                        vehicle.lastUpdate != null
-                            ? 'Mis à jour ${timeago.format(vehicle.lastUpdate!, locale: 'fr')}'
-                            : 'Jamais mis à jour',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textHint,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _SleepModePanel(vehicle: vehicle),
-                ),
-
-                const SizedBox(height: 12),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _SecurityActionsPanel(vehicle: vehicle),
-                ),
-
-                const SizedBox(height: 20),
-
-                // ── Map Preview ───────────────────────────────────────────
-                if (pos != null) ...[
+                  // ── Status Row ─────────────────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _MapCard(
-                      vehicle: vehicle,
-                      pos: pos,
-                      addressAsync: addressAsync,
-                      ref: ref,
+                    child: Row(
+                      children: [
+                        StatusBadge(status: vehicle.status),
+                        const SizedBox(width: 10),
+                        Text(
+                          vehicle.lastUpdate != null
+                              ? 'Mis à jour ${timeago.format(vehicle.lastUpdate!, locale: 'fr')}'
+                              : 'Jamais mis à jour',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textHint,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                ],
 
-                const SizedBox(height: 24),
-              ],
+                  const SizedBox(height: 16),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ProductSurface(
+                      padding: const EdgeInsets.all(8),
+                      child: GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        childAspectRatio: 2.15,
+                        children: [
+                          _StatPill(
+                            icon: Icons.battery_charging_full_rounded,
+                            label: 'Batterie',
+                            value: pos?.battery != null
+                                ? '${pos!.battery}%'
+                                : '--',
+                            color: (pos?.battery ?? 100) > 20
+                                ? AppColors.primary
+                                : AppColors.statusAlert,
+                          ),
+                          _StatPill(
+                            icon: Icons.speed_rounded,
+                            label: 'Vitesse',
+                            value: pos?.speedKmh != null
+                                ? '${pos!.speedKmh.toStringAsFixed(0)} km/h'
+                                : '0 km/h',
+                            color: (pos?.speedKmh ?? 0) > 120
+                                ? AppColors.statusAlert
+                                : AppColors.statusIdle,
+                          ),
+                          _StatPill(
+                            icon: Icons.power_settings_new_rounded,
+                            label: 'Moteur',
+                            value: pos?.ignition == true ? 'Allumé' : 'Éteint',
+                            color: pos?.ignition == true
+                                ? AppColors.primary
+                                : AppColors.textHint,
+                          ),
+                          _StatPill(
+                            icon: Icons.signal_cellular_alt_rounded,
+                            label: 'Signal',
+                            value: (pos?.rssi ?? 25) > 20 ? 'Fort' : 'Faible',
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _SleepModePanel(vehicle: vehicle),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _SecurityActionsPanel(vehicle: vehicle),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ── Map Preview ───────────────────────────────────────────
+                  if (pos != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const ProductSectionHeader(
+                            title: 'Position actuelle',
+                            subtitle:
+                                'Touchez la carte pour l’ouvrir en plein écran.',
+                          ),
+                          const SizedBox(height: 10),
+                          _MapCard(
+                            vehicle: vehicle,
+                            pos: pos,
+                            addressAsync: addressAsync,
+                            ref: ref,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ],
@@ -583,160 +598,76 @@ class _HeroBackground extends StatelessWidget {
   final Vehicle vehicle;
   final IconData icon;
   final Color accent;
-  final double topPad;
 
   const _HeroBackground({
     required this.vehicle,
     required this.icon,
     required this.accent,
-    required this.topPad,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primaryDark,
-            Color.lerp(AppColors.primaryDark, accent, 0.35)!,
-          ],
-        ),
-      ),
+      color: AppColors.primaryDark,
       child: Stack(
         children: [
-          // Decorative circles
           Positioned(
-            top: -30,
-            right: -40,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: accent.withValues(alpha: 0.06),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 40,
-            left: -60,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.03),
-              ),
-            ),
-          ),
-
-          // Vehicle image or icon
-          Positioned(
-            top: topPad + 56,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: accent.withValues(alpha: 0.15),
-                  border: Border.all(
-                    color: accent.withValues(alpha: 0.3),
-                    width: 1.5,
-                  ),
-                ),
-                child: vehicle.imageUrl != null
-                    ? ClipOval(
-                        child: Image.network(
-                          vehicle.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Icon(
-                            icon,
-                            size: 52,
-                            color: Colors.white.withValues(alpha: 0.9),
-                          ),
-                        ),
-                      )
-                    : Icon(
-                        icon,
-                        size: 52,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-              ),
-            ),
-          ),
-
-          // Name + plate at bottom
-          Positioned(
-            bottom: 24,
             left: 20,
             right: 20,
-            child: Column(
+            bottom: 24,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  vehicle.name,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: .18),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (vehicle.plate != null && vehicle.plate!.isNotEmpty) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
+                  child: vehicle.imageUrl != null
+                      ? ClipRRect(
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
+                          child: Image.network(
+                            vehicle.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Icon(
+                              icon,
+                              size: 34,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          vehicle.plate!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                          ),
+                        )
+                      : Icon(icon, size: 34, color: Colors.white),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        vehicle.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 23,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -.4,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(height: 7),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          if (vehicle.plate?.isNotEmpty == true)
+                            _HeroMeta(label: vehicle.plate!),
+                          _HeroMeta(label: vehicle.serialNumber, muted: true),
+                        ],
+                      ),
                     ],
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        vehicle.serialNumber,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -747,6 +678,32 @@ class _HeroBackground extends StatelessWidget {
   }
 }
 
+class _HeroMeta extends StatelessWidget {
+  final String label;
+  final bool muted;
+  const _HeroMeta({required this.label, this.muted = false});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: muted ? .08 : .14),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: muted ? .65 : .95),
+            fontSize: 11,
+            fontWeight: muted ? FontWeight.w500 : FontWeight.w700,
+            letterSpacing: muted ? .2 : .8,
+          ),
+        ),
+      );
+}
+
 // ── Stat Pill ─────────────────────────────────────────────────────────────────
 
 class _StatPill extends StatelessWidget {
@@ -754,71 +711,46 @@ class _StatPill extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  final double progress;
 
   const _StatPill({
     required this.icon,
     required this.label,
     required this.value,
     required this.color,
-    required this.progress,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 110,
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryDark,
+                  ),
                 ),
-                child: Icon(icon, size: 16, color: color),
-              ),
-              const Spacer(),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryDark,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textHint,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: progress.clamp(0.0, 1.0),
-              backgroundColor: AppColors.divider.withValues(alpha: 0.3),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-              minHeight: 3,
+                Text(label, style: AppTextStyles.labelSmall),
+              ],
             ),
           ),
         ],
@@ -847,14 +779,8 @@ class _MapCard extends StatelessWidget {
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.divider),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(

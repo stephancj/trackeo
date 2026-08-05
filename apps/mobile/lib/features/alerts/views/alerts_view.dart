@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'dart:math' as math;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/product_ui.dart';
 import '../providers/alerts_provider.dart';
 import '../providers/geofences_provider.dart';
 import '../models/geofence_model.dart';
@@ -59,57 +60,59 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         ]),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionHeader(
-                'ZONES ACTIVES',
-                action: '+ Ajouter',
-                onActionTap: () {
-                  Navigator.push(
-                    context,
-                    TrackeoRoute(
-                      builder: (context) => const CreateGeofenceView(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              geofencesState.when(
-                data: (geofences) {
-                  if (geofences.isEmpty) {
-                    return _buildGeofencesEmptyState();
-                  }
-                  return SizedBox(
-                    height: 300,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      clipBehavior: Clip.none,
-                      itemCount: geofences.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (_, i) => SizedBox(
-                        width: MediaQuery.of(context).size.width - 32,
-                        child: _buildActiveGeofenceCard(geofences[i]),
+          child: ProductPage(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionHeader(
+                  'Zones de sécurité',
+                  action: 'Ajouter',
+                  onActionTap: () {
+                    Navigator.push(
+                      context,
+                      TrackeoRoute(
+                        builder: (context) => const CreateGeofenceView(),
                       ),
-                    ),
-                  );
-                },
-                loading: () => const GeofenceCarouselSkeleton(),
-                error: (e, st) =>
-                    _buildErrorState('Impossible de charger les zones.'),
-              ),
-              const SizedBox(height: 32),
-              _buildActivitySectionHeader(),
-              const SizedBox(height: 12),
-              alertsState.when(
-                data: (alerts) => _buildRecentActivityList(alerts),
-                loading: () => const AlertListSkeleton(),
-                error: (e, st) =>
-                    _buildErrorState('Impossible de charger les alertes.'),
-              ),
-              const SizedBox(height: 32),
-            ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                geofencesState.when(
+                  data: (geofences) {
+                    if (geofences.isEmpty) {
+                      return _buildGeofencesEmptyState();
+                    }
+                    return SizedBox(
+                      height: 300,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        clipBehavior: Clip.none,
+                        itemCount: geofences.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (_, i) => SizedBox(
+                          width: (MediaQuery.of(context).size.width - 32)
+                              .clamp(280.0, 688.0),
+                          child: _buildActiveGeofenceCard(geofences[i]),
+                        ),
+                      ),
+                    );
+                  },
+                  loading: () => const GeofenceCarouselSkeleton(),
+                  error: (e, st) =>
+                      _buildErrorState('Impossible de charger les zones.'),
+                ),
+                const SizedBox(height: 32),
+                _buildActivitySectionHeader(),
+                const SizedBox(height: 12),
+                alertsState.when(
+                  data: (alerts) => _buildRecentActivityList(alerts),
+                  loading: () => const AlertListSkeleton(),
+                  error: (e, st) =>
+                      _buildErrorState('Impossible de charger les alertes.'),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         ),
       ),
@@ -126,12 +129,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textHint,
-            letterSpacing: 0.5,
-          ),
+          style: AppTextStyles.sectionTitle,
         ),
         if (action != null)
           InkWell(
@@ -160,13 +158,8 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         const Text(
-          'ACTIVITÉ RÉCENTE',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textHint,
-            letterSpacing: 0.5,
-          ),
+          'Activité récente',
+          style: AppTextStyles.sectionTitle,
         ),
         SizedBox(
           height: 28,
@@ -742,25 +735,12 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         context,
         TrackeoRoute(builder: (context) => const CreateGeofenceView()),
       ),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       hoverColor: AppColors.primary.withValues(alpha: 0.04),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.primary.withValues(alpha: 0.08),
-              AppColors.primary.withValues(alpha: 0.03),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.2),
-            width: 1.5,
-          ),
-        ),
+      child: ProductSurface(
+        color: AppColors.pastelGreen,
+        borderColor: AppColors.primary.withValues(alpha: .22),
+        padding: const EdgeInsets.all(20),
         child: Row(
           children: [
             Container(
@@ -782,7 +762,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Aucune zone',
+                    'Créez votre première zone',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -791,7 +771,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    'Appuyez ici pour créer votre première zone et recevoir des alertes à l\'entrée ou la sortie.',
+                    'Recevez une alerte à chaque entrée ou sortie.',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textHint,
@@ -809,7 +789,7 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
-                '+ Créer',
+                'Créer',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -824,54 +804,13 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
   }
 
   Widget _buildActivityEmptyState() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check_circle_outline_rounded,
-              color: Colors.green,
-              size: 32,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Tout est calme',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Aucune alerte récente.\nVos véhicules sont dans leurs zones.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textHint,
-              height: 1.5,
-            ),
-          ),
-        ],
+    return const ProductSurface(
+      padding: EdgeInsets.zero,
+      child: ProductEmptyState(
+        icon: Icons.check_circle_outline_rounded,
+        title: 'Tout est calme',
+        message: 'Aucune alerte récente. Vos véhicules sont dans leurs zones.',
+        compact: true,
       ),
     );
   }
