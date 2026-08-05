@@ -49,6 +49,18 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
     final user = ref.watch(authProvider).user;
     final firstName = _firstName(user?.name, user?.email);
 
+    if (vehiclesAsync.hasValue && allVehicles.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: _EmptyFleetScreen(
+            firstName: firstName,
+            onAddVehicle: _addVehicle,
+          ),
+        ),
+      );
+    }
+
     // Un seul véhicule → pas de recherche ni de filtres : écran épuré et premium.
     if (vehiclesAsync.hasValue && allVehicles.length == 1) {
       return Scaffold(
@@ -227,8 +239,13 @@ String _firstName(String? name, String? email) {
 class _DashboardGreeting extends StatelessWidget {
   final String firstName;
   final VoidCallback onAdd;
+  final String subtitle;
 
-  const _DashboardGreeting({required this.firstName, required this.onAdd});
+  const _DashboardGreeting({
+    required this.firstName,
+    required this.onAdd,
+    this.subtitle = 'Voici l’état de vos véhicules.',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -272,8 +289,8 @@ class _DashboardGreeting extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Voici l’état de vos véhicules.',
+                Text(
+                  subtitle,
                   style: AppTextStyles.bodySecondary,
                 ),
               ],
@@ -473,6 +490,214 @@ class _FleetOverviewSkeleton extends StatelessWidget {
         color: AppColors.divider,
         borderRadius: BorderRadius.circular(22),
       ),
+    );
+  }
+}
+
+class _SingleVehicleOverview extends StatelessWidget {
+  final Vehicle vehicle;
+  final VoidCallback onOpenMap;
+
+  const _SingleVehicleOverview({
+    required this.vehicle,
+    required this.onOpenMap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final (title, subtitle, icon, accent) = switch (vehicle.status) {
+      VehicleStatus.online => (
+          '${vehicle.name} est en route',
+          '${vehicle.position?.speedKmh.toInt() ?? 0} km/h · position actualisée automatiquement',
+          Icons.near_me_rounded,
+          AppColors.primary,
+        ),
+      VehicleStatus.idle => (
+          '${vehicle.name} est à l’arrêt',
+          vehicle.sleepMode?.active == true
+              ? 'La veille antivol surveille le véhicule.'
+              : 'Le véhicule est connecté et ne se déplace pas.',
+          vehicle.sleepMode?.active == true
+              ? Icons.lock_outline_rounded
+              : Icons.local_parking_rounded,
+          AppColors.primary,
+        ),
+      VehicleStatus.offline => (
+          'Connexion à rétablir',
+          'Aucune position récente reçue de ${vehicle.name}.',
+          Icons.wifi_off_rounded,
+          const Color(0xFFFFC067),
+        ),
+    };
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(18, 18, 14, 16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryDark,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryDark.withValues(alpha: 0.18),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, color: accent, size: 21),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.66),
+                        fontSize: 12,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          TextButton.icon(
+            onPressed: onOpenMap,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+            ),
+            icon: const Icon(Icons.map_outlined, size: 18),
+            label: const Text(
+              'Voir sur la carte',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyFleetScreen extends StatelessWidget {
+  final String firstName;
+  final VoidCallback onAddVehicle;
+
+  const _EmptyFleetScreen({
+    required this.firstName,
+    required this.onAddVehicle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 28),
+      children: [
+        _DashboardGreeting(
+          firstName: firstName,
+          onAdd: onAddVehicle,
+          subtitle: 'Commencez par associer votre traceur.',
+        ),
+        const SizedBox(height: 28),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.fromLTRB(22, 26, 22, 24),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: AppColors.pastelGreen,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(
+                  Icons.directions_car_filled_rounded,
+                  color: AppColors.primaryDark,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Ajoutez votre premier véhicule',
+                style: TextStyle(
+                  color: AppColors.primaryDark,
+                  fontSize: 24,
+                  height: 1.15,
+                  letterSpacing: -0.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Munissez-vous de l’IMEI à 15 chiffres indiqué sur le traceur ou son emballage.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: onAddVehicle,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Ajouter un véhicule'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 22),
+          child: Row(
+            children: [
+              Icon(Icons.lock_outline_rounded,
+                  size: 17, color: AppColors.textHint),
+              SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'L’association est sécurisée et ne prend qu’une minute.',
+                  style: AppTextStyles.bodySecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -766,9 +991,19 @@ class _SingleVehicleScreen extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.only(bottom: 28),
         children: [
-          _DashboardGreeting(firstName: firstName, onAdd: onAddVehicle),
+          _DashboardGreeting(
+            firstName: firstName,
+            onAdd: onAddVehicle,
+            subtitle: 'Voici l’état de votre véhicule.',
+          ),
           const SizedBox(height: 16),
-          _FleetOverview(vehicles: [vehicle]),
+          _SingleVehicleOverview(
+            vehicle: vehicle,
+            onOpenMap: () {
+              ref.read(selectedVehicleIdProvider.notifier).state = vehicle.id;
+              ref.read(activeTabProvider.notifier).state = 1;
+            },
+          ),
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
