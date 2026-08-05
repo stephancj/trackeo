@@ -49,7 +49,16 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
           phone: _normalizePhone(_phoneCtrl.text),
           password: _passwordCtrl.text,
         );
-    if (mounted && !success) setState(() => _isSubmitting = false);
+    if (!mounted) return;
+
+    setState(() => _isSubmitting = false);
+    if (success) {
+      // L'inscription est ouverte depuis le login via Navigator.push().
+      // L'état global affiche déjà AppShell ; retirer cette route révèle
+      // immédiatement l'application authentifiée au lieu de laisser le
+      // formulaire et son spinner au-dessus.
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   @override
