@@ -10,7 +10,7 @@ Implémentation basée sur le [guide officiel](https://docs.papi.mg/fr/docs/deve
 4. La PWA redirige la fenêtre courante. Android/iOS ouvrent le navigateur externe.
 5. PAPI revient sur `https://app.iooeh.com/payment/return?...`.
 6. Cette URL est une route Flutter Web et un Universal Link/App Link natif.
-7. Le callback `POST https://api.iooeh.com/payments/papi/notification` vérifie référence, token, montant et devise avant activation.
+7. Le callback `POST https://api.iooeh.com/payments/papi/notification` retrouve le paiement avec `merchantPaymentReference` (la référence `IOOEH-…`), conserve `paymentReference` comme identifiant interne PAPI, puis vérifie token, montant et devise avant activation.
 
 Le retour navigateur n’active jamais l’abonnement : seul le callback serveur vérifié le fait.
 

@@ -118,11 +118,23 @@ export class PaymentsService {
   }
 
   async handleNotification(dto: PapiNotificationDto) {
+    // PAPI distingue sa référence interne (`paymentReference`) de la référence
+    // fournie par le marchand (`merchantPaymentReference`). Notre ligne locale
+    // est toujours indexée par cette dernière.
+    const merchantReference =
+      dto.merchantPaymentReference?.trim() ||
+      (dto.paymentReference.startsWith('IOOEH-')
+        ? dto.paymentReference.trim()
+        : null);
+    if (!merchantReference)
+      throw new BadRequestException(
+        'Référence marchand PAPI manquante ou invalide.',
+      );
     const payment = await this.paymentRepo
       .createQueryBuilder('payment')
       .addSelect('payment.papiNotificationToken')
       .where('payment.reference = :reference', {
-        reference: dto.paymentReference,
+        reference: merchantReference,
       })
       .getOne();
     if (
@@ -142,7 +154,8 @@ export class PaymentsService {
     )
       return { received: true };
     payment.paymentMethod = dto.paymentMethod ?? null;
-    payment.papiMerchantReference = dto.merchantPaymentReference ?? null;
+    payment.papiMerchantReference = merchantReference;
+    payment.papiPaymentReference = dto.paymentReference;
     payment.rawNotification = {
       ...(dto as unknown as Record<string, unknown>),
       notificationToken: '[redacted]',

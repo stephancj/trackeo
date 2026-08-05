@@ -51,6 +51,14 @@ export class Payment {
     nullable: true,
   })
   papiMerchantReference: string | null;
+  @Column({
+    name: 'papi_payment_reference',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+    unique: true,
+  })
+  papiPaymentReference: string | null;
   @Column({ name: 'failure_message', type: 'text', nullable: true })
   failureMessage: string | null;
   @Column({ name: 'paid_at', type: 'timestamptz', nullable: true })
