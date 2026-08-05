@@ -8,10 +8,18 @@ ALTER TABLE alerts
   ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION,
   ADD COLUMN IF NOT EXISTS lon DOUBLE PRECISION;
 
-ALTER TYPE alerts_type_enum ADD VALUE IF NOT EXISTS 'sos';
-ALTER TYPE alerts_type_enum ADD VALUE IF NOT EXISTS 'low_battery';
-ALTER TYPE alerts_type_enum ADD VALUE IF NOT EXISTS 'speed_limit';
-ALTER TYPE alerts_type_enum ADD VALUE IF NOT EXISTS 'sleep_movement';
+DO $$
+DECLARE enum_name TEXT; enum_value TEXT;
+BEGIN
+  SELECT typname INTO enum_name FROM pg_type
+  WHERE typname IN ('alerts_type_enum', 'alert_type')
+  ORDER BY CASE WHEN typname = 'alerts_type_enum' THEN 0 ELSE 1 END LIMIT 1;
+  IF enum_name IS NOT NULL THEN
+    FOREACH enum_value IN ARRAY ARRAY['sos','low_battery','speed_limit','sleep_movement'] LOOP
+      EXECUTE format('ALTER TYPE %I ADD VALUE IF NOT EXISTS %L', enum_name, enum_value);
+    END LOOP;
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS waitlist_subscribers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

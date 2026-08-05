@@ -45,7 +45,16 @@ CREATE TABLE IF NOT EXISTS trips (
 );
 CREATE INDEX IF NOT EXISTS idx_trips_device_period ON trips(device_id, start_ts DESC);
 
-ALTER TYPE alerts_type_enum ADD VALUE IF NOT EXISTS 'theft';
+DO $$
+DECLARE enum_name TEXT;
+BEGIN
+  SELECT typname INTO enum_name FROM pg_type
+  WHERE typname IN ('alerts_type_enum', 'alert_type')
+  ORDER BY CASE WHEN typname = 'alerts_type_enum' THEN 0 ELSE 1 END LIMIT 1;
+  IF enum_name IS NOT NULL THEN
+    EXECUTE format('ALTER TYPE %I ADD VALUE IF NOT EXISTS %L', enum_name, 'theft');
+  END IF;
+END $$;
 
 INSERT INTO features (code, name, description, category, value_type, unit, display_order) VALUES
  ('sos_alerts','Alertes SOS','Déclenchement d’un incident SOS critique.','Sécurité','boolean',NULL,200),
