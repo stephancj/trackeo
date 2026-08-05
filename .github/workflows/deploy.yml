@@ -300,8 +300,13 @@ jobs:
             cd /opt/trackeo &&
             git fetch origin main &&
             git reset --hard origin/main &&
-            if [ -f /etc/nginx/sites-available/trackeo ]; then cp infra/nginx/trackeo.conf /etc/nginx/sites-available/trackeo; fi &&
-            if [ -f /etc/nginx/sites-available/trackeo.conf ]; then cp infra/nginx/trackeo.conf /etc/nginx/sites-available/trackeo.conf; fi &&
+            trackeo_nginx_target=\$(grep -rl 'server_name app.iooeh.com' /etc/nginx/sites-available /etc/nginx/conf.d 2>/dev/null | head -n 1) &&
+            if [ -n \"\$trackeo_nginx_target\" ]; then
+              echo \"Updating active vhost source: \$trackeo_nginx_target\" &&
+              cp infra/nginx/trackeo.conf \"\$trackeo_nginx_target\";
+            else
+              echo 'Unable to locate the app.iooeh.com nginx vhost' >&2 && exit 1;
+            fi &&
             nginx -t && systemctl reload nginx &&
             docker-compose pull &&
             docker ps -a --filter 'name=trackeo-traccar' -q | xargs -r docker rm -f &&
