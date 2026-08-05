@@ -46,7 +46,6 @@
   <entry key='filter.distance'>10</entry>        <!-- mètres minimum entre 2 positions -->
   <entry key='filter.maxSpeed'>250</entry>       <!-- km/h max (filtre les valeurs aberrantes) -->
   <entry key='filter.invalid'>true</entry>
-  <entry key='filter.accuracy'>0</entry>
 
   <!-- Logs -->
   <entry key='logger.level'>info</entry>
