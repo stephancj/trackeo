@@ -13,6 +13,7 @@ import { VehicleDto, VehiclePositionDto, VehicleStatus } from './vehicle.dto';
 import { Device } from '../devices/device.entity';
 import { DeviceAssignment } from '../admin/device-assignment.entity';
 import { ClaimVehicleDto } from './dto/claim-vehicle.dto';
+import { VehicleSleepMode } from './vehicle-sleep-mode.entity';
 
 @Injectable()
 export class VehiclesService {
@@ -21,6 +22,8 @@ export class VehiclesService {
     private readonly positionsService: PositionsService,
     @InjectRepository(DeviceAssignment)
     private readonly assignmentRepo: Repository<DeviceAssignment>,
+    @InjectRepository(VehicleSleepMode)
+    private readonly sleepModeRepo: Repository<VehicleSleepMode>,
   ) {}
 
   /**
@@ -142,6 +145,54 @@ export class VehiclesService {
     return this.buildVehicleDto(device);
   }
 
+  /** Arme la veille depuis la position actuelle, uniquement véhicule arrêté. */
+  async enableSleepMode(
+    deviceId: number,
+    ownerId: number,
+  ): Promise<VehicleSleepMode> {
+    const vehicle = await this.findOne(deviceId);
+    if (!vehicle.position || vehicle.status === 'offline') {
+      throw new BadRequestException(
+        'Le véhicule doit transmettre une position récente pour activer la veille.',
+      );
+    }
+    if (vehicle.status !== 'idle' || vehicle.position.speedKmh > 2) {
+      throw new BadRequestException(
+        'La veille peut être activée uniquement lorsque le véhicule est à l’arrêt.',
+      );
+    }
+
+    const existing = await this.sleepModeRepo.findOne({
+      where: { deviceId },
+    });
+    const mode = this.sleepModeRepo.create({
+      ...(existing ?? {}),
+      deviceId,
+      ownerId,
+      active: true,
+      armedLat: vehicle.position.lat,
+      armedLon: vehicle.position.lon,
+      movementThresholdM: 100,
+      triggeredAt: null,
+      lastDistanceM: 0,
+      armedAt: new Date(),
+    });
+    return this.sleepModeRepo.save(mode);
+  }
+
+  /** Désarme la veille. Le record est conservé pour le diagnostic. */
+  async disableSleepMode(
+    deviceId: number,
+    ownerId: number,
+  ): Promise<VehicleSleepMode | null> {
+    const mode = await this.sleepModeRepo.findOne({
+      where: { deviceId, ownerId },
+    });
+    if (!mode) return null;
+    mode.active = false;
+    return this.sleepModeRepo.save(mode);
+  }
+
   /**
    * Dernière position d'un véhicule — endpoint de polling (toutes les 10s).
    */
@@ -191,6 +242,10 @@ export class VehiclesService {
       }
     }
 
+    const sleepMode = await this.sleepModeRepo.findOne({
+      where: { deviceId: device.id, active: true },
+    });
+
     return {
       id: device.id,
       name: device.name,
@@ -204,6 +259,16 @@ export class VehiclesService {
       ),
       lastUpdate: device.lastUpdate,
       position,
+      sleepMode: sleepMode
+        ? {
+            active: sleepMode.active,
+            triggered: sleepMode.triggeredAt != null,
+            armedAt: sleepMode.armedAt,
+            triggeredAt: sleepMode.triggeredAt,
+            movementThresholdM: sleepMode.movementThresholdM,
+            lastDistanceM: sleepMode.lastDistanceM,
+          }
+        : null,
     };
   }
 

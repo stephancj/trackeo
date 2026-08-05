@@ -1,5 +1,5 @@
 /**
- * simulate.ts — Simulateur GPS réaliste pour Trackeo (Antananarivo)
+ * simulate.ts — Simulateur GPS réaliste pour iooeh (Antananarivo)
  *
  * Trajet : Analakely → Antanimena → Ankorondrano → Ivandry → RN1 → Ambohidratrimo
  * Distance approximative : ~18 km
@@ -400,7 +400,7 @@ function printStats(points: GpsPoint[]): void {
 
 async function main(): Promise<void> {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('  🗺️  Trackeo GPS Simulator — Antananarivo');
+  console.log('  🗺️  iooeh GPS Simulator — Antananarivo');
   console.log(`  📡  Device   : ${CONFIG.deviceId}`);
   console.log(`  🎯  Trajet   : Analakely → Antanimena → Ankorondrano`);
   console.log(`                → Ivandry → RN1 → Ambohidratrimo`);

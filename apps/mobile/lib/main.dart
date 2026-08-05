@@ -26,20 +26,20 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: TrackeoApp(),
+      child: IooehApp(),
     ),
   );
 }
 
-class TrackeoApp extends ConsumerWidget {
-  const TrackeoApp({super.key});
+class IooehApp extends ConsumerWidget {
+  const IooehApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
 
     return MaterialApp(
-      title: 'Trackeo',
+      title: 'iooeh',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       home: switch (auth.status) {

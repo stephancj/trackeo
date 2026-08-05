@@ -6,11 +6,11 @@ brand
 
 ## Users
 
-Trackeo s'adresse aux proprietaires de vehicules, gestionnaires de flotte, PME, societes de transport et equipes support a Madagascar. Ils consultent surtout le produit sur mobile, parfois sur laptop, souvent en plein jour, avec un besoin simple: savoir vite ou est le vehicule, ce qu'il vient de faire et s'il faut reagir.
+iooeh s'adresse aux proprietaires de vehicules, gestionnaires de flotte, PME, societes de transport et equipes support a Madagascar. Ils consultent surtout le produit sur mobile, parfois sur laptop, souvent en plein jour, avec un besoin simple: savoir vite ou est le vehicule, ce qu'il vient de faire et s'il faut reagir.
 
 ## Product Purpose
 
-Trackeo transforme des positions GPS en informations utiles: suivi en direct, historique des trajets, zones de securite, alertes et gestion des vehicules. Le produit doit aider a reduire l'incertitude, accelerer la reaction en cas d'incident et offrir une marche progressive entre un seul vehicule et une flotte complete.
+iooeh transforme des positions GPS en informations utiles: suivi en direct, historique des trajets, zones de securite, alertes et gestion des vehicules. Le produit doit aider a reduire l'incertitude, accelerer la reaction en cas d'incident et offrir une marche progressive entre un seul vehicule et une flotte complete.
 
 ## Brand Personality
 

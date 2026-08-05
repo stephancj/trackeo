@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Palette de couleurs Trackeo — extraite du logo officiel.
+/// Palette de couleurs iooeh — extraite du logo officiel.
 class AppColors {
   AppColors._();
 
   // ── Brand ──────────────────────────────────────────────────────────────────
-  /// Vert menthe officiel du logo Trackeo.
+  /// Vert menthe officiel du logo iooeh.
   static const Color primary = Color(0xFF4ECB8D);
   static const Color brandMint = Color(0xFF4ECB8D);
 

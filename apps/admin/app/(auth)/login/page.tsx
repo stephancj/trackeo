@@ -41,7 +41,7 @@ export default function LoginPage() {
             <div className="inline-flex h-12 w-12 rounded-xl bg-trackeo-primary items-center justify-center mb-4 shadow-sm">
               <MapPin className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Trackeo</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">iooeh</h1>
             <p className="text-sm text-muted-foreground mt-1">Admin Dashboard</p>
           </div>
 

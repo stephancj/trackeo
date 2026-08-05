@@ -56,7 +56,7 @@ class NominatimCache {
       final dio = Dio(
         BaseOptions(
           headers: {
-            'User-Agent': 'Trackeo Mobile App / contact@projettrackeo.mg',
+            'User-Agent': 'iooeh Mobile App / contact@projettrackeo.mg',
           },
         ),
       );
@@ -95,7 +95,7 @@ class NominatimCache {
       final dio = Dio(
         BaseOptions(
           headers: {
-            'User-Agent': 'Trackeo Mobile App / contact@projettrackeo.mg',
+            'User-Agent': 'iooeh Mobile App / contact@projettrackeo.mg',
           },
         ),
       );

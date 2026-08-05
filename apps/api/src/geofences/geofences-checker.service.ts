@@ -10,6 +10,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { UsersService } from '../users/users.service';
 import { AlertType } from '../alerts/entities/alert.entity';
 import { DeviceAssignment } from '../admin/device-assignment.entity';
+import { VehicleSleepMode } from '../vehicles/vehicle-sleep-mode.entity';
 
 interface AlertSettings {
   alertsEnabled: boolean;
@@ -32,6 +33,8 @@ export class GeofencesCheckerService {
     private readonly usersService: UsersService,
     @InjectRepository(DeviceAssignment)
     private readonly assignmentRepo: Repository<DeviceAssignment>,
+    @InjectRepository(VehicleSleepMode)
+    private readonly sleepModeRepo: Repository<VehicleSleepMode>,
   ) {}
 
   // Cache en mémoire pour éviter le spam et les requêtes DB.
@@ -196,6 +199,68 @@ export class GeofencesCheckerService {
   // (le cron tourne toutes les 30 s ; sans ça la batterie faible spammait).
   private readonly ALERT_THROTTLE_MS = 30 * 60 * 1000; // 30 min
 
+  /**
+   * Veille antivol : une alerte unique dès que le véhicule quitte le rayon
+   * d'armement. L'état reste déclenché jusqu'au désarmement par l'utilisateur.
+   */
+  @Cron('*/15 * * * * *')
+  async checkSleepModes() {
+    try {
+      const modes = await this.sleepModeRepo.find({ where: { active: true } });
+      if (modes.length === 0) return;
+
+      const vehicles = await this.vehiclesService.findAll();
+      const vehicleMap = new Map(
+        vehicles.map((vehicle) => [vehicle.id, vehicle]),
+      );
+
+      for (const mode of modes) {
+        if (mode.triggeredAt) continue;
+        const vehicle = vehicleMap.get(mode.deviceId);
+        if (!vehicle?.position || vehicle.status === 'offline') continue;
+
+        const distanceM = this.getDistanceFromLatLonInM(
+          mode.armedLat,
+          mode.armedLon,
+          vehicle.position.lat,
+          vehicle.position.lon,
+        );
+        mode.lastDistanceM = Math.round(distanceM);
+
+        if (distanceM < mode.movementThresholdM) {
+          await this.sleepModeRepo.save(mode);
+          continue;
+        }
+
+        mode.triggeredAt = new Date();
+        await this.sleepModeRepo.save(mode);
+
+        const message = `Mouvement détecté à ${Math.round(distanceM)} m du point de veille`;
+        await this.alertsService.createAlert(
+          mode.ownerId,
+          mode.deviceId,
+          AlertType.SLEEP_MOVEMENT,
+          message,
+          vehicle.position.lat,
+          vehicle.position.lon,
+        );
+
+        const settings = await this.getUserAlertSettings(mode.ownerId);
+        await this.notifyAlert(
+          mode.ownerId,
+          mode.deviceId,
+          vehicle.name,
+          AlertType.SLEEP_MOVEMENT,
+          message,
+          settings,
+        );
+        this.logger.warn(`VEILLE DÉCLENCHÉE ${vehicle.name}: ${message}`);
+      }
+    } catch (e) {
+      this.logger.error('Erreur lors du check des modes veille', e);
+    }
+  }
+
   @Cron('*/30 * * * * *')
   async checkVehicleAlerts() {
     this.logger.debug('Vérification des alertes véhicule...');
@@ -340,7 +405,10 @@ export class GeofencesCheckerService {
     const cacheKey = `${vehicleId}_${alertType}`;
     const lastAlert = this.lastAlertCache.get(cacheKey);
 
-    if (lastAlert && Date.now() - lastAlert.getTime() < this.ALERT_THROTTLE_MS) {
+    if (
+      lastAlert &&
+      Date.now() - lastAlert.getTime() < this.ALERT_THROTTLE_MS
+    ) {
       return;
     }
 
@@ -379,7 +447,9 @@ export class GeofencesCheckerService {
       const title =
         alertType === AlertType.LOW_BATTERY
           ? '🔋 Batterie faible'
-          : '⚡ Excès de vitesse';
+          : alertType === AlertType.SLEEP_MOVEMENT
+            ? '🚨 Mouvement en mode veille'
+            : '⚡ Excès de vitesse';
       // Préfixe le nom du véhicule : le push n'a pas de puce véhicule comme l'in-app.
       const pushBody = `${vehicleName} • ${message}`;
       await this.notificationsService.sendPush({
@@ -399,7 +469,11 @@ export class GeofencesCheckerService {
         userId,
         vehicleName,
         message,
-        alertType === AlertType.LOW_BATTERY ? 'enter' : 'exit',
+        alertType === AlertType.SLEEP_MOVEMENT
+          ? 'movement'
+          : alertType === AlertType.LOW_BATTERY
+            ? 'enter'
+            : 'exit',
       );
     }
   }
@@ -475,7 +549,7 @@ export class GeofencesCheckerService {
     userId: number,
     vehicleName: string,
     alertMessage: string,
-    alertType: 'enter' | 'exit',
+    alertType: 'enter' | 'exit' | 'movement',
   ): Promise<void> {
     const phone = await this.getUserPhone(userId);
     if (!phone) {
@@ -504,7 +578,7 @@ export class GeofencesCheckerService {
       const address = await new Promise<string>((resolve, reject) => {
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=16`;
         https
-          .get(url, { headers: { 'User-Agent': 'Trackeo/1.0' } }, (res) => {
+          .get(url, { headers: { 'User-Agent': 'iooeh/1.0' } }, (res) => {
             let data = '';
             res.on('data', (chunk) => (data += chunk));
             res.on('end', () => {
@@ -515,7 +589,12 @@ export class GeofencesCheckerService {
                   a.road ?? a.pedestrian ?? a.path,
                   a.suburb ?? a.neighbourhood ?? a.village ?? a.town ?? a.city,
                 ].filter(Boolean);
-                resolve(parts.length > 0 ? parts.join(', ') : json.display_name?.split(',')[0] ?? `${lat.toFixed(4)},${lon.toFixed(4)}`);
+                resolve(
+                  parts.length > 0
+                    ? parts.join(', ')
+                    : (json.display_name?.split(',')[0] ??
+                        `${lat.toFixed(4)},${lon.toFixed(4)}`),
+                );
               } catch {
                 resolve(`${lat.toFixed(4)},${lon.toFixed(4)}`);
               }

@@ -113,6 +113,7 @@ const TYPE_LABELS: Record<string, string> = {
   geofence_exit: "Geofence Exit",
   low_battery: "Low Battery",
   speed_limit: "Speed Limit",
+  sleep_movement: "Mouvement en veille",
   sos: "SOS",
 };
 

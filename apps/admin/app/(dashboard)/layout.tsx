@@ -19,7 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <SidebarNav />
       <div className="sticky top-0 z-20 border-b bg-background lg:hidden">
         <div className="flex h-14 items-center justify-between px-4">
-          <span className="font-bold text-foreground">Trackeo Admin</span>
+          <span className="font-bold text-foreground">iooeh Admin</span>
           <span className="text-xs font-semibold text-trackeo-primary">OPÉRATIONS</span>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3" aria-label="Navigation mobile">

@@ -73,7 +73,9 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
   }
 
   @override
-  Widget build(BuildContext context, ) {
+  Widget build(
+    BuildContext context,
+  ) {
     AsyncValue<String?>? addressAsync;
     if (widget.vehicle.position != null) {
       addressAsync = ref.watch(
@@ -99,8 +101,7 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
-            border:
-                Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+            border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.02),
@@ -155,8 +156,11 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                     StatusBadge(status: widget.vehicle.status),
                   ],
                 ),
+                if (widget.vehicle.sleepMode != null) ...[
+                  const SizedBox(height: 12),
+                  _SleepModeBadge(mode: widget.vehicle.sleepMode!),
+                ],
                 const SizedBox(height: 20),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -173,7 +177,8 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                         RichText(
                           text: TextSpan(
                             children: [
-                              if (widget.vehicle.status == VehicleStatus.online &&
+                              if (widget.vehicle.status ==
+                                      VehicleStatus.online &&
                                   widget.vehicle.position != null)
                                 TextSpan(
                                   text:
@@ -228,9 +233,7 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 12),
-
                 Row(
                   children: [
                     const Icon(
@@ -284,6 +287,44 @@ class _VehicleCardState extends ConsumerState<VehicleCard>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SleepModeBadge extends StatelessWidget {
+  final VehicleSleepMode mode;
+  const _SleepModeBadge({required this.mode});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = mode.triggered ? AppColors.statusAlert : AppColors.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            mode.triggered
+                ? Icons.warning_amber_rounded
+                : Icons.shield_outlined,
+            size: 15,
+            color: color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            mode.triggered ? 'Mouvement détecté' : 'Veille active',
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

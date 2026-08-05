@@ -39,7 +39,14 @@ class VehicleDetailsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final vehicle = ref.watch(selectedVehicleProvider) ?? this.vehicle;
+    final liveVehicles = ref.watch(vehiclesProvider).valueOrNull ?? const [];
+    var vehicle = this.vehicle;
+    for (final candidate in liveVehicles) {
+      if (candidate.id == this.vehicle.id) {
+        vehicle = candidate;
+        break;
+      }
+    }
     final pos = vehicle.position;
     final addressAsync = pos != null
         ? ref.watch(reverseGeocodeProvider(LatLng(pos.lat, pos.lon)))
@@ -158,6 +165,13 @@ class VehicleDetailsView extends ConsumerWidget {
 
                 const SizedBox(height: 20),
 
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _SleepModePanel(vehicle: vehicle),
+                ),
+
+                const SizedBox(height: 20),
+
                 // ── Map Preview ───────────────────────────────────────────
                 if (pos != null) ...[
                   Padding(
@@ -239,6 +253,173 @@ class VehicleDetailsView extends ConsumerWidget {
             }
           }
         },
+      ),
+    );
+  }
+}
+
+class _SleepModePanel extends ConsumerStatefulWidget {
+  final Vehicle vehicle;
+  const _SleepModePanel({required this.vehicle});
+
+  @override
+  ConsumerState<_SleepModePanel> createState() => _SleepModePanelState();
+}
+
+class _SleepModePanelState extends ConsumerState<_SleepModePanel> {
+  bool _saving = false;
+
+  Future<void> _toggle() async {
+    setState(() => _saving = true);
+    try {
+      if (widget.vehicle.sleepMode?.active == true) {
+        await ref
+            .read(vehiclesProvider.notifier)
+            .disableSleepMode(widget.vehicle.id);
+      } else {
+        await ref
+            .read(vehiclesProvider.notifier)
+            .enableSleepMode(widget.vehicle.id);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.vehicle.sleepMode?.active == true
+                ? 'Veille désactivée'
+                : 'Veille activée, ioeh surveille ce véhicule.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Impossible de modifier la veille. Vérifiez que le véhicule est bien à l’arrêt.',
+          ),
+          backgroundColor: AppColors.statusAlert,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mode = widget.vehicle.sleepMode;
+    final isActive = mode?.active == true;
+    final isTriggered = mode?.triggered == true;
+    final canEnable = widget.vehicle.status == VehicleStatus.idle &&
+        widget.vehicle.position != null;
+    final color = isTriggered
+        ? AppColors.statusAlert
+        : isActive
+            ? AppColors.primary
+            : AppColors.primaryDark;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isTriggered
+            ? AppColors.pastelRed
+            : isActive
+                ? AppColors.pastelGreen
+                : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isActive ? color.withValues(alpha: 0.35) : AppColors.divider,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  isTriggered
+                      ? Icons.warning_amber_rounded
+                      : Icons.shield_outlined,
+                  color: color,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isTriggered
+                          ? 'Mouvement détecté'
+                          : isActive
+                              ? 'Veille active'
+                              : 'Veille antivol',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isTriggered
+                          ? 'Le véhicule a quitté son point de veille. Consultez sa position et désactivez la veille après vérification.'
+                          : isActive
+                              ? 'Une alerte sera envoyée au-delà de ${mode!.movementThresholdM} m du point actuel.'
+                              : canEnable
+                                  ? 'Surveille le véhicule à l’arrêt et vous alerte s’il est déplacé.'
+                                  : 'Disponible lorsque le véhicule est arrêté et transmet sa position.',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: isActive
+                ? OutlinedButton.icon(
+                    onPressed: _saving ? null : _toggle,
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.shield_outlined, size: 18),
+                    label: const Text('Désactiver la veille'),
+                  )
+                : ElevatedButton.icon(
+                    onPressed: canEnable && !_saving ? _toggle : null,
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.shield_outlined, size: 18),
+                    label: const Text('Activer la veille'),
+                  ),
+          ),
+        ],
       ),
     );
   }

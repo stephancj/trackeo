@@ -20,7 +20,7 @@ export interface WhatsAppPayload {
   phone: string;
   vehicleName: string;
   geofenceName: string;
-  alertType: 'enter' | 'exit';
+  alertType: 'enter' | 'exit' | 'movement';
 }
 
 @Injectable()
@@ -102,9 +102,12 @@ export class NotificationsService {
       return;
     }
 
-    const action =
-      payload.alertType === 'enter' ? 'est entré dans' : 'a quitté';
-    const message = `🚗 *Trackeo Alert*\n\n${payload.vehicleName} ${action} la zone "${payload.geofenceName}".\n\n🔔 Connectez-vous à l'app pour plus de détails.`;
+    const message =
+      payload.alertType === 'movement'
+        ? `🚨 *Alerte iooeh*\n\n${payload.vehicleName}: ${payload.geofenceName}.\n\n🔔 Ouvrez l'app pour vérifier sa position.`
+        : `🚗 *Alerte iooeh*\n\n${payload.vehicleName} ${
+            payload.alertType === 'enter' ? 'est entré dans' : 'a quitté'
+          } la zone "${payload.geofenceName}".\n\n🔔 Connectez-vous à l'app pour plus de détails.`;
 
     const formattedPhone = this.formatPhoneForWhatsApp(payload.phone);
 

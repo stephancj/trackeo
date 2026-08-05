@@ -361,7 +361,7 @@ class _MapViewState extends ConsumerState<MapView>
               ),
             ),
 
-          // ── Header : logo Trackeo + cloche ─────────────────────────────
+          // ── Header : signature iooeh + cloche ──────────────────────────
           Positioned(
             top: topPad + 8,
             left: 16,
@@ -379,7 +379,7 @@ class _MapViewState extends ConsumerState<MapView>
                   ),
                   child: const Center(
                     child: Text(
-                      'T',
+                      'i',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w900,

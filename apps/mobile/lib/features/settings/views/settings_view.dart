@@ -212,7 +212,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 child: Column(
                   children: [
                     Text(
-                      'Trackeo',
+                      'iooeh',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,

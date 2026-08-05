@@ -81,7 +81,7 @@ export class UsersService {
     return this.userRepo.save(user);
   }
 
-  /** Supprime le compte et ses données Trackeo après confirmation du mot de passe. */
+  /** Supprime le compte et ses données iooeh après confirmation du mot de passe. */
   async deleteAccount(userId: number, password: string): Promise<void> {
     const user = await this.findByIdWithPassword(userId);
     if (!user || !(await bcrypt.compare(password, user.password))) {

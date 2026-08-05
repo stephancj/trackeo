@@ -74,7 +74,7 @@ export function SidebarNav() {
           <MapPin className="h-4.5 w-4.5 text-white" />
         </div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-lg font-bold tracking-tight text-foreground">Trackeo</span>
+          <span className="text-lg font-bold tracking-tight text-foreground">iooeh</span>
           <span className="text-[10px] font-semibold uppercase tracking-widest text-trackeo-primary">Admin</span>
         </div>
       </div>

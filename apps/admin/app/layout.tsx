@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Trackeo Admin",
-  description: "Trackeo GPS Tracking — Admin Dashboard",
+  title: "iooeh Admin",
+  description: "iooeh GPS Tracking — Admin Dashboard",
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
-# Guide de Test Trackeo
+# Guide de Test iooeh
 
-Ce guide vous accompagne pas à pas pour lancer et tester l'environnement de développement complet de Trackeo.
+Ce guide vous accompagne pas à pas pour lancer et tester l'environnement de développement complet de iooeh.
 
 ## Étape 1 — Lancer l'infrastructure (Docker)
 
@@ -87,7 +87,7 @@ cd scripts
 npx ts-node simulate.ts
 ```
 
-> **Note** : Le script simule un déplacement entre Paris et La Défense. Une fois cette étape passée, vous devriez voir le véhicule apparaître en ligne sur la carte de Trackeo et se déplacer en temps réel ! Vous pouvez aussi personnaliser l'identifiant avec par exemple : `DEVICE_ID=mon-camion INTERVAL_MS=2000 npx ts-node simulate.ts` (n'oubliez pas de créer l'identifiant `mon-camion` dans l'interface Traccar).
+> **Note** : Le script simule un déplacement entre Paris et La Défense. Une fois cette étape passée, vous devriez voir le véhicule apparaître en ligne sur la carte de iooeh et se déplacer en temps réel ! Vous pouvez aussi personnaliser l'identifiant avec par exemple : `DEVICE_ID=mon-camion INTERVAL_MS=2000 npx ts-node simulate.ts` (n'oubliez pas de créer l'identifiant `mon-camion` dans l'interface Traccar).
 
 ---
 

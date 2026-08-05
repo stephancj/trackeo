@@ -9,10 +9,11 @@ import { VehiclesModule } from '../vehicles/vehicles.module';
 import { AlertsModule } from '../alerts/alerts.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { UsersModule } from '../users/users.module';
+import { VehicleSleepMode } from '../vehicles/vehicle-sleep-mode.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Geofence, DeviceAssignment]),
+    TypeOrmModule.forFeature([Geofence, DeviceAssignment, VehicleSleepMode]),
     VehiclesModule,
     AlertsModule,
     NotificationsModule,

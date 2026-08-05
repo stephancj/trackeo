@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Patch,
   Body,
   Param,
@@ -71,6 +72,27 @@ export class VehiclesController {
   ) {
     await this.vehiclesService.assertOwner(id, req.user.id);
     return this.vehiclesService.update(id, data);
+  }
+
+  /** POST /api/vehicles/:id/sleep-mode — arme la veille antivol. */
+  @Post(':id/sleep-mode')
+  async enableSleepMode(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
+    return this.vehiclesService.enableSleepMode(id, req.user.id);
+  }
+
+  /** DELETE /api/vehicles/:id/sleep-mode — désarme la veille antivol. */
+  @Delete(':id/sleep-mode')
+  async disableSleepMode(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: { user: { id: number } },
+  ) {
+    await this.vehiclesService.assertOwner(id, req.user.id);
+    await this.vehiclesService.disableSleepMode(id, req.user.id);
+    return { active: false };
   }
 
   /**

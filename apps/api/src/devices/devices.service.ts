@@ -32,7 +32,7 @@ export class DevicesService {
     const password = process.env.TRACCAR_API_PASSWORD;
     if (!baseUrl || !email || !password) {
       throw new ServiceUnavailableException(
-        'Activation automatique indisponible. Contactez le support Trackeo.',
+        'Activation automatique indisponible. Contactez le support iooeh.',
       );
     }
 

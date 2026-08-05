@@ -6,6 +6,7 @@ import { DeviceAssignment } from '../admin/device-assignment.entity';
 import { Subscription } from '../admin/subscription.entity';
 import { Geofence } from '../geofences/entities/geofence.entity';
 import { Alert } from '../alerts/entities/alert.entity';
+import { VehicleSleepMode } from '../vehicles/vehicle-sleep-mode.entity';
 import * as pg from 'pg';
 
 // Force parsing of 'timestamp without time zone' (OID 1114) as UTC.
@@ -18,7 +19,16 @@ export default (): TypeOrmModuleOptions => ({
   username: process.env.DB_USER ?? 'trackeo',
   password: process.env.DB_PASS ?? 'Password_1234',
   database: process.env.DB_NAME ?? 'traccar_db',
-  entities: [Device, Position, User, DeviceAssignment, Subscription, Geofence, Alert],
+  entities: [
+    Device,
+    Position,
+    User,
+    DeviceAssignment,
+    Subscription,
+    Geofence,
+    Alert,
+    VehicleSleepMode,
+  ],
   // migrations exclues du runtime — lancées manuellement via `npm run migration:run`
   synchronize: false,
   logging: ['error'],

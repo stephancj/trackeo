@@ -29,7 +29,7 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Trackeo</title>
+  <title>iooeh</title>
   <link rel="manifest" href="manifest.json">
 
   <!-- OneSignal Web Push SDK -->
@@ -49,9 +49,9 @@
         await window.OneSignal.login(userId);
         // Capture le subscription ID après login (peut être null si pas encore souscrit)
         window._trackeoSubId = window.OneSignal?.User?.PushSubscription?.id ?? null;
-        console.log('[Trackeo] OneSignal login OK — externalId:', userId, '| subId:', window._trackeoSubId);
+        console.log('[iooeh] OneSignal login OK — externalId:', userId, '| subId:', window._trackeoSubId);
       } catch(e) {
-        console.error('[Trackeo] OneSignal login failed:', e);
+        console.error('[iooeh] OneSignal login failed:', e);
       }
     };
 
@@ -82,7 +82,7 @@
               type: "push",
               autoPrompt: true,
               text: {
-                actionMessage: "Trackeo souhaite vous envoyer des alertes de zone.",
+                actionMessage: "iooeh souhaite vous envoyer des alertes de zone.",
                 acceptButton: "Autoriser",
                 cancelButton: "Plus tard",
               },
@@ -93,13 +93,13 @@
 
       // Capture le subscription ID dès que l'init est terminée
       window._trackeoSubId = OneSignal?.User?.PushSubscription?.id ?? null;
-      console.log('[Trackeo] OneSignal init OK — subId:', window._trackeoSubId);
+      console.log('[iooeh] OneSignal init OK — subId:', window._trackeoSubId);
 
       // Si Flutter a déjà fourni un userId avant la fin de l'init, on le lie maintenant
       if (window._trackeoUserId) {
         await OneSignal.login(window._trackeoUserId);
         window._trackeoSubId = OneSignal?.User?.PushSubscription?.id ?? null;
-        console.log('[Trackeo] OneSignal post-init login OK —', window._trackeoUserId, '| subId:', window._trackeoSubId);
+        console.log('[iooeh] OneSignal post-init login OK —', window._trackeoUserId, '| subId:', window._trackeoSubId);
       }
     });
   </script>

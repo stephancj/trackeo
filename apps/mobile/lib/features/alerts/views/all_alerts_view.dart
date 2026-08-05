@@ -19,7 +19,7 @@ class AllAlertsView extends ConsumerStatefulWidget {
 class _AllAlertsViewState extends ConsumerState<AllAlertsView> {
   // 'all' | 'open'
   String _statusFilter = 'all';
-  // 'all' | 'geofence' | 'speed_limit' | 'low_battery'
+  // 'all' | 'geofence' | 'speed_limit' | 'low_battery' | 'sleep_movement'
   String _typeFilter = 'all';
 
   bool _matchesType(AlertModel a) {
@@ -30,6 +30,8 @@ class _AllAlertsViewState extends ConsumerState<AllAlertsView> {
         return a.type == 'speed_limit';
       case 'low_battery':
         return a.type == 'low_battery';
+      case 'sleep_movement':
+        return a.type == 'sleep_movement';
       default:
         return true;
     }
@@ -44,8 +46,18 @@ class _AllAlertsViewState extends ConsumerState<AllAlertsView> {
     if (diff == 0) return "Aujourd'hui";
     if (diff == 1) return 'Hier';
     const months = [
-      'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-      'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+      'janvier',
+      'février',
+      'mars',
+      'avril',
+      'mai',
+      'juin',
+      'juillet',
+      'août',
+      'septembre',
+      'octobre',
+      'novembre',
+      'décembre',
     ];
     return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
@@ -91,7 +103,8 @@ class _AllAlertsViewState extends ConsumerState<AllAlertsView> {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Impossible de mettre à jour les alertes.'),
+                        content:
+                            Text('Impossible de mettre à jour les alertes.'),
                         behavior: SnackBarBehavior.floating,
                         backgroundColor: AppColors.statusAlert,
                       ),
@@ -155,7 +168,8 @@ class _AllAlertsViewState extends ConsumerState<AllAlertsView> {
                             SizedBox(height: 80),
                             _EmptyState(
                               title: 'Aucun résultat',
-                              subtitle: 'Aucune alerte ne correspond au filtre.',
+                              subtitle:
+                                  'Aucune alerte ne correspond au filtre.',
                             ),
                           ],
                         )
@@ -224,6 +238,14 @@ class _AllAlertsViewState extends ConsumerState<AllAlertsView> {
                   icon: Icons.battery_alert_rounded,
                   selected: _typeFilter == 'low_battery',
                   onTap: () => setState(() => _typeFilter = 'low_battery'),
+                  subtle: true,
+                ),
+                const SizedBox(width: 8),
+                _filterChip(
+                  label: 'Veille',
+                  icon: Icons.shield_outlined,
+                  selected: _typeFilter == 'sleep_movement',
+                  onTap: () => setState(() => _typeFilter = 'sleep_movement'),
                   subtle: true,
                 ),
               ],
@@ -332,6 +354,8 @@ class _AlertCard extends ConsumerWidget {
         return AppColors.batteryLow;
       case 'speed_limit':
         return AppColors.statusAlert;
+      case 'sleep_movement':
+        return AppColors.statusAlert;
       default:
         return AppColors.primary;
     }
@@ -347,6 +371,8 @@ class _AlertCard extends ConsumerWidget {
         return 'Batterie faible';
       case 'speed_limit':
         return 'Excès de vitesse';
+      case 'sleep_movement':
+        return 'Mouvement en veille';
       default:
         return type;
     }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../theme/app_theme.dart';
 
-/// Wraps its [child] in the Trackeo shimmer animation.
+/// Wraps its [child] in the iooeh shimmer animation.
 /// All skeleton widgets must be descendants of this widget.
 class TrackeoShimmer extends StatelessWidget {
   final Widget child;

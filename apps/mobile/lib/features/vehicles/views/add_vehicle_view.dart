@@ -318,7 +318,7 @@ class _ActivationStatusView extends StatelessWidget {
                 done: hasSignal,
                 title: 'Connexion au réseau',
                 subtitle: hasSignal
-                    ? 'Le traceur communique avec Trackeo.'
+                    ? 'Le traceur communique avec iooeh.'
                     : 'Laissez le traceur alimenté dans une zone couverte.',
               ),
               const SizedBox(height: 14),

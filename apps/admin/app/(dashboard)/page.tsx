@@ -28,6 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
   low_battery: "Batterie faible",
   speed_limit: "Excès de vitesse",
   sos: "SOS",
+  sleep_movement: "Mouvement en veille",
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -36,6 +37,7 @@ const TYPE_COLORS: Record<string, string> = {
   low_battery: "bg-trackeo-pastel-red text-trackeo-alert",
   speed_limit: "bg-trackeo-pastel-red text-trackeo-alert",
   sos: "bg-trackeo-pastel-red text-trackeo-alert",
+  sleep_movement: "bg-trackeo-pastel-red text-trackeo-alert",
 };
 
 const REFRESH_INTERVAL = 60_000;

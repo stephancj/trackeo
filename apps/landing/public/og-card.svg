@@ -39,7 +39,7 @@
   <text x="104" y="474" fill="#ADB0C0" font-family="Arial, Helvetica, sans-serif" font-size="27">des trajets. Pensé pour Madagascar.</text>
 
   <!-- telemetry -->
-  <text x="104" y="546" fill="#7F8296" font-family="Courier New, monospace" font-size="20" letter-spacing="3">TRACKEO — -18.8792° S · 47.5079° E · MAJ 10 S</text>
+  <text x="104" y="546" fill="#7F8296" font-family="Courier New, monospace" font-size="20" letter-spacing="3">IOOEH — -18.8792° S · 47.5079° E · MAJ 10 S</text>
   <circle cx="568" cy="539" r="6" fill="#4ECB8D"/>
 
   <defs>

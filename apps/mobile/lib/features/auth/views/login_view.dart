@@ -121,7 +121,7 @@ class _LoginViewState extends ConsumerState<LoginView>
                 opacity: _logoFade,
                 child: SlideTransition(
                   position: _logoSlide,
-                  child: const Center(child: _TrackeoLogo()),
+                  child: const Center(child: _IooehLogo()),
                 ),
               ),
               const SizedBox(height: 56),
@@ -257,7 +257,7 @@ class _LoginViewState extends ConsumerState<LoginView>
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             const Text(
-                              'Nouveau sur Trackeo ?',
+                              'Nouveau sur iooeh ?',
                               style: TextStyle(color: AppColors.textSecondary),
                             ),
                             TextButton(
@@ -294,9 +294,9 @@ class _LoginViewState extends ConsumerState<LoginView>
   }
 }
 
-/// Reproduit le logo Trackeo : "tracke" + bulle GPS verte
-class _TrackeoLogo extends StatelessWidget {
-  const _TrackeoLogo();
+/// Signature typographique de la marque iooeh.
+class _IooehLogo extends StatelessWidget {
+  const _IooehLogo();
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +305,7 @@ class _TrackeoLogo extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const Text(
-          'tracke',
+          'iooeh',
           style: TextStyle(
             fontSize: 38,
             fontWeight: FontWeight.w800,
@@ -313,32 +313,14 @@ class _TrackeoLogo extends StatelessWidget {
             letterSpacing: -1,
           ),
         ),
-        const SizedBox(width: 1),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(4),
-                ),
-              ),
-            ),
-            Container(
-              width: 16,
-              height: 16,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ],
+        const SizedBox(width: 8),
+        Container(
+          width: 12,
+          height: 12,
+          decoration: const BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+          ),
         ),
       ],
     );

@@ -46,7 +46,7 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 
-  /* Trackeo custom semantic colors */
+  /* iooeh custom semantic colors */
   --color-trackeo-primary: #4ECB8D;
   --color-trackeo-primary-dark: #333549;
   --color-trackeo-dark: #333549;
@@ -63,7 +63,7 @@
 }
 
 /*
- * Trackeo Design System — aligned with Flutter mobile app
+ * iooeh Design System, aligned with Flutter mobile app
  *
  * Primary:     #4ECB8D (mint green)
  * Dark:        #333549 (charcoal)
@@ -114,7 +114,7 @@
   --input: #E5E7EB;
   --ring: #4ECB8D;
 
-  /* Charts — Trackeo palette */
+  /* Charts, iooeh palette */
   --chart-1: #4ECB8D;
   --chart-2: #5B8DEF;
   --chart-3: #F59E0B;

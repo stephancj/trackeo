@@ -149,6 +149,8 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
         return AppColors.batteryLow;
       case 'speed_limit':
         return AppColors.statusAlert;
+      case 'sleep_movement':
+        return AppColors.statusAlert;
       default:
         return AppColors.primary;
     }
@@ -164,6 +166,8 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
         return Icons.battery_alert_rounded;
       case 'speed_limit':
         return Icons.speed_rounded;
+      case 'sleep_movement':
+        return Icons.warning_amber_rounded;
       default:
         return Icons.notifications_rounded;
     }
@@ -179,6 +183,8 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
         return 'Batterie faible';
       case 'speed_limit':
         return 'Excès de vitesse';
+      case 'sleep_movement':
+        return 'Mouvement en veille';
       default:
         return _alert.type;
     }
@@ -194,6 +200,8 @@ class _AlertDetailSheetState extends ConsumerState<AlertDetailSheet> {
         return 'Batterie';
       case 'speed_limit':
         return 'Vitesse';
+      case 'sleep_movement':
+        return 'Veille antivol';
       default:
         return _alert.type;
     }

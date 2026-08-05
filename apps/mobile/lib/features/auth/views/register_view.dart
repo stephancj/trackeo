@@ -71,7 +71,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Bienvenue sur Trackeo',
+                  'Bienvenue sur iooeh',
                   style: AppTextStyles.pageTitleLarge,
                 ),
                 const SizedBox(height: 6),

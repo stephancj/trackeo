@@ -706,6 +706,8 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         return AppColors.statusAlert;
       case 'low_battery':
         return Colors.amber;
+      case 'sleep_movement':
+        return AppColors.statusAlert;
       default:
         return AppColors.primary;
     }
@@ -721,6 +723,8 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
         return 'Excès de vitesse';
       case 'low_battery':
         return 'Batterie faible';
+      case 'sleep_movement':
+        return 'Mouvement en veille';
       default:
         return type;
     }

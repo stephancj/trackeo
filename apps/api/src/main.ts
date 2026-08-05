@@ -19,6 +19,6 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`Trackeo API running on http://localhost:${port}/api`);
+  console.log(`iooeh API running on http://localhost:${port}/api`);
 }
 bootstrap().catch((err) => console.error(err));

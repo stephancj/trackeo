@@ -5,10 +5,10 @@ enum VehicleStatus { online, idle, offline }
 extension VehicleStatusX on VehicleStatus {
   // L3 fix : labels en français (utilisés par StatusBadge)
   String get label => switch (this) {
-    VehicleStatus.online => 'En route',
-    VehicleStatus.idle => 'Arrêté',
-    VehicleStatus.offline => 'Hors ligne',
-  };
+        VehicleStatus.online => 'En route',
+        VehicleStatus.idle => 'Arrêté',
+        VehicleStatus.offline => 'Hors ligne',
+      };
 }
 
 /// H2 — Parse une date ISO 8601 sans crash si le format est invalide.
@@ -64,6 +64,46 @@ class VehiclePosition extends Equatable {
   List<Object?> get props => [lat, lon, deviceTime];
 }
 
+class VehicleSleepMode extends Equatable {
+  final bool active;
+  final bool triggered;
+  final DateTime armedAt;
+  final DateTime? triggeredAt;
+  final int movementThresholdM;
+  final double lastDistanceM;
+
+  const VehicleSleepMode({
+    required this.active,
+    required this.triggered,
+    required this.armedAt,
+    this.triggeredAt,
+    required this.movementThresholdM,
+    required this.lastDistanceM,
+  });
+
+  factory VehicleSleepMode.fromJson(Map<String, dynamic> json) =>
+      VehicleSleepMode(
+        active: json['active'] as bool? ?? false,
+        triggered: json['triggered'] as bool? ?? false,
+        armedAt: _parseDateTimeSafe(json['armedAt'] as String),
+        triggeredAt: json['triggeredAt'] != null
+            ? _parseDateTimeSafe(json['triggeredAt'] as String)
+            : null,
+        movementThresholdM: json['movementThresholdM'] as int? ?? 100,
+        lastDistanceM: (json['lastDistanceM'] as num?)?.toDouble() ?? 0,
+      );
+
+  @override
+  List<Object?> get props => [
+        active,
+        triggered,
+        armedAt,
+        triggeredAt,
+        movementThresholdM,
+        lastDistanceM,
+      ];
+}
+
 class Vehicle extends Equatable {
   final int id;
   final String name;
@@ -73,6 +113,7 @@ class Vehicle extends Equatable {
   final VehicleStatus status;
   final DateTime? lastUpdate;
   final VehiclePosition? position;
+  final VehicleSleepMode? sleepMode;
 
   const Vehicle({
     required this.id,
@@ -83,6 +124,7 @@ class Vehicle extends Equatable {
     required this.status,
     this.lastUpdate,
     this.position,
+    this.sleepMode,
   });
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
@@ -105,11 +147,16 @@ class Vehicle extends Equatable {
       position: json['position'] != null
           ? VehiclePosition.fromJson(json['position'] as Map<String, dynamic>)
           : null,
+      sleepMode: json['sleepMode'] != null
+          ? VehicleSleepMode.fromJson(
+              json['sleepMode'] as Map<String, dynamic>,
+            )
+          : null,
     );
   }
 
   bool get isMoving => status == VehicleStatus.online;
 
   @override
-  List<Object?> get props => [id, serialNumber, plate];
+  List<Object?> get props => [id, serialNumber, plate, status, sleepMode];
 }

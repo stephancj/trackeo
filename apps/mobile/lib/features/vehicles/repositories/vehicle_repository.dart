@@ -23,6 +23,8 @@ abstract class VehicleRepository {
     DateTime to,
   );
   Future<Vehicle> updateVehicle(int id, Map<String, dynamic> data);
+  Future<void> enableSleepMode(int vehicleId);
+  Future<void> disableSleepMode(int vehicleId);
 }
 
 class RemoteVehicleRepository implements VehicleRepository {
@@ -111,6 +113,16 @@ class RemoteVehicleRepository implements VehicleRepository {
       data: data,
     );
     return Vehicle.fromJson(response.data!);
+  }
+
+  @override
+  Future<void> enableSleepMode(int vehicleId) async {
+    await _dio.post<void>('/vehicles/$vehicleId/sleep-mode');
+  }
+
+  @override
+  Future<void> disableSleepMode(int vehicleId) async {
+    await _dio.delete<void>('/vehicles/$vehicleId/sleep-mode');
   }
 }
 

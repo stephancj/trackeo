@@ -83,6 +83,16 @@ class VehiclesNotifier extends AutoDisposeAsyncNotifier<List<Vehicle>> {
       currentVehicles.map((v) => v.id == id ? updated : v).toList(),
     );
   }
+
+  Future<void> enableSleepMode(int vehicleId) async {
+    await ref.read(vehicleRepositoryProvider).enableSleepMode(vehicleId);
+    await _refresh();
+  }
+
+  Future<void> disableSleepMode(int vehicleId) async {
+    await ref.read(vehicleRepositoryProvider).disableSleepMode(vehicleId);
+    await _refresh();
+  }
 }
 
 /// Provider principal — remplace l'ancien FutureProvider.autoDispose.

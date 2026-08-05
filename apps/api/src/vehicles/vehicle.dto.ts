@@ -1,5 +1,14 @@
 export type VehicleStatus = 'online' | 'idle' | 'offline';
 
+export interface VehicleSleepModeDto {
+  active: boolean;
+  triggered: boolean;
+  armedAt: Date;
+  triggeredAt: Date | null;
+  movementThresholdM: number;
+  lastDistanceM: number;
+}
+
 export interface VehiclePositionDto {
   lat: number;
   lon: number;
@@ -31,4 +40,6 @@ export interface VehicleDto {
   status: VehicleStatus;
   lastUpdate: Date | null;
   position: VehiclePositionDto | null;
+  /** Veille antivol armée depuis la position d'arrêt, null si désactivée. */
+  sleepMode: VehicleSleepModeDto | null;
 }

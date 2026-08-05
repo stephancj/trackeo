@@ -125,7 +125,7 @@ class _DeleteAccountViewState extends ConsumerState<DeleteAccountView> {
                   const SizedBox(height: 16),
                   const _ConsequenceRow(
                     icon: Icons.notifications_off_outlined,
-                    text: 'Vous ne recevrez plus de notifications Trackeo.',
+                    text: 'Vous ne recevrez plus de notifications iooeh.',
                   ),
                   const SizedBox(height: 30),
                   const Text(
