@@ -26,7 +26,6 @@ export class PromotionsController {
     @Body() dto: RedeemCouponDto,
     @Request() req: { user: { id: number } },
   ) {
-    await this.entitlementsService.assertFeature(req.user.id, 'coupon_redemption');
     return this.promotionsService.redeemCode(req.user.id, dto.code);
   }
 
@@ -36,7 +35,6 @@ export class PromotionsController {
     @Body() dto: ValidateCouponDto,
     @Request() req: { user: { id: number } },
   ) {
-    await this.entitlementsService.assertFeature(req.user.id, 'coupon_redemption');
     return this.promotionsService.validateCouponForCheckout(
       dto.code,
       dto.planId,
@@ -47,7 +45,6 @@ export class PromotionsController {
   @Get('referral-info')
   @UseGuards(JwtAuthGuard)
   async getReferralInfo(@Request() req: { user: { id: number } }) {
-    await this.entitlementsService.assertFeature(req.user.id, 'referral_program');
     return this.promotionsService.getReferralInfo(req.user.id);
   }
 

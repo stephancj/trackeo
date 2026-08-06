@@ -337,7 +337,14 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
         }
       });
       final pos = _interpolatedPoint(positions, _playbackIndex);
-      _mapController.move(pos, math.max(_mapController.camera.zoom, 14.0));
+      final currentZoom = math.max(_mapController.camera.zoom, 14.0);
+      _mapController.fitCamera(
+        CameraFit.coordinates(
+          coordinates: [pos],
+          padding: const EdgeInsets.only(bottom: 220),
+          maxZoom: currentZoom,
+        ),
+      );
     });
   }
 
@@ -367,8 +374,14 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     setState(() {
       _playbackIndex = value.clamp(0, maxIdx);
     });
-    final pos = _interpolatedPoint(positions, _playbackIndex);
-    _mapController.move(pos, _mapController.camera.zoom);
+    final currentZoom = _mapController.camera.zoom;
+    _mapController.fitCamera(
+      CameraFit.coordinates(
+        coordinates: [pos],
+        padding: const EdgeInsets.only(bottom: 220),
+        maxZoom: currentZoom,
+      ),
+    );
   }
 
   void _stopPlayback() {
