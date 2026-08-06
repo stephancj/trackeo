@@ -136,7 +136,7 @@ export default function PaymentsAdminPage() {
             Historique des transactions PAPI.mg, abonnements réglés et tentatives de paiement.
           </p>
         </div>
-        <Button onClick={loadData} variant="outline" size="sm" className="gap-2">
+        <Button onClick={() => loadData()} variant="outline" size="sm" className="gap-2">
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Actualiser
         </Button>
