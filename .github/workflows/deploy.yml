@@ -123,9 +123,9 @@ jobs:
             printf 'PAPI_API_KEY=' >> apps/api/.env &&
             printf '%s' '$trackeo_papi_key_b64' | base64 -d >> apps/api/.env &&
             printf '\\nPAPI_TEST_MODE=true\\n' >> apps/api/.env &&
-            cat \$(ls apps/api/migrations/*.sql | sort) | docker-compose exec -T postgres psql -v ON_ERROR_STOP=1 -U trackeo -d traccar_db &&
+            cat \$(ls apps/api/migrations/*.sql | sort) | docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U trackeo -d traccar_db &&
             docker ps -a --filter 'name=trackeo-api' -q | xargs -r docker rm -f &&
-            DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d --build --no-deps api &&
+            docker compose up -d --build --no-deps api &&
             docker inspect trackeo-api --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^PAPI_API_KEY=' &&
             docker inspect trackeo-api --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^PAPI_TEST_MODE=true$'
           "
@@ -221,7 +221,7 @@ jobs:
             git fetch origin main &&
             git reset --hard origin/main &&
             docker ps -a --filter 'name=trackeo-admin' -q | xargs -r docker rm -f &&
-            DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d --build --no-deps admin
+            docker compose up -d --build --no-deps admin
           "
 
       - name: Health check
@@ -320,9 +320,9 @@ jobs:
               echo 'Unable to locate the app.iooeh.com nginx vhost' >&2 && exit 1;
             fi &&
             nginx -t && systemctl reload nginx &&
-            docker-compose pull &&
+            docker compose pull &&
             docker ps -a --filter 'name=trackeo-traccar' -q | xargs -r docker rm -f &&
-            DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker-compose up -d
+            docker compose up -d
           "
 
       - name: Health check
