@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/speed_palette.dart';
 import '../../../core/providers/geocoding_provider.dart';
 import '../../../core/utils/app_time.dart';
+import '../../vehicles/models/vehicle_model.dart';
 import '../../vehicles/utils/speed_gradient.dart';
 import '../models/trip_model.dart';
 import '../models/day_activity_model.dart';
@@ -49,8 +52,16 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
   DayTrips _day = DayTrips.fromPositions(const []);
   List<LatLng> _allPoints = const [];
 
+  // ── Playback State ──────────────────────────────────────────────────
+  bool _isPlaying = false;
+  bool _playbackActive = false;
+  double _playbackIndex = 0;
+  double _playbackSpeed = 1.0;
+  Timer? _playbackTimer;
+
   @override
   void dispose() {
+    _playbackTimer?.cancel();
     _mapController.dispose();
     super.dispose();
   }
@@ -105,8 +116,13 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
               // Une polyligne (dégradé de vitesse) par trajet — pas de ligne
               // factice à travers les arrêts.
               if (polylines.isNotEmpty) PolylineLayer(polylines: polylines),
-              // Marqueurs départ / arrivée du jour + points d'arrêt.
-              MarkerLayer(markers: _dayMarkers(_day)),
+              // Marqueurs départ / arrivée du jour + points d'arrêt + véhicule animé.
+              MarkerLayer(
+                markers: [
+                  ..._dayMarkers(_day),
+                  ..._playbackMarkers(positions),
+                ],
+              ),
             ],
           ),
 
@@ -234,6 +250,9 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
             ),
           ),
 
+          // ── Bar de contrôle du Playback ──────────────────────────────
+          _buildPlaybackBar(positions, panelH),
+
           // ── Panneau inférieur (résumé + trajets) ─────────────────────
           Positioned(
             bottom: 0,
@@ -277,11 +296,307 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                         day: _day,
                         selectedTrip: _selectedTrip,
                         onTripTap: _onTripTap,
+                        onPlayPlayback: () => _startPlayback(positions: positions),
                       ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── Playback Logic & Helpers ──────────────────────────────────────────
+
+  void _startPlayback({required List<VehiclePosition> positions, int? startIndex}) {
+    if (positions.isEmpty) return;
+    _playbackTimer?.cancel();
+    final maxIdx = (positions.length - 1).toDouble();
+    setState(() {
+      _playbackActive = true;
+      _isPlaying = true;
+      _playbackIndex = (startIndex ?? 0).toDouble().clamp(0, maxIdx);
+    });
+
+    _playbackTimer = Timer.periodic(const Duration(milliseconds: 60), (_) {
+      if (!_isPlaying || !mounted) return;
+      setState(() {
+        _playbackIndex += (0.15 * _playbackSpeed);
+        if (_playbackIndex >= maxIdx) {
+          _playbackIndex = maxIdx;
+          _isPlaying = false;
+          _playbackTimer?.cancel();
+        }
+      });
+      final pos = _interpolatedPoint(positions, _playbackIndex);
+      _mapController.move(pos, math.max(_mapController.camera.zoom, 14.0));
+    });
+  }
+
+  void _togglePlayPause() {
+    setState(() {
+      _isPlaying = !_isPlaying;
+    });
+  }
+
+  void _changeSpeed() {
+    setState(() {
+      if (_playbackSpeed == 1.0) {
+        _playbackSpeed = 2.0;
+      } else if (_playbackSpeed == 2.0) {
+        _playbackSpeed = 4.0;
+      } else if (_playbackSpeed == 4.0) {
+        _playbackSpeed = 8.0;
+      } else {
+        _playbackSpeed = 1.0;
+      }
+    });
+  }
+
+  void _seekPlayback(List<VehiclePosition> positions, double value) {
+    if (positions.isEmpty) return;
+    final maxIdx = (positions.length - 1).toDouble();
+    setState(() {
+      _playbackIndex = value.clamp(0, maxIdx);
+    });
+    final pos = _interpolatedPoint(positions, _playbackIndex);
+    _mapController.move(pos, _mapController.camera.zoom);
+  }
+
+  void _stopPlayback() {
+    _playbackTimer?.cancel();
+    setState(() {
+      _playbackActive = false;
+      _isPlaying = false;
+      _playbackIndex = 0;
+    });
+  }
+
+  LatLng _interpolatedPoint(List<VehiclePosition> positions, double index) {
+    if (positions.isEmpty) return _defaultCenter;
+    final i1 = index.floor().clamp(0, positions.length - 1);
+    final i2 = math.min(i1 + 1, positions.length - 1);
+    if (i1 == i2) return LatLng(positions[i1].lat, positions[i1].lon);
+    final t = index - i1;
+    final p1 = positions[i1];
+    final p2 = positions[i2];
+    final lat = p1.lat + (p2.lat - p1.lat) * t;
+    final lon = p1.lon + (p2.lon - p1.lon) * t;
+    return LatLng(lat, lon);
+  }
+
+  double _interpolatedBearing(List<VehiclePosition> positions, double index) {
+    if (positions.length < 2) return 0;
+    final i1 = index.floor().clamp(0, positions.length - 1);
+    final i2 = math.min(i1 + 1, positions.length - 1);
+    if (i1 == i2) return 0;
+    final p1 = LatLng(positions[i1].lat, positions[i1].lon);
+    final p2 = LatLng(positions[i2].lat, positions[i2].lon);
+    return _calculateBearing(p1, p2);
+  }
+
+  double _calculateBearing(LatLng start, LatLng end) {
+    final startLat = start.latitude * math.pi / 180;
+    final startLng = start.longitude * math.pi / 180;
+    final endLat = end.latitude * math.pi / 180;
+    final endLng = end.longitude * math.pi / 180;
+    final dLng = endLng - startLng;
+
+    final y = math.sin(dLng) * math.cos(endLat);
+    final x = math.cos(startLat) * math.sin(endLat) -
+        math.sin(startLat) * math.cos(endLat) * math.cos(dLng);
+
+    final bearing = math.atan2(y, x);
+    return (bearing * 180 / math.pi + 360) % 360;
+  }
+
+  List<Marker> _playbackMarkers(List<VehiclePosition> positions) {
+    if (!_playbackActive || positions.isEmpty) return const [];
+    final currentPos = _interpolatedPoint(positions, _playbackIndex);
+    final bearing = _interpolatedBearing(positions, _playbackIndex);
+    final idx = _playbackIndex.floor().clamp(0, positions.length - 1);
+    final speed = positions[idx].speedKmh;
+
+    return [
+      Marker(
+        point: currentPos,
+        width: 70,
+        height: 70,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primaryDark,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: Text(
+                '${speed.round()} km/h',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Transform.rotate(
+              angle: bearing * math.pi / 180,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black38,
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.navigation_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildPlaybackBar(List<VehiclePosition> positions, double panelH) {
+    if (!_playbackActive || positions.isEmpty) return const SizedBox.shrink();
+    final maxIdx = (positions.length - 1).toDouble();
+    final idx = _playbackIndex.floor().clamp(0, positions.length - 1);
+    final currentPos = positions[idx];
+    final date = currentPos.deviceTime.toLocal();
+    final timeStr =
+        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+
+    return Positioned(
+      left: 16,
+      right: 16,
+      bottom: panelH + 12,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.primaryDark.withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: _togglePlayPause,
+              icon: Icon(
+                _isPlaying
+                    ? Icons.pause_circle_filled_rounded
+                    : Icons.play_circle_fill_rounded,
+                color: Colors.white,
+                size: 34,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        timeStr,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      Text(
+                        '${currentPos.speedKmh.round()} km/h',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SliderTheme(
+                    data: const SliderThemeData(
+                      trackHeight: 3,
+                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+                      overlayShape: RoundSliderOverlayShape(overlayRadius: 12),
+                      activeTrackColor: AppColors.primary,
+                      inactiveTrackColor: Colors.white24,
+                      thumbColor: Colors.white,
+                    ),
+                    child: Slider(
+                      value: _playbackIndex.clamp(0, maxIdx),
+                      min: 0,
+                      max: maxIdx > 0 ? maxIdx : 1,
+                      onChanged: (val) => _seekPlayback(positions, val),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: _changeSpeed,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                backgroundColor: Colors.white12,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                '${_playbackSpeed.toInt()}x',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            IconButton(
+              onPressed: _stopPlayback,
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Colors.white70,
+                size: 20,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -672,11 +987,13 @@ class _DayPanel extends StatelessWidget {
   final DayTrips day;
   final int? selectedTrip;
   final void Function(int index) onTripTap;
+  final VoidCallback onPlayPlayback;
 
   const _DayPanel({
     required this.day,
     required this.selectedTrip,
     required this.onTripTap,
+    required this.onPlayPlayback,
   });
 
   @override
@@ -701,16 +1018,39 @@ class _DayPanel extends StatelessWidget {
 
           // ── Header ────────────────────────────────────────────────────
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Résumé de la journée',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 17,
-                  color: AppColors.primaryDark,
+              const Expanded(
+                child: Text(
+                  'Résumé de la journée',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                    color: AppColors.primaryDark,
+                  ),
                 ),
               ),
+              if (!day.isEmpty) ...[
+                ElevatedButton.icon(
+                  onPressed: onPlayPlayback,
+                  icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                  label: const Text('Rejouer'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryDark,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
