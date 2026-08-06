@@ -34,7 +34,7 @@ export class EntitlementsService {
     number,
     { at: number; value: UserEntitlements }
   >();
-  private readonly cacheTtlMs = 30_000;
+  private readonly cacheTtlMs = 5_000;
 
   constructor(
     @InjectRepository(Subscription)

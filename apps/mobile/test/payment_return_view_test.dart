@@ -19,7 +19,7 @@ class _FakePaymentsRepository implements PaymentsRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> checkout(String planId, {String? provider}) =>
+  Future<Map<String, dynamic>> checkout(String planId, {String? provider, String? couponCode}) =>
       throw UnimplementedError();
 
   @override

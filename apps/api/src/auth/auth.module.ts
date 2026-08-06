@@ -6,11 +6,13 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { EntitlementsModule } from '../entitlements/entitlements.module';
+import { PromotionsModule } from '../promotions/promotions.module';
 
 @Module({
   imports: [
     UsersModule,
     EntitlementsModule,
+    PromotionsModule,
     PassportModule,
     JwtModule.registerAsync({
       useFactory: () => ({

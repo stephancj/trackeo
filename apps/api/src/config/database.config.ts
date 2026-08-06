@@ -16,6 +16,9 @@ import { IncidentEvent } from '../security/incident-event.entity';
 import { PublicTrackingLink } from '../security/tracking-link.entity';
 import { Payment } from '../payments/payment.entity';
 import { Trip } from '../trips/trip.entity';
+import { Coupon } from '../promotions/entities/coupon.entity';
+import { Referral } from '../promotions/entities/referral.entity';
+import { CouponRedemption } from '../promotions/entities/coupon-redemption.entity';
 import * as pg from 'pg';
 
 // Force parsing of 'timestamp without time zone' (OID 1114) as UTC.
@@ -46,6 +49,9 @@ export default (): TypeOrmModuleOptions => ({
     PublicTrackingLink,
     Payment,
     Trip,
+    Coupon,
+    Referral,
+    CouponRedemption,
   ],
   // migrations exclues du runtime — lancées manuellement via `npm run migration:run`
   synchronize: false,

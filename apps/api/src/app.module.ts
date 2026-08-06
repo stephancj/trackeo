@@ -19,6 +19,7 @@ import { EntitlementsModule } from './entitlements/entitlements.module';
 import { SecurityModule } from './security/security.module';
 import { PaymentsModule } from './payments/payments.module';
 import { TripsModule } from './trips/trips.module';
+import { PromotionsModule } from './promotions/promotions.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { TripsModule } from './trips/trips.module';
     SecurityModule,
     PaymentsModule,
     TripsModule,
+    PromotionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

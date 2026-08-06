@@ -15,6 +15,7 @@ export enum PapiProvider {
 export class CreatePaymentDto {
   @IsUUID() planId: string;
   @IsOptional() @IsEnum(PapiProvider) provider?: PapiProvider;
+  @IsOptional() @IsString() couponCode?: string;
 }
 export class PapiNotificationDto {
   @IsString() paymentStatus: string;

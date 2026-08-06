@@ -1,0 +1,850 @@
+# AGENTS.md — Trackeo GPS Tracking Monorepo (Production: zenkai.mg)
+
+## Vue d'ensemble du projet
+
+**Trackeo** est une plateforme de tracking GPS en temps réel. Elle s'appuie sur :
+- **Traccar** comme serveur de collecte des positions GPS
+- **NestJS** comme API backend exposant les données
+- **Flutter Web (PWA)** comme frontend unique (web + mobile via navigateur)
+- **PostgreSQL + TimescaleDB** pour le stockage des séries temporelles
+
+---
+
+## Stratégie MVP — "Local First"
+
+Développement 100% local d'abord, déploiement VPS en fin de cycle.
+
+### Cible frontend (en 2 phases)
+
+| Phase | Cible | Raison |
+|---|---|---|
+| **MVP (maintenant)** | Flutter Web — PWA | Déploiement immédiat via URL, pas de contrainte App Store, même codebase Flutter |
+| **V2 (finalité)** | Flutter Mobile — iOS & Android | App native distribuée sur les stores, même code base réutilisé à ~80% |
+
+> ⚠️ **Conséquence pour le code** : écrire le code Flutter de façon platform-agnostic dès le départ (pas de plugins purement mobile dans le MVP). Le passage PWA → Mobile sera une adaptation, pas une réécriture.
+
+### Décisions techniques justifiées
+
+| Composant | Vision initiale | Choix MVP | Raison |
+|---|---|---|---|
+| Ingestion GPS | MQTT + HTTP custom | **Traccar** | Gère nativement des milliers de protocoles GPS binaires |
+| Backend | Microservices | **NestJS monolithe modulaire** | Plus simple à gérer seul |
+| Frontend | React Native + ReactJS | **Flutter Web (PWA) → Mobile** | Un seul codebase Flutter, PWA d'abord, mobile ensuite |
+| Interface Admin | Intégrée au frontend | **Next.js** | Interface d'administration back-office |
+
+---
+
+### Interface Admin Next.js
+
+#### Fonctionnalités
+
+| Module | Description |
+|---|---|
+| **Gestion Utilisateurs** | Liste des utilisateurs avec recherche/filtre, création, édition, désactivation, visualisation des véhicules et geofences |
+| **Gestion Devices** | Liste des devices Traccar, assignation aux utilisateurs, détails device (IMEI, statut, dernière position) |
+| **Gestion Geofences** | Visualisation de toutes les geofences, suppression, détails |
+| **Gestion Alertes** | Visualisation globale de toutes les alertes, filtrage par type/utilisateur/date, acknowledgement, statistiques |
+| **Rapports & Analytique** | Rapports de distance par véhicule/utilisateur, historique des trajets, statistiques d'utilisation |
+| **Abonnements** | Statut des abonnements utilisateurs, activation/désactivation, gestion des plans |
+| **Configuration Système** | Paramètres API (Traccar), notifications (OneSignal, WhatsApp), monitoring |
+
+#### Stack Technique
+
+- **Framework**: Next.js (App Router)
+- **UI**: Tailwind CSS + shadcn/ui
+- **API**: Endpoints NestJS existants
+- **Auth**: JWT (partagé avec le backend)
+
+#### Structure du projet
+
+```
+apps/admin/
+├── app/
+│   ├── (auth)/           # Login, forgot password
+│   ├── (dashboard)/      # Protected routes
+│   │   ├── users/        # User management
+│   │   ├── devices/      # Device management
+│   │   ├── geofences/   # Geofence management
+│   │   ├── alerts/       # Alert management
+│   │   ├── reports/      # Reports & analytics
+│   │   ├── subscriptions/ # Subscription management
+│   │   └── settings/     # System configuration
+│   └── layout.tsx
+├── components/           # Shared components
+├── lib/                  # API clients, utils
+└── package.json
+```
+
+---
+
+## Catalogue des fonctionnalités
+
+### MVP (0–6 mois)
+
+#### ✅ Suivi en temps réel (Live Tracking)
+- Carte avec marqueur véhicule mis à jour toutes les 10s (polling)
+- Vitesse, batterie, force signal, statut affiché
+- Statut "offline" si aucune mise à jour après 30s
+- **V2** : Lien de suivi partageable sans login (lien expirant)
+- **V2** : WebSocket temps réel (polling suffisant pour MVP PWA)
+
+#### ✅ Historique des trajets (Raw History)
+- Sélecteur de date (from/to)
+- Appel `GET /api/vehicles/:id/history?from=&to=`
+- Polyligne sur flutter_map (`PolylineLayer`)
+- Marqueurs départ / arrivée
+- Stats trip (distance Haversine, durée, vitesse max)
+- ⚠️ Pas d'algorithme de segmentation — points bruts reliés par polyligne
+
+- ✅ Geofencing basique
+- ✅ Création de zone en base et API (cercle, rayon)
+- ✅ Vérification : "Le dernier point est-il hors du cercle ?" (via Cron et algorithme Haversine)
+- ✅ Alertes d'entrée/sortie (`GEOFENCE_ENTER`, `GEOFENCE_EXIT`) insérées dans la base
+- ✅ Entités `Geofence` et `Alert` enregistrées dans TypeORM (`database.config.ts`)
+- ✅ Migrations SQL exécutées (`002_geofences.sql`, `003_alerts.sql`)
+- ✅ Flutter : UI geofences + alertes (liste, vide premium)
+- ✅ Flutter : Création de geofence avec marqueur draggable, tap-to-place, bouton centrer
+- ✅ Flutter : taille du cercle a adapter avec le zoom de la carte et slider (geofence view)
+- ✅ **Optimisation Backend** : Cache en mémoire (`insideGeofencesCache`) pour éviter le spam d'alertes multiples et supprimer la surcharge de requêtes `SELECT` sur PostgreSQL.
+- ✅ **Correction Timezone** : Forçage explicite du driver `pg` Node.js en UTC (`pg.types.setTypeParser(1114)`) pour éviter les faux statuts "offline" dus aux décalages horaires locaux vs serveur Traccar.
+- ✅ **Gestion des Véhicules** : Édition complète des informations (Nom, Plaque, Numéro de série/IMEI, URL photo personnalisée).
+- ✅ **Sérialisation Robuste** : Correction de la corruption de la colonne `attributes` (TEXT) de Traccar via un transformateur JSON NestJS, permettant de stocker proprement la plaque et l'image sans casser le format Traccar.
+- ✅ **Notifications Push OneSignal** : `NotificationsService` (NestJS) appelle l'API REST OneSignal à chaque alerte geofence. Flutter SDK `onesignal_flutter` lié au `userId` via `OneSignal.login()` après login/restore session. Service worker web (`web/OneSignalSDKWorker.js`) + init JS dans `web/index.html` pour support PWA.
+- ✅ **Fix Push Ciblage (Subscription ID)** : `OneSignal.login()` (web SDK) ne persistait pas le External ID côté serveur OneSignal → push échouait avec "All included players are not subscribed". Fix : enregistrement du **subscription ID** (`OneSignal.User.PushSubscription.id`) en base (`users.onesignal_sub_id`) via `POST /api/auth/push-token` après login. Backend utilise désormais `include_subscription_ids` (ciblage direct, sans dépendance au External ID). Migration `004_onesignal_sub_id.sql`.
+- ✅ **SQL Logging** : `logging: ['error']` dans `database.config.ts` — seules les erreurs SQL sont loggées (plus de spam SELECT toutes les 15s).
+- ✅ **Notifications WhatsApp** : `NotificationsService.sendWhatsApp()` via Meta WhatsApp Business API. Chaque geofence a `alertOnEntry` (défaut: true), `alertOnExit` (défaut: true). Les paramètres globaux d'alerte (`alertsEnabled`, `alertViaPush`, `alertViaWhatsapp`) sont configurables par utilisateur via `PATCH /api/auth/alert-settings`. L'utilisateur doit avoir un numéro `phone` enregistré. Migration `005_geofence_alerts_whatsapp.sql`.
+- ✅ **Paramètres d'Alerte Globaux** : Ajout de `alertsEnabled`, `alertSos`, `alertLowBattery`, `alertSpeedLimit`, `alertViaPush`, `alertViaWhatsapp` dans la table `users`. Nouvelle vue Flutter "Alert Settings" accessible depuis Paramètres. Cron `checkVehicleAlerts()` (toutes les 30s) vérifie batterie <20% et vitesse >120 km/h. Migration `006_alert_settings.sql`.
+- 🔲 PostGIS `ST_Contains` pour polygones (workaround avec rayon circulaire 100% fonctionnel)
+
+#### 🔲 Onboarding & Activation appareil (QR / OTP)
+- Scan QR (contient `device_id`) → OTP WhatsApp/SMS → liaison device/compte
+- Fallback OTP si QR indisponible
+- OTP expire en 10 min ; rate-limit ; token chiffré
+- **MVP simplifié** : admin crée manuellement via Traccar UI — onboarding QR/OTP en V2
+
+#### 🔲 Gestion des alertes & support
+- File d'alertes + actions owner (Share Live Link, Call Support)
+- Ticket support créé automatiquement
+- Escalade automatique après timeout configurable (défaut 10 min) si owner ne répond pas
+- Canaux : push, WhatsApp, Messenger, SMS
+
+#### 🔲 Mode Vol & Récupération
+- Owner signale vol → fréquence reporting augmentée (5s si supporté)
+- Ticket support créé + notification partenaires
+- Annulation possible dans la minute (faux positif)
+- **Reporté** : commande hardware d'immobilisation → V2+ (supervision humaine obligatoire)
+
+#### 🔲 Flow Installation & Photos Installateur
+- Installateur : VIN + ≥2 photos + confirmation placement
+- **MVP** : Google Form ou WhatsApp à la place — flow applicatif en V2
+
+#### 🔲 Gestion de compte & Abonnement (basique)
+- Plans, période d'essai, facturation Stripe (carte) puis mobile money local
+- **MVP** : activation manuelle par admin
+
+---
+
+### Near-term (6–18 mois)
+
+#### 🔲 Trips & Trip Aggregator
+- Worker de segmentation des trajets depuis `tc_positions`
+- Table `trips` dédiée pour requêtes rapides
+- Critères de segmentation : vitesse > seuil OU mouvement > distance ET gap < seuil
+- Lecture des trajets paginée + polyline GeoJSON
+- Playback trajet sur carte
+
+#### 🔲 Rapports Distance (complet)
+- Totaux journaliers/hebdo/mensuels par device depuis table `trips`
+- Export CSV / PDF
+- `GET /devices/:id/reports/distance?start=&end=&interval=daily|weekly|monthly`
+- Agrégation Timescale `time_bucket()` pour performances
+
+#### 🔲 Télémétrie Carburant
+- Champs `fuel_pct` / `fuel_v` dans la télémétrie (entrée analogique ou OBD-II)
+- Lissage / calibration tension→pourcentage
+- Jauge carburant + graphe historique
+- Alerte niveau bas + alerte chute soudaine (vol)
+- Consommation L/100km par trajet si `tank_capacity_liters` renseigné
+
+#### 🔲 Module Livraison / Collecte (basique)
+- Flux chauffeur/marchand/client pour livraison colis
+- Statuts : `accepted → arrived_pickup → picked_up → in_transit → delivered`
+- Photo preuve de livraison (POD)
+- Lien de tracking live pour le client (sans login)
+- Dispatch simple : nearest driver naïf (distance)
+
+#### 🔲 Gestion de flotte B2B & Dashboard web
+- Multi-véhicules, groupes, assignation chauffeur, rapports
+- Import CSV (jusqu'à 1 000 devices)
+- RBAC pour membres de l'équipe
+- Rapports planifiés + exports batch
+
+#### 🔲 API Partenaires & Webhooks (sociétés de sécurité)
+- Partenaires enregistrent des webhooks, s'abonnent aux alertes
+- POST HMAC-signé ; retries exponentiels
+- Partenaire peut claim/ack les alertes
+- Scopes limités : `location:read`, `alerts:subscribe`
+- Consentement owner requis pour partage historique
+
+#### 🔲 OTA Firmware Management
+- Hébergement firmware + déploiement canary (1–5 devices)
+- Monitoring erreurs + rollback si taux d'échec > seuil
+- MQTT `devices/{id}/ota` avec url + checksum SHA256
+
+---
+
+### Future (18+ mois)
+
+#### 🔲 Immobilisateur à distance / Contrôle véhicule
+- Coupure démarreur à distance (soumis à cadre légal)
+- Multi-factor confirmation + interlock fail-safe + audit log
+- Human-in-the-loop obligatoire
+
+#### 🔲 Analytics avancées & IA
+- Détection d'anomalies, maintenance prédictive, scoring comportement chauffeur
+- Opt-in pour données d'entraînement
+
+---
+
+## Feuille de route (16 semaines MVP)
+
+### Mois 1 — Setup & Simulation
+| Semaine | Objectif | Statut |
+|---|---|---|
+| S1 | Docker + Traccar + PostgreSQL | ✅ Fait |
+| S2 | Simulation GPS (simulate.ts + Traccar Client mobile) | ✅ Fait |
+| S3-S4 | API NestJS : Auth JWT + Vehicles (fleet list, polling, history) | ✅ Fait |
+
+### Mois 2 — Frontend PWA
+| Semaine | Objectif | Statut |
+|---|---|---|
+| S5-S6 | Init Flutter Web + flutter_map + marqueur véhicule (polling 10s) | ✅ Fait |
+| S7-S8 | Login + Fleet List + Popup détail (vitesse, batterie) | ✅ Fait |
+
+### Mois 3 — Fonctionnalités Métier
+| Semaine | Objectif | Statut |
+|---|---|---|
+| S9-S10 | Historique trajet (sélecteur de date + polyligne + stats) | ✅ Fait |
+| S11-S12 | Init DB device_assignments + Tests terrain (Admin Next.js reporté) | 🔄 En cours |
+
+### Mois 4 — Déploiement VPS & Tests Terrain
+| Semaine | Objectif | Statut |
+|---|---|---|
+| S13 | Réserver VPS + nom de domaine `trackeo.mg` | 🔲 À faire |
+| S14 | Docker sur VPS + Configurer HTTPS (Let's Encrypt SSL) | 🔲 À faire |
+| S15 | Tracker GPS matériel réel → Configuration IP / Port VPS | 🔲 À faire |
+| S16 | Tests sur route complets + Lancement "Go Live" | 🔲 À faire |
+
+---
+
+## Structure du monorepo
+
+```
+trackeo/
+├── apps/
+│   ├── api/                   # Backend NestJS (REST API)
+│   │   ├── src/
+│   │   │   ├── config/        # Configuration DB, env vars
+│   │   │   ├── auth/          # Module Auth (JWT login) ✅
+│   │   │   ├── devices/       # Module Devices (entity, service, controller) ✅
+│   │   │   ├── positions/     # Module Positions (entity, service, controller) ✅
+│   │   │   ├── vehicles/      # Module Vehicles (combine devices + positions) ✅
+│   │   │   └── users/         # Module Users (entity, service) ✅
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   └── mobile/                # Frontend Flutter Web (PWA)
+│       └── lib/
+│           ├── core/
+│           │   ├── network/   # Client Dio (api_client.dart)
+│           │   ├── navigation/ # AppShell, activeTabProvider
+│           │   └── theme/     # AppTheme, AppColors
+│           └── features/
+│               ├── auth/      # Login view + provider ✅
+│               ├── vehicles/  # Modèle, repository, providers, fleet list ✅
+│               ├── map/       # Vue carte (flutter_map) + tracking temps réel ✅
+│               └── history/   # Historique trajet + stats ✅
+├── infra/
+│   ├── postgres/
+│   │   └── init.sql           # Init TimescaleDB extensions
+│   └── traccar/
+│       └── traccar.xml        # Config Traccar → PostgreSQL
+├── scripts/
+│   └── simulate.ts            # Simulateur de positions GPS
+├── docker-compose.yml         # Stack complète
+└── AGENTS.md                  # Ce fichier
+```
+
+---
+
+## Stack technique
+
+| Couche | Technologie | Version |
+|---|---|---|
+| API | NestJS + TypeORM | ^10 |
+| Base de données | PostgreSQL + TimescaleDB | 14+ |
+| GPS Server | Traccar | latest |
+| Frontend | Flutter Web (PWA) + Riverpod | 3.x |
+| Carte | flutter_map (OSM) | ^6 |
+| HTTP Client | Dio (polling 10s) | ^5 |
+| Conteneurs | Docker Compose | v3.9 |
+
+---
+
+## Démarrage rapide
+
+### 1. Lancer l'infrastructure
+
+```bash
+docker compose up -d postgres traccar
+# Attendre ~30s que Traccar initialise son schéma
+docker compose logs -f traccar
+```
+
+### 2. Lancer l'API NestJS (dev)
+
+```bash
+cd apps/api
+cp .env.example .env
+npm install
+npm run start:dev
+```
+
+### 3. Simuler un véhicule GPS
+
+```bash
+cd scripts
+npx ts-node simulate.ts
+# Ou avec options :
+DEVICE_ID=camion-01 TOTAL_POINTS=50 INTERVAL_MS=2000 npx ts-node simulate.ts
+```
+
+### 4. Lancer l'app Flutter Web (PWA)
+
+```bash
+cd apps/mobile
+flutter pub get
+flutter run -d chrome          # Dev en navigateur
+# Build PWA production :
+flutter build web --release
+```
+
+---
+
+## Variables d'environnement
+
+### apps/api/.env
+
+```
+NODE_ENV=development
+PORT=3000
+DB_HOST=localhost       # postgres dans Docker
+DB_PORT=5432
+DB_USER=trackeo
+DB_PASS=Password_1234
+DB_NAME=traccar_db
+JWT_SECRET=change_this_secret
+JWT_EXPIRES_IN=7d
+```
+
+### Simulateur (scripts/simulate.ts)
+
+```
+TRACCAR_HOST=localhost   # default
+TRACCAR_PORT=5055        # OsmAnd protocol
+DEVICE_ID=trackeo-sim-001
+INTERVAL_MS=3000
+TOTAL_POINTS=30
+```
+
+---
+
+## Ports exposés
+
+### Développement local
+
+| Service | Port | Usage |
+|---|---|---|
+| PostgreSQL | 5432 | Connexion directe DB |
+| Traccar UI | 8082 | Interface web Traccar |
+| Traccar | 5055 | Protocole OsmAnd (simulation) |
+| Traccar | 5001 | GPS103/TK103 |
+| Traccar | 5027 | Teltonika FMB |
+| API NestJS | 3000 | REST API `/api/*` |
+| Flutter Web | 8080 | PWA dev (`flutter run -d chrome`) |
+
+### Production (VPS zenkai.mg)
+
+| Service | URL | Port interne |
+|---|---|---|
+| Web App (Flutter PWA) | https://trackeo.zenkai.mg | 80/443 (Nginx) |
+| API NestJS | https://api.trackeo.zenkai.mg/api | 3000 |
+| Traccar UI | https://traccar.trackeo.zenkai.mg | 8082 |
+| PostgreSQL | - | 5432 (non exposé) |
+| Traccar (OsmAnd) | - | 15055 (simulation) |
+| Traccar (autres protocoles) | - | 5001-5150 |
+
+> **Note VPS:** Port 5055 → 15055 pour éviter les conflits avec d'autres services.
+
+---
+
+## API Endpoints
+
+### MVP (implémentés)
+
+| Méthode | Route | Description |
+|---|---|---|
+| `POST` | `/api/auth/login` | Login → retourne JWT |
+| `GET` | `/api/auth/me` | Retourne l'utilisateur connecté |
+| `PATCH` | `/api/auth/profile` | Met à jour le profil (name, phone) |
+| `PATCH` | `/api/auth/alert-settings` | Met à jour les paramètres d'alerte |
+| `POST` | `/api/auth/push-token` | Enregistre le subscription ID OneSignal |
+| `GET` | `/api/vehicles` | Liste tous les véhicules avec statut + dernière position |
+| `GET` | `/api/vehicles/:id/position` | Dernière position d'un véhicule (polling 10s) |
+| `PATCH` | `/api/vehicles/:id` | Mise à jour complète (nom, plaque, IMEI, photo) |
+| `GET` | `/api/vehicles/:id/history` | Positions entre `from` et `to` (historique trajet) |
+| `POST` | `/api/geofences` | Créer une geofence (cercle) |
+| `GET` | `/api/geofences` | Liste des geofences de l'utilisateur |
+| `PATCH` | `/api/geofences/:id` | Mettre à jour une geofence (ex : activer/désactiver) |
+| `DELETE` | `/api/geofences/:id` | Supprimer une geofence |
+| `GET` | `/api/alerts` | Alertes de l'utilisateur (geofence_enter / geofence_exit) |
+| `GET` | `/api/vehicles/:id/reports/activity?period=today\|7d\|30d` | Résumé activité (distance, idle, trips, max speed) |
+| `GET` | `/api/vehicles/:id/reports/trip-log?from=&to=` | Trajets reconstitués (gap > 10 min) |
+| `GET` | `/api/vehicles/:id/reports/speed-violations?from=&to=&threshold=` | Épisodes vitesse excessive |
+| `GET` | `/api/vehicles/:id/reports/idle?from=&to=` | Épisodes immobilisation prolongée |
+| `GET` | `/api/vehicles/:id/reports/geofence-activity?period=today\|7d\|30d` | Activité geofence (entrées/sorties par zone) |
+
+### Admin (implémentés)
+
+| Méthode | Route | Description |
+|---|---|---|
+| `GET` | `/api/admin/users` | Liste tous les utilisateurs avec vehicleCount |
+| `GET` | `/api/admin/users/:id` | Détail user (véhicules, alertes, geofences) |
+| `POST` | `/api/admin/users` | Créer un utilisateur |
+| `PATCH` | `/api/admin/users/:id` | Modifier un utilisateur |
+| `DELETE` | `/api/admin/users/:id` | Désactiver un utilisateur (soft) |
+| `GET` | `/api/admin/vehicles` | Liste enrichie (statut, user assigné, alertes open) |
+| `GET` | `/api/admin/vehicles/:id` | Détail véhicule (alertes récentes, geofences, user) |
+| `POST` | `/api/admin/devices/:deviceId/assign/:userId` | Assigner un device à un user |
+| `DELETE` | `/api/admin/devices/:deviceId/assign` | Désassigner un device |
+| `GET` | `/api/admin/geofences` | Toutes les geofences |
+| `DELETE` | `/api/admin/geofences/:id` | Supprimer une geofence |
+| `GET` | `/api/admin/alerts` | Toutes les alertes |
+| `PATCH` | `/api/admin/alerts/:id` | Ack une alerte |
+| `GET` | `/api/admin/reports/overview` | Stats globales (users, véhicules, alertes) |
+| `GET` | `/api/admin/reports/vehicles?period=today\|7d\|30d` | Rapport par véhicule (distance, vitesse max, alertes) |
+| `GET` | `/api/admin/reports/vehicle/:deviceId/activity?period=today\|7d\|30d` | Résumé activité par véhicule (distance, idle, trips, max speed) |
+| `GET` | `/api/admin/reports/vehicle/:deviceId/trip-log?from=&to=` | Trajets reconstitués (segmentation gap > 10 min) |
+| `GET` | `/api/admin/reports/vehicle/:deviceId/speed-violations?from=&to=&threshold=` | Épisodes vitesse excessive |
+| `GET` | `/api/admin/reports/vehicle/:deviceId/idle?from=&to=` | Épisodes immobilisation prolongée |
+| `GET` | `/api/admin/reports/vehicle/:deviceId/geofence-activity?from=&to=` | Activité geofence (entrées/sorties par zone) |
+| `GET` | `/api/admin/subscriptions` | Tous les users avec leur abonnement |
+| `PATCH` | `/api/admin/subscriptions/:userId` | Créer/modifier l'abonnement d'un user |
+
+### Near-term (à implémenter)
+
+| Méthode | Route | Description |
+|---|---|---|
+| `POST` | `/api/auth/register` | Inscription + provisionnement device |
+| `POST` | `/api/provision/request-otp` | Demande OTP pour activation device |
+| `POST` | `/api/provision/claim` | Valide OTP + lie device au compte |
+| `POST` | `/api/devices/:id/theft` | Déclencher le mode récupération vol |
+| `POST` | `/api/alerts/:id/escalate` | Escalader une alerte au partenaire |
+
+---
+
+## Schéma de base de données
+
+### Tables Traccar (ne pas modifier — `synchronize: false`)
+
+| Table | Description |
+|---|---|
+| `tc_devices` | Appareils GPS enregistrés |
+| `tc_positions` | Historique des positions (à convertir en hypertable) |
+| `tc_users` | Utilisateurs Traccar |
+| `tc_events` | Événements (geofencing, alertes…) |
+
+### Activer TimescaleDB sur tc_positions
+
+Après le premier démarrage de Traccar :
+
+```sql
+SELECT create_hypertable('tc_positions', 'devicetime', if_not_exists => TRUE);
+```
+
+### Tables propres à l'API (migrations TypeORM)
+
+```sql
+-- Assignation des devices (Lié propriétaire Trackeo <-> Device Traccar)
+CREATE TABLE device_assignments (
+  id SERIAL PRIMARY KEY,
+  device_id INTEGER NOT NULL UNIQUE,
+  user_id INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Trajets segmentés (Near-term)
+CREATE TABLE trips (
+  id uuid PRIMARY KEY,
+  device_id text NOT NULL,
+  start_ts timestamptz,
+  end_ts timestamptz,
+  distance_m double precision,
+  duration_s integer,
+  geom geometry(LineString, 4326),
+  created_at timestamptz DEFAULT now()
+);
+
+-- Geofences
+CREATE TABLE geofences (
+  id uuid PRIMARY KEY,
+  owner_id uuid,
+  device_ids integer[],
+  geom geometry,
+  name text,
+  radius_m integer,
+  active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Alertes
+CREATE TABLE alerts (
+  id uuid PRIMARY KEY,
+  device_id text,
+  owner_id uuid,
+  type text,           -- 'geofence_exit', 'geofence_enter', 'theft', 'low_battery'
+  status text,         -- 'open', 'acked', 'escalated', 'resolved'
+  created_at timestamptz DEFAULT now(),
+  handled_by uuid
+);
+
+-- Télémétrie carburant (Near-term)
+CREATE TABLE device_fuel_readings (
+  id bigserial PRIMARY KEY,
+  device_id text,
+  ts timestamptz,
+  fuel_pct numeric,
+  fuel_v numeric,
+  raw jsonb
+);
+
+-- Livraisons (Near-term)
+CREATE TABLE deliveries (
+  id uuid PRIMARY KEY,
+  merchant_id uuid,
+  customer_id uuid,
+  driver_id uuid,
+  pickup_lat double precision,
+  pickup_lon double precision,
+  dropoff_lat double precision,
+  dropoff_lon double precision,
+  status varchar,      -- 'pending', 'accepted', 'picked_up', 'in_transit', 'delivered'
+  eta timestamptz,
+  amount_cents integer,
+  pod_photos jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Chauffeurs (Near-term)
+CREATE TABLE drivers (
+  id uuid PRIMARY KEY,
+  user_id uuid,
+  vehicle_device_id text,
+  status varchar,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Installations (Near-term)
+CREATE TABLE installations (
+  id uuid PRIMARY KEY,
+  device_id text,
+  installer_id uuid,
+  photos jsonb,
+  vin text,
+  installed_at timestamptz DEFAULT now()
+);
+
+-- Abonnements (migration 007_subscriptions.sql — implémenté)
+CREATE TABLE subscriptions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id INTEGER NOT NULL UNIQUE REFERENCES users(id),
+  plan TEXT NOT NULL DEFAULT 'free',          -- 'free' | 'basic' | 'premium'
+  status TEXT NOT NULL DEFAULT 'trial',       -- 'trial' | 'active' | 'suspended' | 'cancelled'
+  vehicle_limit INTEGER NOT NULL DEFAULT 1,   -- 1 (free) | 5 (basic) | 999 (premium)
+  next_billing_date TIMESTAMPTZ,
+  trial_ends_at TIMESTAMPTZ,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- PLAN_VEHICLE_LIMITS : free=1, basic=5, premium=999
+```
+
+---
+
+## Schéma de télémétrie (canonical)
+
+```json
+{
+  "device_id": "DEV123456",
+  "ts": 1700000000,
+  "lat": -18.8792,
+  "lon": 47.5079,
+  "speed_kmh": 0,
+  "heading": 180,
+  "battery_pct": 78,
+  "gsm_signal": 12,
+  "event": "heartbeat",
+  "seq": 12345,
+  "firmware": "v1.2.3",
+  "fuel_pct": 57.3,
+  "fuel_v": 2.34,
+  "odometer_m": 1234567
+}
+```
+
+> `ts` en epoch seconds UTC. `seq` monotone par device (le serveur rejette les doublons). `fuel_pct` / `fuel_v` optionnels (selon matériel). `odometer_m` préférable à Haversine pour distance cumulative précise.
+
+---
+
+## Workflow de notification & escalade
+
+1. Alerte créée → push + message WhatsApp (template) à l'owner (avec actions : Share Live Link, Call Support)
+2. Si aucun accusé de l'owner en `EscalationTimeout` (défaut 10 min) → notif webhook partenaire + WhatsApp
+3. Ticket support créé immédiatement ; support peut demander consentement owner pour partager position avec police → lien éphémère + log
+4. Partenaire claim l'alerte : `open → in_progress → resolved`
+5. Toutes les étapes sont auditées
+
+---
+
+## Architecture Flutter Web (PWA)
+
+L'app suit une architecture **Feature-first + Repository pattern** :
+
+```
+feature/
+├── [feature]_model.dart          # Entité (Equatable)
+├── repositories/
+│   └── [feature]_repository.dart # Interface + implémentation Dio
+├── providers/
+│   └── [feature]_provider.dart   # FutureProvider / StateProvider Riverpod
+└── views/
+    └── [feature]_view.dart        # ConsumerWidget
+```
+
+### Conventions
+
+- **Models** : `Equatable`, factory `fromJson`
+- **Repositories** : interface abstraite + implémentation `Remote*`
+- **Providers** : `AsyncNotifierProvider` pour les données async avec polling, `FutureProvider` pour les données one-shot, `StateProvider` pour l'état UI
+- **Views** : `ConsumerWidget`, pas de logique métier
+- **Polling** : `Timer.periodic(Duration(seconds: 10), ...)` dans `AsyncNotifier._refresh()` — ne jamais passer par `AsyncLoading` pour éviter le flash des marqueurs
+- **valueOrNull** : utiliser `vehiclesAsync.valueOrNull ?? []` pour les données affichées sur la carte
+
+---
+
+## Stratégie Rapports
+
+### Principe clé
+**Les rapports utiles aux utilisateurs finaux sont aussi consultables par l'admin.** L'admin doit pouvoir ouvrir la page détail d'un véhicule et voir exactement ce que voit le client — pour le support, le diagnostic, et démontrer la valeur du produit.
+
+### Types de rapports — par audience
+
+| Rapport | Admin (`/reports`) | Utilisateur (Flutter) | Priorité |
+|---------|-------------------|-----------------------|----------|
+| Résumé flotte (distance, alertes, statut) | ✅ Fait | 🔲 À faire | P1 |
+| Trip log (trajets reconstitués) | ✅ Fait | ✅ Fait | P1 |
+| Violations de vitesse | ✅ Fait | ✅ Fait | P1 |
+| Idle time (moteur allumé, arrêté) | ✅ Fait | ✅ Fait | P2 |
+| Activité geofence (entrées/sorties par zone) | ✅ Fait | ✅ Fait | P2 |
+| Email mensuel automatique | 🔲 Post-launch | — | P2 |
+| Export PDF | 🔲 À faire | 🔲 À faire | P3 |
+| Driver behavior score | 🔲 À faire | 🔲 À faire | Near-term |
+
+### Trip segmentation (sans table `trips`)
+En attendant le worker de segmentation Near-term, on peut reconstituer les trajets depuis `tc_positions` :
+- Un **gap > 10 min** sans position valide = fin d'un trajet, début d'un autre
+- Chaque segment = liste de positions ordonnées → distance Haversine, durée, vitesse max
+- Limite : 1 000 positions par requête, period max 30 jours
+- **Ce n'est pas du trip segmentation complet** — pas de détection d'arrêt moteur, pas de clustering — mais suffisant pour un trip log MVP
+
+### Algorithme idle time
+- `speed < 2 km/h` ET gap entre points `< 5 min` = segment idle
+- Épisodes consécutifs fusionnés → durée totale + localisation (première position du segment)
+- Filtrer les épisodes < 3 min (arrêts à un feu rouge)
+
+### Violations de vitesse
+- Position avec `speed > threshold` (défaut 120 km/h) = événement vitesse
+- Regrouper les positions consécutives > seuil en un seul épisode
+- Retourner : timestamp, lat/lon, vitesse max, durée de l'épisode
+
+---
+
+## Règles pour Codex
+
+- **Ne pas modifier** le schéma Traccar (`synchronize: false` dans TypeORM)
+- **Ne jamais** committer de credentials réels — utiliser `.env` (gitignored)
+- **Toujours** passer par le `VehicleRepository` / `DeviceRepository` dans Flutter, pas appeler Dio directement dans les vues
+- **Pas de WebSocket pour le MVP** — utiliser le polling toutes les 10s uniquement (WebSocket prévu en V2 avec l'app mobile native)
+- **Segmentation de trajets (admin)** : `PositionsService.getTripLog()` reconstruit les trajets depuis `tc_positions` (gap > 10 min = nouveau trajet). Pas de table `trips` dédiée — calcul à la volée, limite 10 000 points. Disponible admin uniquement pour l'instant. **Flutter côté utilisateur** : toujours points bruts en polyligne — l'exposition via `VehiclesController` est Near-term.
+- Avant d'ajouter un nouveau protocole Traccar, vérifier qu'il n'est pas déjà activé dans `traccar.xml`
+- Les migrations TypeORM sont uniquement pour les tables **propres à l'API** (pas les tables `tc_*`)
+- **selectedVehicle** : stocker uniquement l'id dans `selectedVehicleIdProvider`, dériver le `Vehicle?` via `Provider` depuis la liste live — toujours fraîche
+- **withOpacity** déprécié depuis Flutter 3.38 → utiliser `withValues(alpha: x)`
+- **dart:math** : `pi` est disponible via import transitif de `flutter_map`/`latlong2` — importer explicitement seulement si `sin`, `cos`, `sqrt`, `atan2` sont utilisés
+- **TypeORM entities** : toute nouvelle entité doit être ajoutée dans le tableau `entities` de `apps/api/src/config/database.config.ts` EN PLUS du module feature — sinon EntityMetadataNotFoundError → HTTP 500
+- **Field naming** : les entités TypeORM utilisent camelCase (ex: `userId`, `deviceId`, `createdAt`), TypeORM sérialise en camelCase JSON — s'assurer que les modèles Flutter `fromJson` utilisent les mêmes clés (ex: `json['userId']`, pas `json['ownerId']` sauf si la colonne s'appelle `owner_id`)
+- **Geofence radiusM** : le DTO attend un entier (`@IsNumber()`) — toujours envoyer `_radius.toInt()` depuis Flutter
+- **Marqueur draggable** (flutter_map) : utiliser `GestureDetector.onPanUpdate` sur le `Marker.child` + conversion pixel→lat/lon via formule `metersPerPixel = 156543 * cos(lat * π/180) / 2^zoom`, puis `latPerPixel = metersPerPixel / 111320`
+- **Reverse Geocoding** : Toujours utiliser le provider global `reverseGeocodeProvider(LatLng)` présent dans `lib/core/providers/geocoding_provider.dart`. Il gère le cache et évite de surcharger l'API Nominatim.
+- **Design System** : Pour les éléments "pill-shaped" (barres de recherche, chips), utiliser `BorderRadius.circular(24)`. Les icônes de véhicules doivent utiliser les couleurs thématiques du mapping dans `VehicleCard` (pastel backgrounds).
+- **Attributs Traccar (Fix)** : La colonne `tc_devices.attributes` est de type `TEXT` dans Traccar mais doit être manipulée comme du JSON dans l'API. Utiliser le transformateur défini dans `Device` entity. Ne jamais assigner un objet brut à `attributes` sans passer par l'entité transformée.
+- **Null Safety (Plate)** : Le champ `plate` est nullable. Dans Flutter, toujours utiliser `v.plate?.isNotEmpty ?? false` ou `v.plate != null && v.plate!.isNotEmpty` pour éviter les erreurs de compilation.
+- **Recherche Véhicules** : Toujours inclure `name`, `plate` (null-safe) et `serialNumber` dans les filtres de recherche.
+- **OneSignal Push** : Le ciblage se fait via `include_subscription_ids` (PAS `include_external_user_ids` — le External ID ne se persiste pas côté serveur OneSignal depuis le SDK web). Après login, Flutter lit `window.trackeoGetSubId()` (JS) via `getOneSignalSubId()` (dart:js), attend 3s, puis POST le subscription ID vers `POST /api/auth/push-token`. Le backend le stocke dans `users.onesignal_sub_id` et l'utilise dans `GeofencesCheckerService` (avec cache mémoire `subIdCache`). Web → `web/OneSignalSDKWorker.js` + bloc `<script>` dans `web/index.html` obligatoires. Build production (`flutter build web`) requis — dev mode n'enregistre pas de service worker.
+- **SQL Logging TypeORM** : Garder `logging: ['error']` dans `database.config.ts` — ne jamais remettre `process.env.NODE_ENV === 'development'` qui spamme la console avec chaque SELECT du cron geofence (15s) et du polling (10s).
+- **Raccordement Obligatoire des Fonctionnalités aux Plans (Commercial Entitlements & Plans)** : Pour chaque nouvelle fonctionnalité développée sur le projet, elle DOIT obligatoirement être enregistrée dans la table `features` via une migration SQL (visible dans l'écran Admin *Fonctionnalités* `/features`), liée aux plans dans `plan_features` (attachable aux plans `/plans`), et contrôlée côté API via `await this.entitlementsService.assertFeature(userId, 'code_feature')`. Voir la règle complète dans [`.agents/rules/features_and_plans.md`](file:///Users/schristian/Dev/Personals/trackeo/.agents/rules/features_and_plans.md).
+
+---
+
+## Checklist avancement
+
+### ✅ Fait (S1–S10 + Geofencing)
+- [x] Docker + Traccar + PostgreSQL
+- [x] Simulation GPS (`simulate.ts`)
+- [x] API NestJS : Auth JWT, Vehicles (fleet list, polling, history)
+- [x] Flutter Web PWA : Login, Bottom Nav, Fleet List, Carte OSM + marqueurs + polling 10s
+- [x] Statut véhicule (online=Moving / idle / offline) basé sur le champ `status` Traccar
+- [x] Bouton recentrer sur la carte
+- [x] Design Figma : header logo+bell, search bar, filter chips, vehicle card LIVE badge
+- [x] Fix marqueurs : `AsyncNotifier._refresh()` sans flash + `valueOrNull` pattern
+- [x] Fix popup : flag `_markerJustTapped` pour conflit tap marker/map
+- [x] Screen Historique : sélecteur de date, polyligne, stats (distance/durée/vitesse max), timeline
+- [x] Navigation liste → carte : tap véhicule bascule sur l'onglet Map
+- [x] Geofencing API : entités, migrations, endpoints CRUD + cron checker 15s (Haversine)
+- [x] Fix TypeORM : `Geofence` + `Alert` ajoutés dans `database.config.ts` entities array
+- [x] Fix Flutter : `Geofence.fromJson` utilise `userId` (était `ownerId`)
+- [x] Flutter Alerts : vue geofences + alertes, empty states premium, couleurs par type
+- [x] Flutter Create Geofence : marqueur draggable (pan gesture), tap-to-place, bouton centrer, zoom ±, coordonnées chip, submit correct (`radiusM.toInt()`)
+- [x] UI Refinement : Design "pill-shaped" (radius 24) pour search bars et chips, counts par filtre (All, Moving, Idle, Offline)
+- [x] Vehicle Card : Couleurs par catégorie, intégration `timeago` pour statuts relatifs (Seen X ago, X stopped)
+- [x] Reverse Geocoding : Implementation globale (provider + cache) intégrée dans Liste, Carte, Historique et Alertes
+- [x] Édition Véhicule : Formulaire complet (Nom, Plaque, IMEI, Photo) + Fix sérialisation JSON attributes.
+- [x] Fix Null-Safety : Correction des erreurs de compilation liées à la plaque nullable dans toutes les vues.
+- [x] Notifications Push OneSignal : Backend `NotificationsService` + Flutter SDK lié au userId + service worker web (`OneSignalSDKWorker.js`) + init JS dans `index.html`.
+- [x] Fix SQL logging : `logging: ['error']` — suppression du spam SELECT dans la console NestJS.
+- [x] Fix Push Ciblage OneSignal : Subscription ID enregistré en base (`users.onesignal_sub_id`) via `POST /api/auth/push-token` + `include_subscription_ids` côté backend. Contourne le bug External ID non persisté du SDK web OneSignal. Migration `004_onesignal_sub_id.sql`.
+- [x] Notifications WhatsApp : `sendWhatsApp()` via Meta API + phone sur users + migration `005_geofence_alerts_whatsapp.sql`.
+- [x] Paramètres d'Alerte : Vue Flutter (Enable "Alert Settings" Alerts, SOS, Low Battery, Speed Limit, Push/WhatsApp) + API `PATCH /api/auth/alert-settings` + cron `checkVehicleAlerts()` (batterie <20%, vitesse >120 km/h) + migration `006_alert_settings.sql`.
+
+### ✅ Admin Next.js — Base (implémenté)
+- [x] Auth middleware (`proxy.ts`) — unauthenticated → `/login`, authenticated `/login` → `/`
+- [x] Layout sidebar avec badge alertes (auto-refresh 60s)
+- [x] Dashboard — stats (Users / Vehicles / Open Alerts / Unassigned) + 5 dernières alertes avec Ack inline
+- [x] Users — CRUD complet (Create Sheet, Edit Sheet, Activate/Deactivate, Delete), filter tabs All/Active/Inactive, toasts
+- [x] Vehicles — liste enrichie (statut coloré, Last Seen relatif), filter tabs All/Online/Idle/Offline/Unassigned, Assign/Reassign/Unassign, toasts, auto-refresh 30s
+- [x] Alerts — filter tabs All/Open/Acked, Ack button, auto-refresh 30s, open rows tintées rouge
+- [x] Geofences — Owner column, coordinates column, delete
+- [x] Scoping mobile : `GET /api/vehicles` retourne uniquement les véhicules assignés à l'user connecté (`findAllForUser`), ownership check sur tous les endpoints véhicule
+
+### ✅ Admin Next.js — Super App (implémenté)
+- [x] **User detail page** (`/users/[id]`) — profil, statut alertes, geofences count, liste véhicules assignés avec statut live
+- [x] **Vehicle detail page** (`/vehicles/[id]`) — OSM map, télémétrie (batterie, ignition, vitesse), alertes récentes, geofences liées, assignation
+- [x] **Live Fleet Map** (`/map`) — tous les véhicules sur OSM (Leaflet), marqueurs colorés, sidebar véhicule avec batterie + alertes, auto-refresh 15s
+- [x] **Global search** (`⌘K`) — recherche unifiée users + vehicles + alerts, debounce 250ms, navigation clavier
+- [x] **Battery + Ignition columns** dans la liste véhicules
+- [x] **Alert count badge** par véhicule dans la liste
+- [x] **WhatsApp quick-action** dans users list + user detail page
+- [x] **CSV export** dans la liste utilisateurs
+- [x] **Vehicles count** par utilisateur dans la liste
+- [x] `findByIdAdmin()` dans UsersService — pas de filtre `isActive` pour le contexte admin
+- [x] `getUserDetail()` — user + vehicles + openAlertsCount + geofencesCount
+- [x] `getVehicleDetail()` — vehicle + recentAlerts (20) + linkedGeofences + assignedUser
+
+### ✅ Admin Next.js — Reports & Subscriptions (implémenté)
+- [x] **Reports overview** — 4 stat cards, fleet status bars, alerts by type breakdown
+- [x] **Vehicle report table** — distance, max speed (rouge si >120 km/h), GPS points, alerts, par période Today/7d/30d
+- [x] **CSV export** de la table véhicules
+- [x] **Subscriptions page** — liste users avec plan/status badges, filter tabs All/Active/Trial/Suspended/Free/Basic/Premium
+- [x] **Edit subscription sheet** — plan picker, status selector, trial/billing dates, notes internes
+- [x] `Subscription` entity + migration `007_subscriptions.sql` + `PLAN_VEHICLE_LIMITS`
+- [x] Admin endpoints : `GET /admin/reports/overview`, `GET /admin/reports/vehicles?period=`, `GET /admin/subscriptions`, `PATCH /admin/subscriptions/:userId`
+
+### ✅ Admin Next.js — Reports détaillés par véhicule (implémenté)
+
+> **Principe** : Les rapports utiles aux utilisateurs finaux (clients Trackeo) sont aussi consultables par l'admin — pour le support et le diagnostic.
+
+#### Backend — `PositionsService` + `AdminService` + `AdminController`
+- [x] `PositionsService.getTripLog()` — segmentation gap > 10 min, Haversine, filtre micro-mouvements < 100 m
+- [x] `PositionsService.getSpeedViolations()` — regroupe positions consécutives > seuil en épisodes
+- [x] `PositionsService.getIdleTime()` — speed < 2 km/h, gap < 5 min, filtre épisodes < 3 min
+- [x] `PositionsService.getActivitySummary()` — `Promise.all` sur les 3 ci-dessus + distanceSummary
+- [x] `GET /admin/reports/vehicle/:deviceId/activity?period=` — résumé activité (distance, idle time, trips count, max speed)
+- [x] `GET /admin/reports/vehicle/:deviceId/trip-log?from=&to=` — trajets reconstitués
+- [x] `GET /admin/reports/vehicle/:deviceId/speed-violations?from=&to=&threshold=` — épisodes vitesse excessive
+- [x] `GET /admin/reports/vehicle/:deviceId/idle?from=&to=` — épisodes immobilisation prolongée
+
+#### Admin Frontend
+- [x] **`VehicleDrillDown`** dans `/reports` — sélecteur de véhicule + 4 tabs (Activity / Trip Log / Speed Violations / Idle Time) + période Today/7d/30d
+- [x] **`VehicleReports`** dans `/vehicles/[id]`— section pleine largeur, mêmes 4 tabs + période
+- [x] `lib/api.ts` — `getVehicleActivitySummary`, `getVehicleTripLog`, `getVehicleSpeedViolations`, `getVehicleIdleTime`
+
+#### ✅ Flutter (utilisateur final) — rapports côté mobile (implémenté)
+- [x] **Vue "Rapports"** (`ReportsView`) — accessible depuis Paramètres → "Rapports de conduite"
+  - Sélecteur de véhicule (dropdown, affiché si plusieurs véhicules)
+  - Sélecteur de période : Aujourd'hui / 7 jours / 30 jours
+  - 4 onglets : Activité / Trajets / Vitesse / Inactivité
+- [x] **Onglet Activité** — grille 6 stats (distance, trajets, conduite, inactif, vitesse max, excès)
+- [x] **Onglet Trajets** — liste des trajets avec départ/arrivée, durée, distance, vitesse max
+- [x] **Onglet Vitesse** — liste des épisodes d'excès de vitesse avec badge rouge + durée
+- [x] **Onglet Inactivité** — liste des épisodes avec total inactif en en-tête
+- [x] **Endpoints utilisateur** — `GET /api/vehicles/:id/reports/activity|trip-log|speed-violations|idle` dans `VehiclesController`
+- [x] `lib/features/reports/models/report_models.dart` — `ActivitySummary`, `TripLogEntry`, `SpeedViolation`, `IdleEpisode`
+- [x] `lib/features/reports/repositories/reports_repository.dart` — `ReportsRepository` + `RemoteReportsRepository`
+- [x] `lib/features/reports/providers/reports_provider.dart` — 4 `FutureProvider.autoDispose.family` avec tuples Dart 3 (epoch ms pour from/to)
+- [x] `lib/features/reports/views/reports_view.dart` — vue complète avec `ConsumerStatefulWidget` + `TabController`
+- [x] `settings_view.dart` — tile "Rapports de conduite" (section RAPPORTS) → `Navigator.push(ReportsView)`
+- [x] **Animation fluide des marqueurs** — `map_view.dart` : `TickerProviderStateMixin` + `AnimationController` (10 s, `easeInOut`) par véhicule, interpolation lat/lon/course entre chaque poll. `onPositionChanged: (_, hasGesture)` détecte le pan utilisateur et désactive le suivi. Bouton GPS devient primaire quand le suivi est actif. Tap marqueur ou bouton GPS → suivi activé + recentrage.
+- [x] **Onglet Zones** — 5ème onglet dans `ReportsView` : activité geofence (entrées/sorties par zone), badge total événements, tri par activité décroissante
+- [x] **`GeofenceActivityEntry`** dans `report_models.dart` — geofenceId, geofenceName, isActive, enterCount, exitCount, totalEvents, lastEventAt, lastEventType
+- [x] **`getGeofenceActivity(vehicleId, period)`** dans `ReportsRepository` → `GET /vehicles/:id/reports/geofence-activity?period=`
+- [x] **`geofenceActivityProvider`** dans `reports_provider.dart` — `FutureProvider.autoDispose.family<List<GeofenceActivityEntry>, (int, String)>`
+- [x] **`GET /api/vehicles/:id/reports/geofence-activity?period=`** dans `VehiclesController` — ownership check + délégation à `AlertsService.getGeofenceActivity()`
+- [x] **`AlertsService.getGeofenceActivity(deviceId, from, to)`** — cross-référence alertes × geofences (liées au device + globales), groupe par nom dans le message
+- [x] **`AlertsModule`** — ajout de `Geofence` dans `TypeOrmModule.forFeature` (injection directe du repo dans `AlertsService`)
+- [x] **`VehiclesModule`** — import de `AlertsModule` pour injecter `AlertsService` dans `VehiclesController`
+- [x] **Admin — onglet Zones** dans `VehicleDrillDown` (`/reports`) — tableau zones avec entrées/sorties/total/dernier événement/statut actif
+- [x] **Admin `api.ts`** — `getVehicleGeofenceActivity(deviceId, from, to)` → `GET /admin/reports/vehicle/:deviceId/geofence-activity`
+- [x] **Admin `AdminService.getVehicleGeofenceActivity()`** + **`AdminController` `GET /admin/reports/vehicle/:deviceId/geofence-activity`**
+
+#### 🔲 Email mensuel automatique (post-launch — mid-term)
+> **Décision** : Reporté après le déploiement VPS. Priorité mid-term, pas avant le Go Live.
+- [ ] `@Cron` le 1er de chaque mois → récapitulatif (distance, nb trajets, nb alertes, violations)
+
+### 🔲 À faire (S13-S16 — Déploiement VPS)
+- [ ] Onboarding QR/OTP pour activation device
+
+### 🔲 Prochaines Étapes Immédiates (Déploiement VPS & Setup Prod)
+Maintenant que le MVP (S1-S10) est opérationnel, l'objectif est de le mettre en ligne de manière sécurisée pour de vrais tests.
+
+1. **Infrastructure Cloud**
+   - [ ] Louer un serveur VPS (ex: Hetzner, OVH, DigitalOcean).
+   - [ ] Réserver le nom de domaine `trackeo.mg`.
+   - [ ] Faire pointer le sous-domaine `api.trackeo.mg` et Traccar vers l'IP du VPS.
+
+2. **WhatsApp Business API**
+   - [ ] Créer un compte développeur Meta (developers.facebook.com).
+   - [ ] Créer une app WhatsApp et obtenir `WHATSAPP_PHONE_ID`, `WHATSAPP_API_TOKEN`, `WHATSAPP_BUSINESS_ACCOUNT_ID`.
+   - [ ] Configurer les credentials dans `.env` de l'API.
+
+3. **Déploiement & Sécurité**
+   - [ ] Installer Docker & Docker Compose sur le VPS.
+   - [ ] Mettre en place un proxy inversé (ex: Nginx Proxy Manager ou Traefik) pour gérer les certificats SSL automatistés (HTTPS).
+   - [ ] Mettre en place un script de CI/CD basique (Github Actions ou hooks git) pour mettre à jour l'API et la web app.
+
+3. **Intégration Hardware (Tests Terrain)**
+   - [ ] Obtenir un traceur GPS physique réel (Teltonika, Coban, Sinotrack, etc.).
+   - [ ] Configurer le traceur (par SMS) pour lui donner l'IP publique du VPS, le bon port de Traccar correspondant au protocole, et l'APN de la carte SIM malgache.
+   - [ ] Créer l'identifiant du tracker (IMEI) dans l'interface de Trackeo.
+   - [ ] Mettre le tracker dans une voiture réelle à Antananarivo et s'assurer que sa route s'affiche sans accroc.
+# Test CI
+// trigger

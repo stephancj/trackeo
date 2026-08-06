@@ -9,6 +9,8 @@ import '../../auth/providers/auth_provider.dart';
 import '../../entitlements/models/entitlements_model.dart';
 import '../../entitlements/providers/entitlements_provider.dart';
 import '../../payments/views/payments_view.dart';
+import '../../promotions/redeem_dialog.dart';
+import '../../promotions/referral_view.dart';
 import 'alert_settings_view.dart';
 import 'delete_account_view.dart';
 
@@ -79,6 +81,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
     final displayName = user?.displayName ?? '';
+    final rightsAsync = ref.watch(entitlementsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -139,6 +142,39 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                       ),
                     ),
                 const SizedBox(height: 24),
+                if ((rightsAsync.valueOrNull?.has('referral_program') ?? true) ||
+                    (rightsAsync.valueOrNull?.has('coupon_redemption') ?? true)) ...[
+                  const ProductSectionHeader(
+                    title: 'Promotions & Avantages',
+                    subtitle: 'Parrainez des amis ou utilisez un code promo.',
+                  ),
+                  const SizedBox(height: 10),
+                  ProductSurface(
+                    padding: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                        if (rightsAsync.valueOrNull?.has('referral_program') ?? true)
+                          _SettingsTile(
+                            icon: Icons.card_giftcard_rounded,
+                            title: 'Parrainer un ami',
+                            subtitle: 'Offrez 20% & gagnez 1 mois gratuit',
+                            onTap: () => ReferralView.navigateTo(context),
+                          ),
+                        if ((rightsAsync.valueOrNull?.has('referral_program') ?? true) &&
+                            (rightsAsync.valueOrNull?.has('coupon_redemption') ?? true))
+                          const Divider(height: 1, indent: 68),
+                        if (rightsAsync.valueOrNull?.has('coupon_redemption') ?? true)
+                          _SettingsTile(
+                            icon: Icons.confirmation_number_outlined,
+                            title: 'Utiliser un code promo',
+                            subtitle: 'Débloquez vos réductions et avantages',
+                            onTap: () => RedeemDialog.show(context),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
                 const ProductSectionHeader(
                   title: 'Préférences',
                   subtitle: 'Contrôlez la façon dont ioeh vous prévient.',

@@ -18,12 +18,23 @@ class PaymentsView extends ConsumerStatefulWidget {
 class _PaymentsViewState extends ConsumerState<PaymentsView> {
   String? _selectedPlanId;
   String? _loadingPlanId;
+  final _couponController = TextEditingController();
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
+  }
 
   Future<void> _checkout(Map<String, dynamic> plan) async {
     final id = plan['id'] as String;
+    final coupon = _couponController.text.trim();
     setState(() => _loadingPlanId = id);
     try {
-      final result = await ref.read(paymentsRepositoryProvider).checkout(id);
+      final result = await ref.read(paymentsRepositoryProvider).checkout(
+            id,
+            couponCode: coupon.isNotEmpty ? coupon : null,
+          );
       await openPaymentUrl(result['paymentLink'] as String);
     } catch (_) {
       if (mounted) {
@@ -105,6 +116,7 @@ class _PaymentsViewState extends ConsumerState<PaymentsView> {
                         active: selected['code'] == rights?.planCode,
                         loading: selected['id'] == _loadingPlanId,
                         disabled: _loadingPlanId != null,
+                        couponController: _couponController,
                         onCheckout: () => _checkout(selected),
                       ),
                   ],
@@ -279,6 +291,7 @@ class _PlanDetails extends StatelessWidget {
   final bool active;
   final bool loading;
   final bool disabled;
+  final TextEditingController couponController;
   final VoidCallback onCheckout;
 
   const _PlanDetails({
@@ -286,6 +299,7 @@ class _PlanDetails extends StatelessWidget {
     required this.active,
     required this.loading,
     required this.disabled,
+    required this.couponController,
     required this.onCheckout,
   });
 
@@ -338,6 +352,20 @@ class _PlanDetails extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 11),
+          ],
+          if (!active) ...[
+            const SizedBox(height: 10),
+            TextField(
+              controller: couponController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Code promo (Optionnel)',
+                hintText: 'Ex: WELCOME20',
+                prefixIcon: Icon(Icons.local_offer_outlined, size: 18),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 12),
           ],
           const SizedBox(height: 7),
           SizedBox(

@@ -12,6 +12,7 @@ import { Subscription, SubscriptionStatus } from '../admin/subscription.entity';
 import { EntitlementsService } from '../entitlements/entitlements.service';
 import { Plan } from '../entitlements/plan.entity';
 import { UsersService } from '../users/users.service';
+import { PromotionsService } from '../promotions/promotions.service';
 import { CreatePaymentDto, PapiNotificationDto } from './payments.dto';
 import { Payment, PaymentStatus } from './payment.entity';
 
@@ -26,6 +27,7 @@ export class PaymentsService {
     private readonly subscriptionRepo: Repository<Subscription>,
     private readonly users: UsersService,
     private readonly entitlements: EntitlementsService,
+    private readonly promotionsService: PromotionsService,
   ) {}
 
   async create(userId: number, dto: CreatePaymentDto) {
@@ -41,10 +43,20 @@ export class PaymentsService {
     ]);
     if (!plan || !user)
       throw new NotFoundException('Plan ou utilisateur introuvable.');
-    const amount = Math.round(Number(plan.priceMonthly));
+
+    let amount = Math.round(Number(plan.priceMonthly));
+    if (dto.couponCode) {
+      const discount = await this.promotionsService.validateCouponForCheckout(
+        dto.couponCode,
+        dto.planId,
+        userId,
+      );
+      amount = discount.finalAmount;
+    }
+
     if (amount < 300)
       throw new BadRequestException(
-        'Ce plan ne nécessite pas de paiement PAPI.',
+        'Ce plan ou ce montant ne nécessite pas de paiement PAPI.',
       );
     const reference = `IOOEH-${randomUUID()}`;
     const publicApp = process.env.PUBLIC_APP_URL ?? 'https://app.iooeh.com';
@@ -210,6 +222,7 @@ export class PaymentsService {
     sub.nextBillingDate = next;
     await this.subscriptionRepo.save(sub);
     this.entitlements.invalidate(payment.userId);
+    await this.promotionsService.qualifyReferralOnPayment(payment.userId, payment.id);
   }
   private safeEqual(a: string, b: string) {
     const aa = Buffer.from(a);

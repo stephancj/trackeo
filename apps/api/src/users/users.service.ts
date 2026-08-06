@@ -74,11 +74,13 @@ export class UsersService {
     }
 
     const hashed = await bcrypt.hash(data.password, 12);
+    const referralCode = `REF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const user = this.userRepo.create({
       ...data,
       email,
       phone,
       password: hashed,
+      referralCode,
     });
     return this.userRepo.save(user);
   }

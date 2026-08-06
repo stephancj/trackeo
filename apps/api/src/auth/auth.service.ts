@@ -7,6 +7,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './jwt.strategy';
 import { EntitlementsService } from '../entitlements/entitlements.service';
+import { PromotionsService } from '../promotions/promotions.service';
 
 export interface AuthResponse {
   access_token: string;
@@ -25,6 +26,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly entitlementsService: EntitlementsService,
+    private readonly promotionsService: PromotionsService,
   ) {}
 
   async login(dto: LoginDto): Promise<AuthResponse> {
@@ -53,6 +55,14 @@ export class AuthService {
       role: UserRole.USER,
     });
     await this.entitlementsService.ensureDefaultSubscription(user.id);
+
+    if (dto.referralCode) {
+      await this.promotionsService.processRegistrationReferral(
+        user.id,
+        dto.referralCode,
+      );
+    }
+
     return this.buildResponse(user);
   }
 

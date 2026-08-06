@@ -120,6 +120,33 @@ main.utility-page {
   background: color-mix(in oklab, var(--brand) 75%, var(--ink));
 }
 
+.utility-contact {
+  background: color-mix(in oklab, var(--brand-soft) 54%, white);
+  border-color: color-mix(in oklab, var(--brand) 30%, var(--line));
+}
+
+.utility-contact-label {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem !important;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--brand-strong) 76%, var(--ink)) !important;
+}
+
+.utility-contact a {
+  font-weight: 650;
+  color: var(--ink);
+  text-decoration-color: color-mix(in oklab, var(--brand) 72%, transparent);
+  text-decoration-thickness: 0.12em;
+  text-underline-offset: 0.2em;
+}
+
+.utility-contact a:hover {
+  color: color-mix(in oklab, var(--brand-strong) 72%, var(--ink));
+}
+
 @media (max-width: 760px) {
   .utility-card h1 {
     max-width: none;

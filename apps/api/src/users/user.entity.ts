@@ -49,6 +49,16 @@ export class User {
   })
   onesignalSubId: string | null;
 
+  /** Code parrainage unique pour l'utilisateur */
+  @Column({
+    type: 'varchar',
+    name: 'referral_code',
+    length: 30,
+    nullable: true,
+    unique: true,
+  })
+  referralCode: string | null;
+
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 

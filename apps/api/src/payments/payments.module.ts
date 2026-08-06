@@ -4,6 +4,7 @@ import { Subscription } from '../admin/subscription.entity';
 import { EntitlementsModule } from '../entitlements/entitlements.module';
 import { Plan } from '../entitlements/plan.entity';
 import { UsersModule } from '../users/users.module';
+import { PromotionsModule } from '../promotions/promotions.module';
 import { Payment } from './payment.entity';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
@@ -13,6 +14,7 @@ import { PaymentsService } from './payments.service';
     TypeOrmModule.forFeature([Payment, Plan, Subscription]),
     UsersModule,
     EntitlementsModule,
+    PromotionsModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService],

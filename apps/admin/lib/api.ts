@@ -163,3 +163,9 @@ export const replacePlanFeatures = (
   id: string,
   features: Array<{ featureId: string; enabled: boolean; value?: boolean | number | string | null }>,
 ) => api.put(`/admin/plans/${id}/features`, { features });
+
+// Promotions & Coupons
+export const getCoupons = () => api.get("/promotions/admin/coupons");
+export const createCoupon = (data: unknown) => api.post("/promotions/admin/coupons", data);
+export const deleteCoupon = (id: string) => api.delete(`/promotions/admin/coupons/${id}`);
+

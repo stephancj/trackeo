@@ -21,6 +21,7 @@ import {
   Layers3,
   CreditCard,
   ShieldAlert,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -71,6 +72,7 @@ export function SidebarNav() {
     { href: "/features", label: "Fonctionnalités", icon: Boxes },
     { href: "/plans", label: "Plans", icon: Layers3 },
     { href: "/subscriptions", label: "Abonnements", icon: CreditCard },
+    { href: "/promotions", label: "Promotions & Coupons", icon: Tag },
     { href: "/settings", label: "Configuration", icon: Settings },
   ];
 
