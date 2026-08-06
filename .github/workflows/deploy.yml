@@ -150,6 +150,15 @@ jobs:
             exit 1
           '
 
+      - name: Prune stale Docker data
+        if: always()
+        continue-on-error: true
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} '
+            docker builder prune -af --filter "until=168h"
+            docker image prune -f
+          '
+
   # ===========================================
   # BUILD WEB (Flutter web on GH runner)
   # ===========================================
@@ -242,6 +251,15 @@ jobs:
             done
             echo "Health check failed after 5 attempts"
             exit 1
+          '
+
+      - name: Prune stale Docker data
+        if: always()
+        continue-on-error: true
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} '
+            docker builder prune -af --filter "until=168h"
+            docker image prune -f
           '
 
   # ===========================================
@@ -347,6 +365,15 @@ jobs:
             done
             echo "Health check failed after 6 attempts"
             exit 1
+          '
+
+      - name: Prune stale Docker data
+        if: always()
+        continue-on-error: true
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} '
+            docker builder prune -af --filter "until=168h"
+            docker image prune -f
           '
 
   # ===========================================

@@ -1,4 +1,8 @@
-version: "3.9"
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 networks:
   trackeo-net:
@@ -16,6 +20,7 @@ services:
     image: timescale/timescaledb:latest-pg14
     container_name: trackeo-postgres
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: trackeo
       POSTGRES_PASSWORD: ${DB_PASS:-Password_1234}
@@ -36,6 +41,7 @@ services:
     image: traccar/traccar:latest
     container_name: trackeo-traccar
     restart: unless-stopped
+    logging: *default-logging
     environment:
       CONFIG_USE_ENVIRONMENT_VARIABLES: "true"
       DATABASE_PASSWORD: ${DB_PASS:-Password_1234}
@@ -61,6 +67,7 @@ services:
       dockerfile: Dockerfile
     container_name: trackeo-api
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,6 +96,7 @@ services:
         - NEXT_PUBLIC_API_URL=https://api.iooeh.com
     container_name: trackeo-admin
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       - api
     environment:
