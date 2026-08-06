@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getUsers, createUser, updateUser, deleteUser } from "@/lib/api";
 import { relativeTime } from "@/lib/utils";
 import { toast } from "sonner";
@@ -71,7 +71,11 @@ function exportCSV(users: User[]) {
 
 export default function UsersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pageParam = parseInt(searchParams.get("page") || "1", 10);
+  
   const [users, setUsers] = useState<User[]>([]);
+  const [meta, setMeta] = useState({ page: 1, totalPages: 1, total: 0 });
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [loading, setLoading] = useState(true);
@@ -82,13 +86,17 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  function refresh() {
-    return getUsers().then((r) => setUsers(r.data));
+  function refresh(p = pageParam) {
+    setLoading(true);
+    return getUsers(p).then((r) => {
+      setUsers(r.data.data || []);
+      setMeta(r.data.meta || { page: 1, totalPages: 1, total: 0 });
+    });
   }
 
   useEffect(() => {
-    refresh().finally(() => setLoading(false));
-  }, []);
+    refresh(pageParam).finally(() => setLoading(false));
+  }, [pageParam]);
 
   function openCreate() {
     setEditUser(null);
@@ -151,7 +159,7 @@ export default function UsersPage() {
   }
 
   const counts = {
-    all: users.length,
+    all: meta.total,
     active: users.filter((u) => u.isActive !== false).length,
     inactive: users.filter((u) => u.isActive === false).length,
   };
@@ -323,6 +331,30 @@ export default function UsersPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing {users.length} of {meta.total} users
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page <= 1}
+            onClick={() => router.push(`/users?page=${meta.page - 1}`)}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page >= meta.totalPages}
+            onClick={() => router.push(`/users?page=${meta.page + 1}`)}
+          >
+            Next
+          </Button>
+        </div>
       </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

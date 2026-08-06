@@ -18,6 +18,14 @@ export class DevicesService {
     return this.deviceRepo.find({ order: { id: 'ASC' } });
   }
 
+  findAllPaginated(page: number, limit: number): Promise<[Device[], number]> {
+    return this.deviceRepo.findAndCount({
+      order: { id: 'ASC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+  }
+
   findByUniqueId(uniqueId: string): Promise<Device | null> {
     return this.deviceRepo.findOneBy({ uniqueId });
   }

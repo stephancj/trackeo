@@ -14,6 +14,7 @@ import { EntitlementsModule } from '../entitlements/entitlements.module';
 import { Feature } from '../entitlements/feature.entity';
 import { Plan } from '../entitlements/plan.entity';
 import { PlanFeature } from '../entitlements/plan-feature.entity';
+import { SystemSetting } from './system-setting.entity';
 
 import { PaymentsModule } from '../payments/payments.module';
 
@@ -25,6 +26,7 @@ import { PaymentsModule } from '../payments/payments.module';
       Feature,
       Plan,
       PlanFeature,
+      SystemSetting,
     ]),
     EntitlementsModule,
     UsersModule,

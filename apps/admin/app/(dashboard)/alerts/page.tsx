@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getAlerts, ackAlert } from "@/lib/api";
 import { relativeTime } from "@/lib/utils";
 import { toast } from "sonner";
@@ -47,29 +48,35 @@ type Tab = "all" | "open" | "acked";
 const REFRESH_INTERVAL = 30_000;
 
 export default function AlertsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pageParam = parseInt(searchParams.get("page") || "1", 10);
+
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [tab, setTab] = useState<Tab>("open");
+  const [meta, setMeta] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [tab, setTab] = useState<Tab>("all");
   const [loading, setLoading] = useState(true);
   const [acking, setAcking] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const intervalRef = useRef<ReturnType<typeof setInterval>>(null);
 
-  function fetchAlerts() {
-    return getAlerts()
+  function fetchAlerts(p = pageParam) {
+    return getAlerts(p)
       .then((r) => {
-        setAlerts(r.data);
+        setAlerts(r.data.data || []);
+        setMeta(r.data.meta || { page: 1, totalPages: 1, total: 0 });
         setLastRefresh(new Date());
       })
       .catch(() => toast.error("Failed to load alerts"));
   }
 
   useEffect(() => {
-    fetchAlerts().finally(() => setLoading(false));
-    intervalRef.current = setInterval(fetchAlerts, REFRESH_INTERVAL);
+    fetchAlerts(pageParam).finally(() => setLoading(false));
+    intervalRef.current = setInterval(() => fetchAlerts(pageParam), REFRESH_INTERVAL);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, []);
+  }, [pageParam]);
 
   async function handleAck(alert: Alert) {
     setAcking(alert.id);
@@ -89,7 +96,7 @@ export default function AlertsPage() {
   }
 
   const counts = {
-    all: alerts.length,
+    all: meta.total,
     open: alerts.filter((a) => a.status === "open").length,
     acked: alerts.filter((a) => a.status === "acked").length,
   };
@@ -225,6 +232,30 @@ export default function AlertsPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing {alerts.length} of {meta.total} alerts
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page <= 1}
+            onClick={() => router.push(`/alerts?page=${meta.page - 1}`)}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page >= meta.totalPages}
+            onClick={() => router.push(`/alerts?page=${meta.page + 1}`)}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );

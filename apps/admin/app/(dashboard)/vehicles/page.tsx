@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getAdminVehicles, getUsers, assignDevice, unassignDevice } from "@/lib/api";
 import { relativeTime } from "@/lib/utils";
 import { toast } from "sonner";
@@ -88,7 +88,11 @@ function BatteryBar({ pct }: { pct: number | null | undefined }) {
 
 export default function VehiclesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pageParam = parseInt(searchParams.get("page") || "1", 10);
+
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [meta, setMeta] = useState({ page: 1, totalPages: 1, total: 0 });
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<Tab>("all");
@@ -100,10 +104,11 @@ export default function VehiclesPage() {
   const [assignUserId, setAssignUserId] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
-  function fetchVehicles() {
-    return getAdminVehicles()
+  function fetchVehicles(p = pageParam) {
+    return getAdminVehicles(p)
       .then((r) => {
-        setVehicles(r.data);
+        setVehicles(r.data.data || []);
+        setMeta(r.data.meta || { page: 1, totalPages: 1, total: 0 });
         setLastRefresh(new Date());
       })
       .catch(() => toast.error("Impossible d’actualiser les véhicules"));
@@ -111,13 +116,13 @@ export default function VehiclesPage() {
 
   useEffect(() => {
     Promise.all([
-      fetchVehicles(),
-      getUsers().then((r) => setUsers(r.data)),
+      fetchVehicles(pageParam),
+      getUsers().then((r) => setUsers(r.data.data || [])),
     ]).finally(() => setLoading(false));
 
-    intervalRef.current = setInterval(fetchVehicles, REFRESH_INTERVAL);
+    intervalRef.current = setInterval(() => fetchVehicles(pageParam), REFRESH_INTERVAL);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
+  }, [pageParam]);
 
   async function handleAssign() {
     if (!assignTarget || !assignUserId) return;
@@ -158,7 +163,7 @@ export default function VehiclesPage() {
   });
 
   const counts = {
-    all: vehicles.length,
+    all: meta.total,
     online: vehicles.filter((v) => v.status === "online").length,
     idle: vehicles.filter((v) => v.status === "idle").length,
     offline: vehicles.filter((v) => v.status === "offline").length,
@@ -326,6 +331,30 @@ export default function VehiclesPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Affichage de {vehicles.length} sur {meta.total} véhicules
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page <= 1}
+            onClick={() => router.push(`/vehicles?page=${meta.page - 1}`)}
+          >
+            Précédent
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page >= meta.totalPages}
+            onClick={() => router.push(`/vehicles?page=${meta.page + 1}`)}
+          >
+            Suivant
+          </Button>
+        </div>
       </div>
 
       <Dialog open={!!assignTarget} onOpenChange={() => setAssignTarget(null)}>

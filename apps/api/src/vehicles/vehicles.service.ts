@@ -48,6 +48,26 @@ export class VehiclesService {
   }
 
   /**
+   * Retourne tous les véhicules enrichis avec leur dernière position, paginés.
+   */
+  async findAllPaginated(page: number, limit: number): Promise<[VehicleDto[], number]> {
+    const [devices, total] = await this.devicesService.findAllPaginated(page, limit);
+
+    const results = await Promise.allSettled(
+      devices.map((device) => this.buildVehicleDto(device)),
+    );
+
+    const vehicles = results
+      .filter(
+        (r): r is PromiseFulfilledResult<VehicleDto> =>
+          r.status === 'fulfilled',
+      )
+      .map((r) => r.value);
+      
+    return [vehicles, total];
+  }
+
+  /**
    * Retourne uniquement les véhicules assignés à cet utilisateur.
    * Utilisé par les endpoints mobiles (fleet list, carte).
    */

@@ -179,6 +179,7 @@ export class PaymentsService {
     } else if (dto.paymentStatus === 'FAILED') {
       payment.status = PaymentStatus.FAILED;
       payment.failureMessage = dto.message ?? null;
+      await this.suspendSubscription(payment);
     } else payment.status = PaymentStatus.PENDING;
     await this.paymentRepo.save(payment);
     return { received: true };
@@ -224,18 +225,30 @@ export class PaymentsService {
     this.entitlements.invalidate(payment.userId);
     await this.promotionsService.qualifyReferralOnPayment(payment.userId, payment.id);
   }
+
+  private async suspendSubscription(payment: Payment) {
+    const sub = await this.subscriptionRepo.findOne({ where: { userId: payment.userId } });
+    if (sub && sub.status === SubscriptionStatus.ACTIVE && sub.planId === payment.planId) {
+      sub.status = SubscriptionStatus.SUSPENDED;
+      sub.notes = (sub.notes ? sub.notes + '\n' : '') + `Suspendu suite à l'échec du paiement ${payment.reference}`;
+      await this.subscriptionRepo.save(sub);
+      this.entitlements.invalidate(payment.userId);
+    }
+  }
+
   private safeEqual(a: string, b: string) {
     const aa = Buffer.from(a);
     const bb = Buffer.from(b);
     return aa.length === bb.length && timingSafeEqual(aa, bb);
   }
 
-  async listAdminPayments() {
-    const payments = await this.paymentRepo.find({
+  async listAdminPayments(page = 1, limit = 50) {
+    const [payments, total] = await this.paymentRepo.findAndCount({
       order: { createdAt: 'DESC' },
-      take: 200,
+      skip: (page - 1) * limit,
+      take: limit,
     });
-    if (payments.length === 0) return [];
+    if (payments.length === 0) return { data: [], meta: { total, page, limit, totalPages: 0 } };
 
     const userIds = [...new Set(payments.map((p) => p.userId))];
     const planIds = [...new Set(payments.map((p) => p.planId))];
@@ -248,7 +261,7 @@ export class PaymentsService {
     const userMap = new Map(usersList.map((u) => [u.id, u]));
     const planMap = new Map(plansList.map((p) => [p.id, p]));
 
-    return payments.map((p) => {
+    const data = payments.map((p) => {
       const u = userMap.get(p.userId);
       const plan = planMap.get(p.planId);
       return {
@@ -259,5 +272,15 @@ export class PaymentsService {
         planCode: plan?.code || '',
       };
     });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

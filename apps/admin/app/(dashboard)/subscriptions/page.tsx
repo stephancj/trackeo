@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarClock, CreditCard, Search, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { CommercialPlan, getPlans, getSubscriptions, upsertSubscription } from "@/lib/api";
@@ -33,7 +34,12 @@ type SubscriptionRow = {
 const statusLabels: Record<SubscriptionStatus, string> = { trial: "Essai", active: "Actif", suspended: "Suspendu", cancelled: "Annulé" };
 
 export default function SubscriptionsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pageParam = parseInt(searchParams.get("page") || "1", 10);
+
   const [rows, setRows] = useState<SubscriptionRow[]>([]);
+  const [meta, setMeta] = useState({ page: 1, totalPages: 1, total: 0 });
   const [plans, setPlans] = useState<CommercialPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -42,11 +48,12 @@ export default function SubscriptionsPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ planId: "", status: "trial" as SubscriptionStatus, trialEndsAt: "", nextBillingDate: "", notes: "" });
 
-  const load = async () => {
+  const load = async (p = pageParam) => {
     setLoading(true);
     try {
-      const [subscriptionResponse, planResponse] = await Promise.all([getSubscriptions(), getPlans()]);
-      setRows(subscriptionResponse.data as SubscriptionRow[]);
+      const [subscriptionResponse, planResponse] = await Promise.all([getSubscriptions(p), getPlans()]);
+      setRows(subscriptionResponse.data.data as SubscriptionRow[] || []);
+      setMeta(subscriptionResponse.data.meta || { page: 1, totalPages: 1, total: 0 });
       setPlans(planResponse.data.filter((plan) => plan.isActive));
     } catch {
       toast.error("Impossible de charger les abonnements.");
@@ -54,7 +61,7 @@ export default function SubscriptionsPage() {
       setLoading(false);
     }
   };
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(pageParam); }, [pageParam]);
 
   const filtered = useMemo(() => rows.filter((row) => {
     const q = search.trim().toLowerCase();
@@ -106,7 +113,7 @@ export default function SubscriptionsPage() {
     </header>
 
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <Metric label="Comptes" value={rows.length} icon={Users} tone="neutral" />
+      <Metric label="Comptes" value={meta.total} icon={Users} tone="neutral" />
       <Metric label="Actifs" value={activeCount} icon={ShieldCheck} tone="green" />
       <Metric label="En essai" value={trialCount} icon={CalendarClock} tone="blue" />
       <Metric label="Suspendus / annulés" value={suspendedCount} icon={CreditCard} tone="red" />
@@ -128,6 +135,30 @@ export default function SubscriptionsPage() {
         </tr>)}
         {!loading && filtered.length === 0 && <tr><td colSpan={6} className="p-10 text-center text-muted-foreground">Aucun abonnement trouvé.</td></tr>}
       </tbody></table></div>
+
+      <div className="flex items-center justify-between p-4 border-t border-border">
+        <p className="text-sm text-muted-foreground">
+          Affichage de {rows.length} sur {meta.total} abonnements
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page <= 1}
+            onClick={() => router.push(`/subscriptions?page=${meta.page - 1}`)}
+          >
+            Précédent
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page >= meta.totalPages}
+            onClick={() => router.push(`/subscriptions?page=${meta.page + 1}`)}
+          >
+            Suivant
+          </Button>
+        </div>
+      </div>
     </section>
 
     <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}><DialogContent className="sm:max-w-xl"><DialogHeader><DialogTitle>Gérer l’abonnement · {editing?.name || editing?.email}</DialogTitle></DialogHeader><div className="grid gap-4 py-2 sm:grid-cols-2">

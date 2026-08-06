@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -320,21 +321,10 @@ class _SecurityActionsPanelState extends ConsumerState<_SecurityActionsPanel> {
         final incident = await repo.theft(widget.vehicle.id);
         if (mounted) {
           final cancel = await showDialog<bool>(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (ctx) => AlertDialog(
-                          title: const Text('Mode vol activé'),
-                          content: const Text(
-                              'Le support a été alerté. En cas de faux signalement, vous pouvez encore annuler pendant 60 secondes.'),
-                          actions: [
-                            TextButton(
-                                onPressed: () => Navigator.pop(ctx, true),
-                                child: const Text('Annuler le signalement')),
-                            FilledButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Continuer'))
-                          ])) ??
-              false;
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => const _TheftCountdownDialog(),
+          ) ?? false;
           if (cancel) {
             await repo.cancelTheft(incident['id'] as String);
             if (mounted) {
@@ -1091,6 +1081,62 @@ class _SheetField extends StatelessWidget {
         ),
         labelStyle: const TextStyle(color: AppColors.textSecondary),
       ),
+    );
+  }
+}
+
+class _TheftCountdownDialog extends StatefulWidget {
+  const _TheftCountdownDialog();
+
+  @override
+  State<_TheftCountdownDialog> createState() => _TheftCountdownDialogState();
+}
+
+class _TheftCountdownDialogState extends State<_TheftCountdownDialog> {
+  late Timer _timer;
+  int _secondsLeft = 60;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_secondsLeft > 0) {
+          _secondsLeft--;
+        } else {
+          timer.cancel();
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Mode vol activé'),
+      content: Text(
+        'Le support a été alerté. En cas de faux signalement, vous pouvez encore annuler pendant ${_secondsLeft > 0 ? _secondsLeft : 0} seconde(s).'
+      ),
+      actions: [
+        TextButton(
+          onPressed: _secondsLeft > 0 ? () => Navigator.pop(context, true) : null,
+          child: const Text('Annuler le signalement'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Continuer'),
+        ),
+      ],
     );
   }
 }

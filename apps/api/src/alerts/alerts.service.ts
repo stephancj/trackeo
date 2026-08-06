@@ -94,6 +94,15 @@ export class AlertsService {
     return this.alertsRepository.find({ order: { createdAt: 'DESC' } });
   }
 
+  /** Admin — alertes paginées */
+  async findAllPaginated(page: number, limit: number): Promise<[Alert[], number]> {
+    return this.alertsRepository.findAndCount({
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+  }
+
   /** Admin — alertes d'un device spécifique (pour la page détail véhicule) */
   async findByDeviceId(deviceId: number, limit = 20): Promise<Alert[]> {
     return this.alertsRepository.find({

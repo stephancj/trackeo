@@ -54,9 +54,9 @@ export default function FleetMapPage() {
   const intervalRef = useRef<ReturnType<typeof setInterval>>(null);
 
   function fetchVehicles() {
-    return getAdminVehicles()
+    return getAdminVehicles(1, 1000)
       .then((r) => {
-        setVehicles(r.data);
+        setVehicles(r.data.data || []);
         setLastRefresh(new Date());
       });
   }

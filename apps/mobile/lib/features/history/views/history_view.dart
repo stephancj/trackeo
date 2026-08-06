@@ -374,6 +374,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     setState(() {
       _playbackIndex = value.clamp(0, maxIdx);
     });
+    final pos = _interpolatedPoint(positions, _playbackIndex);
     final currentZoom = _mapController.camera.zoom;
     _mapController.fitCamera(
       CameraFit.coordinates(

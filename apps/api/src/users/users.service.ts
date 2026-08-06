@@ -191,6 +191,14 @@ export class UsersService {
     return this.userRepo.find({ order: { createdAt: 'DESC' } });
   }
 
+  findAllPaginated(page: number, limit: number): Promise<[User[], number]> {
+    return this.userRepo.findAndCount({
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+  }
+
   /** Admin — mise à jour étendue (role, isActive inclus) */
   async adminUpdate(
     userId: number,

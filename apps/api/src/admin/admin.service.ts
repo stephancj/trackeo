@@ -19,6 +19,7 @@ import { Feature, FeatureValueType } from '../entitlements/feature.entity';
 import { Plan } from '../entitlements/plan.entity';
 import { PlanFeature } from '../entitlements/plan-feature.entity';
 import { EntitlementsService } from '../entitlements/entitlements.service';
+import { SystemSetting } from './system-setting.entity';
 
 @Injectable()
 export class AdminService {
@@ -33,6 +34,8 @@ export class AdminService {
     private readonly planRepo: Repository<Plan>,
     @InjectRepository(PlanFeature)
     private readonly planFeatureRepo: Repository<PlanFeature>,
+    @InjectRepository(SystemSetting)
+    private readonly systemSettingRepo: Repository<SystemSetting>,
     private readonly usersService: UsersService,
     private readonly devicesService: DevicesService,
     private readonly vehiclesService: VehiclesService,
@@ -41,6 +44,35 @@ export class AdminService {
     private readonly positionsService: PositionsService,
     private readonly entitlementsService: EntitlementsService,
   ) {}
+
+  // ── System Config ────────────────────────────────────────────────────────
+
+  async getConfig() {
+    const settings = await this.systemSettingRepo.find();
+    const settingsMap = settings.reduce((acc, s) => {
+      acc[s.key] = s.value;
+      return acc;
+    }, {} as Record<string, any>);
+
+    return {
+      apiUrl: process.env.NODE_ENV === 'production' ? 'https://api.trackeo.zenkai.mg/api' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'),
+      traccarUrl: process.env.TRACCAR_URL || 'http://localhost:8082',
+      oneSignalAppId: process.env.ONESIGNAL_APP_ID || 'Configured via backend .env',
+      whatsappEnabled: settingsMap['whatsapp_enabled'] ?? true,
+      pushEnabled: settingsMap['push_enabled'] ?? true,
+      database: 'TimescaleDB',
+    };
+  }
+
+  async updateConfig(key: string, value: any) {
+    let setting = await this.systemSettingRepo.findOne({ where: { key } });
+    if (!setting) {
+      setting = this.systemSettingRepo.create({ key, value });
+    } else {
+      setting.value = value;
+    }
+    return this.systemSettingRepo.save(setting);
+  }
 
   // ── Feature catalogue & plans ────────────────────────────────────────────
 
@@ -180,11 +212,16 @@ export class AdminService {
 
   // ── Users ────────────────────────────────────────────────────────────────
 
-  async listUsers() {
-    const [users, assignments] = await Promise.all([
-      this.usersService.findAll(),
-      this.assignmentRepo.find(),
-    ]);
+  async listUsers(page = 1, limit = 50) {
+    const [users, total] = await this.usersService.findAllPaginated(page, limit);
+    
+    if (users.length === 0) {
+      return { data: [], meta: { total, page, limit, totalPages: 0 } };
+    }
+
+    const assignments = await this.assignmentRepo.find({
+      where: { userId: In(users.map(u => u.id)) }
+    });
 
     const vehicleCountByUser = new Map<number, number>();
     for (const a of assignments) {
@@ -194,10 +231,20 @@ export class AdminService {
       );
     }
 
-    return users.map((u) => ({
+    const data = users.map((u) => ({
       ...u,
       vehicleCount: vehicleCountByUser.get(u.id) ?? 0,
     }));
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async createUser(dto: CreateUserDto) {
@@ -244,13 +291,17 @@ export class AdminService {
 
   // ── Vehicles (enriched — device + position + assignment) ─────────────────
 
-  async listVehicles() {
-    const [vehicles, assignments, users, allAlerts] = await Promise.all([
-      this.vehiclesService.findAll(),
+  async listVehicles(page = 1, limit = 50) {
+    const [[vehicles, total], assignments, users, allAlerts] = await Promise.all([
+      this.vehiclesService.findAllPaginated(page, limit),
       this.assignmentRepo.find(),
       this.usersService.findAll(),
       this.alertsService.findAll(),
     ]);
+
+    if (vehicles.length === 0) {
+      return { data: [], meta: { total, page, limit, totalPages: 0 } };
+    }
 
     const userMap = new Map(users.map((u) => [u.id, u.name ?? u.email]));
 
@@ -264,7 +315,7 @@ export class AdminService {
       }
     }
 
-    return vehicles.map((v) => {
+    const data = vehicles.map((v) => {
       const assignment = assignments.find((a) => a.deviceId === v.id);
       return {
         ...v,
@@ -275,6 +326,16 @@ export class AdminService {
         openAlertsCount: openAlertsByDevice.get(v.id) ?? 0,
       };
     });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   /** Admin — détail d'un véhicule avec alertes récentes, geofences liées et assignation */
@@ -350,8 +411,17 @@ export class AdminService {
 
   // ── Alerts ───────────────────────────────────────────────────────────────
 
-  listAlerts() {
-    return this.alertsService.findAll();
+  async listAlerts(page = 1, limit = 50) {
+    const [alerts, total] = await this.alertsService.findAllPaginated(page, limit);
+    return {
+      data: alerts,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   ackAlert(id: string) {
@@ -371,6 +441,10 @@ export class AdminService {
     const statusCounts = { online: 0, idle: 0, offline: 0 };
     for (const v of vehicles) statusCounts[v.status]++;
 
+    const assignments = await this.assignmentRepo.find();
+    const assignedDeviceIds = new Set(assignments.map(a => a.deviceId));
+    const unassignedVehicles = vehicles.filter(v => !assignedDeviceIds.has(v.id)).length;
+
     const alertsByType = allAlerts.reduce<Record<string, number>>((acc, a) => {
       acc[a.type] = (acc[a.type] ?? 0) + 1;
       return acc;
@@ -383,6 +457,9 @@ export class AdminService {
     ).length;
 
     const openAlerts = allAlerts.filter((a) => a.status === 'open').length;
+    const recentOpenAlerts = allAlerts.filter((a) => a.status === 'open')
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
 
     return {
       totalUsers: users.length,
@@ -391,8 +468,10 @@ export class AdminService {
       statusCounts,
       totalAlerts: allAlerts.length,
       openAlerts,
+      recentOpenAlerts,
       alertsThisMonth,
       alertsByType,
+      unassignedVehicles,
     };
   }
 
@@ -455,11 +534,15 @@ export class AdminService {
   // ── Subscriptions ─────────────────────────────────────────────────────────
 
   /** Liste tous les users avec leur abonnement (crée un enregistrement free/trial si absent) */
-  async listSubscriptions() {
-    const [users, plans] = await Promise.all([
-      this.usersService.findAll(),
+  async listSubscriptions(page = 1, limit = 50) {
+    const [[users, total], plans] = await Promise.all([
+      this.usersService.findAllPaginated(page, limit),
       this.planRepo.find(),
     ]);
+    
+    if (users.length === 0) {
+      return { data: [], meta: { total, page, limit, totalPages: 0 } };
+    }
     await Promise.all(
       users.map((user) =>
         this.entitlementsService.ensureDefaultSubscription(user.id),
@@ -470,7 +553,7 @@ export class AdminService {
     const subMap = new Map(subs.map((s) => [s.userId, s]));
     const planMap = new Map(plans.map((plan) => [plan.id, plan]));
 
-    return users.map((u) => {
+    const data = users.map((u) => {
       const sub = subMap.get(u.id);
       return {
         userId: u.id,
@@ -488,6 +571,16 @@ export class AdminService {
           : null,
       };
     });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   /** Crée ou met à jour l'abonnement d'un user */

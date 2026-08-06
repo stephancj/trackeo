@@ -32,14 +32,14 @@ export const login = (email: string, password: string) =>
   api.post<{ access_token: string }>("/auth/login", { email, password });
 
 // Users
-export const getUsers = () => api.get("/admin/users");
+export const getUsers = (page = 1, limit = 50) => api.get(`/admin/users?page=${page}&limit=${limit}`);
 export const getUserDetail = (id: number) => api.get(`/admin/users/${id}`);
 export const createUser = (data: unknown) => api.post("/admin/users", data);
 export const updateUser = (id: string | number, data: unknown) => api.patch(`/admin/users/${id}`, data);
 export const deleteUser = (id: string | number) => api.delete(`/admin/users/${id}`);
 
 // Vehicles (enriched: device + position + assignment)
-export const getAdminVehicles = () => api.get("/admin/vehicles");
+export const getAdminVehicles = (page = 1, limit = 50) => api.get(`/admin/vehicles?page=${page}&limit=${limit}`);
 export const getVehicleDetail = (id: number) => api.get(`/admin/vehicles/${id}`);
 export const assignDevice = (deviceId: number, userId: number) =>
   api.post(`/admin/devices/${deviceId}/assign/${userId}`);
@@ -51,13 +51,18 @@ export const getGeofences = () => api.get("/admin/geofences");
 export const deleteGeofence = (id: string) => api.delete(`/admin/geofences/${id}`);
 
 // Alerts
-export const getAlerts = () => api.get("/admin/alerts");
+export const getAlerts = (page = 1, limit = 50) => api.get(`/admin/alerts?page=${page}&limit=${limit}`);
 export const ackAlert = (id: string) => api.patch(`/admin/alerts/${id}`);
 export const getIncidents = () => api.get("/admin/incidents");
 export const updateIncident = (id: string, status: string, note?: string) =>
   api.patch(`/admin/incidents/${id}`, { status, note });
 export const getIncidentEvents = (id: string) =>
   api.get(`/admin/incidents/${id}/events`);
+
+// Config
+export const getConfig = () => api.get("/admin/config");
+export const updateConfig = (key: string, value: any) =>
+  api.patch("/admin/config", { key, value });
 
 // Reports — fleet overview
 export const getReportsOverview = () => api.get("/admin/reports/overview");
@@ -102,7 +107,7 @@ export const getVehicleGeofenceActivity = (
   );
 
 // Subscriptions
-export const getSubscriptions = () => api.get("/admin/subscriptions");
+export const getSubscriptions = (page = 1, limit = 50) => api.get(`/admin/subscriptions?page=${page}&limit=${limit}`);
 export const upsertSubscription = (
   userId: number,
   data: {
@@ -170,5 +175,5 @@ export const createCoupon = (data: unknown) => api.post("/promotions/admin/coupo
 export const deleteCoupon = (id: string) => api.delete(`/promotions/admin/coupons/${id}`);
 
 // Payments / Transactions
-export const getPayments = () => api.get("/admin/payments");
+export const getPayments = (page = 1, limit = 50) => api.get(`/admin/payments?page=${page}&limit=${limit}`);
 

@@ -56,8 +56,25 @@ export class AdminController {
   ) {}
 
   @Get('payments')
-  listPayments() {
-    return this.paymentsService.listAdminPayments();
+  listPayments(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const p = page ? parseInt(page, 10) : 1;
+    const l = limit ? parseInt(limit, 10) : 50;
+    return this.paymentsService.listAdminPayments(p, l);
+  }
+
+  // ── System Config ────────────────────────────────────────────────────────
+
+  @Get('config')
+  getConfig() {
+    return this.adminService.getConfig();
+  }
+
+  @Patch('config')
+  updateConfig(@Body() body: { key: string; value: any }) {
+    return this.adminService.updateConfig(body.key, body.value);
   }
 
   // ── Commercial catalogue ────────────────────────────────────────────────
@@ -127,8 +144,13 @@ export class AdminController {
   // ── Users ────────────────────────────────────────────────────────────────
 
   @Get('users')
-  listUsers() {
-    return this.adminService.listUsers();
+  listUsers(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const p = page ? parseInt(page, 10) : 1;
+    const l = limit ? parseInt(limit, 10) : 50;
+    return this.adminService.listUsers(p, l);
   }
 
   @Get('users/:id')
@@ -159,8 +181,13 @@ export class AdminController {
   // ── Vehicles (enriched view — replaces raw devices list) ─────────────────
 
   @Get('vehicles')
-  listVehicles() {
-    return this.adminService.listVehicles();
+  listVehicles(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const p = page ? parseInt(page, 10) : 1;
+    const l = limit ? parseInt(limit, 10) : 50;
+    return this.adminService.listVehicles(p, l);
   }
 
   @Get('vehicles/:id')
@@ -201,8 +228,13 @@ export class AdminController {
   // ── Alerts ───────────────────────────────────────────────────────────────
 
   @Get('alerts')
-  listAlerts() {
-    return this.adminService.listAlerts();
+  listAlerts(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const p = page ? parseInt(page, 10) : 1;
+    const l = limit ? parseInt(limit, 10) : 50;
+    return this.adminService.listAlerts(p, l);
   }
 
   @Patch('alerts/:id')
@@ -306,8 +338,13 @@ export class AdminController {
   // ── Subscriptions ─────────────────────────────────────────────────────────
 
   @Get('subscriptions')
-  listSubscriptions() {
-    return this.adminService.listSubscriptions();
+  listSubscriptions(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const p = page ? parseInt(page, 10) : 1;
+    const l = limit ? parseInt(limit, 10) : 50;
+    return this.adminService.listSubscriptions(p, l);
   }
 
   @Patch('subscriptions/:userId')

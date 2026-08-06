@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getUsers, getAdminVehicles, getAlerts, ackAlert } from "@/lib/api";
+import { getReportsOverview, ackAlert } from "@/lib/api";
 import { relativeTime } from "@/lib/utils";
 import { toast } from "sonner";
 import { Users, Car, Bell, AlertTriangle, CheckCheck } from "lucide-react";
@@ -43,18 +43,16 @@ const TYPE_COLORS: Record<string, string> = {
 const REFRESH_INTERVAL = 60_000;
 
 export default function DashboardPage() {
-  const [users, setUsers] = useState(0);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [overview, setOverview] = useState<any>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [acking, setAcking] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval>>(null);
 
   function fetchAll() {
-    return Promise.allSettled([
-      getUsers().then((r) => setUsers(r.data?.length ?? 0)),
-      getAdminVehicles().then((r) => setVehicles(r.data ?? [])),
-      getAlerts().then((r) => setAlerts(r.data ?? [])),
-    ]);
+    return getReportsOverview().then((r) => {
+      setOverview(r.data);
+      setAlerts(r.data.recentOpenAlerts ?? []);
+    });
   }
 
   useEffect(() => {
@@ -80,23 +78,19 @@ export default function DashboardPage() {
     }
   }
 
-  const online = vehicles.filter((v) => v.status === "online").length;
-  const idle = vehicles.filter((v) => v.status === "idle").length;
-  const unassigned = vehicles.filter((v) => v.assignedUserId === null).length;
-  const openAlerts = alerts.filter((a) => a.status === "open");
-  const recentOpen = openAlerts.slice(0, 5);
+  if (!overview) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
 
   const cards = [
     {
       label: "Utilisateurs",
-      value: String(users),
+      value: String(overview.totalUsers),
       icon: Users,
       iconBg: "bg-trackeo-pastel-blue",
       iconColor: "text-trackeo-idle",
     },
     {
       label: "Véhicules",
-      value: `${online + idle}/${vehicles.length}`,
+      value: `${overview.statusCounts.online + overview.statusCounts.idle}/${overview.totalVehicles}`,
       sub: "actifs",
       icon: Car,
       iconBg: "bg-trackeo-pastel-green",
@@ -104,18 +98,18 @@ export default function DashboardPage() {
     },
     {
       label: "Alertes ouvertes",
-      value: String(openAlerts.length),
+      value: String(overview.openAlerts),
       icon: Bell,
-      iconBg: openAlerts.length > 0 ? "bg-trackeo-pastel-red" : "bg-muted",
-      iconColor: openAlerts.length > 0 ? "text-trackeo-alert" : "text-muted-foreground",
+      iconBg: overview.openAlerts > 0 ? "bg-trackeo-pastel-red" : "bg-muted",
+      iconColor: overview.openAlerts > 0 ? "text-trackeo-alert" : "text-muted-foreground",
     },
     {
       label: "Non assignés",
-      value: String(unassigned),
+      value: String(overview.unassignedVehicles),
       sub: "véhicules",
       icon: AlertTriangle,
-      iconBg: unassigned > 0 ? "bg-trackeo-pastel-orange" : "bg-muted",
-      iconColor: unassigned > 0 ? "text-trackeo-warning" : "text-muted-foreground",
+      iconBg: overview.unassignedVehicles > 0 ? "bg-trackeo-pastel-orange" : "bg-muted",
+      iconColor: overview.unassignedVehicles > 0 ? "text-trackeo-warning" : "text-muted-foreground",
     },
   ];
 
@@ -140,7 +134,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {recentOpen.length > 0 ? (
+      {alerts.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-foreground">Alertes à traiter</h2>
@@ -150,7 +144,7 @@ export default function DashboardPage() {
           </div>
           <Card>
             <div className="divide-y divide-border">
-              {recentOpen.map((alert) => (
+              {alerts.map((alert) => (
                 <div key={alert.id} className="flex items-center gap-3 px-4 py-3">
                   <span className="h-2 w-2 rounded-full bg-trackeo-alert shrink-0 animate-pulse" />
                   <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold shrink-0 ${TYPE_COLORS[alert.type] ?? "bg-muted text-muted-foreground"}`}>
@@ -185,11 +179,11 @@ export default function DashboardPage() {
             </div>
           </Card>
         </div>
-      ) : alerts.length > 0 ? (
+      ) : (
         <Card className="px-4 py-6 text-center">
           <p className="text-muted-foreground text-sm">Aucune alerte ouverte.</p>
         </Card>
-      ) : null}
+      )}
     </div>
   );
 }

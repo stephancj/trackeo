@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getPayments } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -55,25 +56,31 @@ interface AdminPayment {
 }
 
 export default function PaymentsAdminPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pageParam = parseInt(searchParams.get("page") || "1", 10);
+
   const [payments, setPayments] = useState<AdminPayment[]>([]);
+  const [meta, setMeta] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "success" | "pending" | "failed">("all");
   const [search, setSearch] = useState("");
   const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null);
 
-  function loadData() {
+  function loadData(p = pageParam) {
     setLoading(true);
-    getPayments()
+    getPayments(p)
       .then((res) => {
-        setPayments(res.data as AdminPayment[]);
+        setPayments(res.data.data as AdminPayment[] || []);
+        setMeta(res.data.meta || { page: 1, totalPages: 1, total: 0 });
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(pageParam);
+  }, [pageParam]);
 
   const totalRevenue = payments
     .filter((p) => p.status === "success")
@@ -199,7 +206,7 @@ export default function PaymentsAdminPage() {
               filter === "all" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Tous ({payments.length})
+            Tous ({meta.total})
           </button>
           <button
             onClick={() => setFilter("success")}
@@ -331,6 +338,30 @@ export default function PaymentsAdminPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Affichage de {payments.length} sur {meta.total} paiements
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page <= 1}
+            onClick={() => router.push(`/payments?page=${meta.page - 1}`)}
+          >
+            Précédent
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page >= meta.totalPages}
+            onClick={() => router.push(`/payments?page=${meta.page + 1}`)}
+          >
+            Suivant
+          </Button>
+        </div>
       </div>
 
       {/* Details Dialog */}

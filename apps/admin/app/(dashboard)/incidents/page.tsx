@@ -1,25 +1,265 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getIncidents, updateIncident } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ShieldAlert, Clock3, MapPin, CheckCircle2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { getIncidents } from "@/lib/api";
+import { relativeTime } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshCw, ShieldAlert, AlertTriangle } from "lucide-react";
+import { IncidentSheet } from "./incident-sheet";
 
-type Incident = { id: string; deviceId: number; ownerId: number; type: string; status: string; title: string | null; description: string | null; lat: number | null; lon: number | null; createdAt: string };
-const active = new Set(["open", "acknowledged", "in_progress", "escalated"]);
+export interface Incident {
+  id: string;
+  type: string;
+  status: string;
+  severity: string;
+  deviceId: string;
+  title: string;
+  description: string | null;
+  createdAt: string;
+  escalateAt: string | null;
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  sos: "Détresse (SOS)",
+  theft: "Véhicule Volé",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  open: "Nouveau",
+  acknowledged: "Pris en charge",
+  in_progress: "En cours",
+  escalated: "Escaladé",
+  resolved: "Résolu",
+  cancelled: "Annulé",
+  false_alarm: "Fausse alarme",
+};
+
+function statusBadgeVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+  if (status === "open" || status === "escalated") return "destructive";
+  if (status === "acknowledged" || status === "in_progress") return "default";
+  if (status === "resolved") return "outline";
+  return "secondary";
+}
+
+type Tab = "active" | "all" | "resolved";
+
+const REFRESH_INTERVAL = 30_000;
 
 export default function IncidentsPage() {
-  const [rows, setRows] = useState<Incident[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [tab, setTab] = useState<Tab>("active");
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<string | null>(null);
-  const load = () => getIncidents().then((r) => setRows(r.data)).catch(() => toast.error("Incidents indisponibles")).finally(() => setLoading(false));
-  useEffect(() => { void load(); const id = setInterval(load, 30_000); return () => clearInterval(id); }, []);
-  async function transition(row: Incident, status: string) { setBusy(row.id); try { await updateIncident(row.id, status); toast.success("Incident mis à jour"); await load(); } catch { toast.error("Transition impossible"); } finally { setBusy(null); } }
-  const open = rows.filter((r) => active.has(r.status));
-  return <div className="space-y-6">
-    <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-destructive"><ShieldAlert className="h-4 w-4"/> Centre de réponse</div><h1 className="text-3xl font-bold tracking-tight">Incidents sécurité</h1><p className="mt-1 text-sm text-muted-foreground">SOS, vols et mouvements critiques, de l’ouverture à la résolution.</p></div><div className="rounded-2xl border bg-card px-5 py-3"><span className="text-xs text-muted-foreground">À traiter</span><strong className="ml-3 text-2xl text-destructive">{open.length}</strong></div></header>
-    {loading ? <div className="rounded-2xl border bg-card p-12 text-center text-muted-foreground">Chargement de la file…</div> : <div className="grid gap-4">{rows.map((row) => <article key={row.id} className={`rounded-2xl border bg-card p-5 shadow-sm ${row.status === "escalated" ? "border-destructive/50" : ""}`}><div className="flex flex-col gap-4 lg:flex-row lg:items-center"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive"><ShieldAlert className="h-6 w-6"/></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="font-bold">{row.title || row.type}</h2><Badge variant={row.status === "escalated" ? "destructive" : active.has(row.status) ? "secondary" : "outline"}>{row.status}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{row.description} · véhicule #{row.deviceId} · client #{row.ownerId}</p><div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground"><span className="flex items-center gap-1"><Clock3 className="h-3.5 w-3.5"/>{new Date(row.createdAt).toLocaleString("fr-FR")}</span>{row.lat != null && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5"/>{row.lat.toFixed(4)}, {row.lon?.toFixed(4)}</span>}</div></div>{active.has(row.status) && <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={busy === row.id} onClick={() => transition(row, row.status === "open" ? "acknowledged" : "in_progress")}>{row.status === "open" ? "Accuser réception" : "Prendre en charge"}</Button><Button disabled={busy === row.id} onClick={() => transition(row, "resolved")} className="gap-2"><CheckCircle2 className="h-4 w-4"/>Résoudre</Button></div>}</div></article>)}{rows.length === 0 && <div className="rounded-2xl border border-dashed bg-card p-14 text-center"><CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600"/><h2 className="mt-3 font-bold">Aucun incident</h2><p className="text-sm text-muted-foreground">La file opérationnelle est vide.</p></div>}</div>}
-  </div>;
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval>>(null);
+
+  function fetchIncidents() {
+    return getIncidents()
+      .then((r) => {
+        setIncidents(r.data);
+        setLastRefresh(new Date());
+      })
+      .catch(() => toast.error("Erreur lors du chargement des incidents"));
+  }
+
+  useEffect(() => {
+    fetchIncidents().finally(() => setLoading(false));
+    intervalRef.current = setInterval(fetchIncidents, REFRESH_INTERVAL);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const counts = {
+    all: incidents.length,
+    active: incidents.filter((a) => !["resolved", "cancelled", "false_alarm"].includes(a.status)).length,
+    resolved: incidents.filter((a) => ["resolved", "cancelled", "false_alarm"].includes(a.status)).length,
+  };
+
+  const filtered = tab === "all" ? incidents : 
+    tab === "active" ? incidents.filter((a) => !["resolved", "cancelled", "false_alarm"].includes(a.status)) :
+    incidents.filter((a) => ["resolved", "cancelled", "false_alarm"].includes(a.status));
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "active", label: `Actifs (${counts.active})` },
+    { key: "all", label: `Tous (${counts.all})` },
+    { key: "resolved", label: `Clôturés (${counts.resolved})` },
+  ];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <ShieldAlert className="h-6 w-6 text-destructive" />
+            Incidents Sécurité
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Gérez les SOS et déclarations de vol (Cycle de vie, escalade, résolution).
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            Mis à jour {relativeTime(lastRefresh)}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => fetchIncidents()}
+            className="gap-1.5"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Rafraîchir
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-4">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+              tab === t.key
+                ? "bg-destructive text-white border-destructive"
+                : "bg-card text-muted-foreground border-border hover:text-foreground"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="overflow-x-auto rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead>
+              <TableHead>Véhicule / Titre</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead>Création</TableHead>
+              <TableHead>Escalade auto.</TableHead>
+              <TableHead className="w-24 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 6 }).map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-12 text-center">
+                  <p className="text-muted-foreground font-medium flex items-center justify-center gap-2">
+                    {tab === "active" ? (
+                      <>
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        Aucun incident actif.
+                      </>
+                    ) : "Aucun incident trouvé."}
+                  </p>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((incident) => (
+                <TableRow
+                  key={incident.id}
+                  className={incident.status === "open" ? "bg-destructive/5" : ""}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className={`h-4 w-4 ${incident.type === 'sos' ? 'text-orange-500' : 'text-red-600'}`} />
+                      <span className="font-semibold">{TYPE_LABELS[incident.type] ?? incident.type}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{incident.title}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Device: {incident.deviceId}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={statusBadgeVariant(incident.status)}>
+                      {STATUS_LABELS[incident.status] ?? incident.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell
+                    className="text-sm text-muted-foreground"
+                    title={new Date(incident.createdAt).toLocaleString()}
+                  >
+                    {relativeTime(incident.createdAt)}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {["resolved", "cancelled", "false_alarm", "escalated"].includes(incident.status) ? (
+                      "—"
+                    ) : incident.escalateAt ? (
+                      <span className={new Date(incident.escalateAt) < new Date() ? "text-destructive font-semibold" : ""}>
+                        {relativeTime(incident.escalateAt)}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      variant={incident.status === "open" ? "default" : "secondary"}
+                      onClick={() => setSelectedIncidentId(incident.id)}
+                    >
+                      Détails
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {selectedIncidentId && (
+        <IncidentSheet 
+          incidentId={selectedIncidentId} 
+          onClose={() => {
+            setSelectedIncidentId(null);
+            fetchIncidents();
+          }} 
+        />
+      )}
+    </div>
+  );
+}
+
+function CheckCircle(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  );
 }
