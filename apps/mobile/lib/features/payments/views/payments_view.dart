@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 
 import '../../../core/platform/payment_launcher.dart';
 import '../../../core/theme/app_theme.dart';
@@ -36,6 +37,19 @@ class _PaymentsViewState extends ConsumerState<PaymentsView> {
             couponCode: coupon.isNotEmpty ? coupon : null,
           );
       await openPaymentUrl(result['paymentLink'] as String);
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map && e.response?.data['message'] != null
+          ? (e.response!.data['message'] is List
+              ? (e.response!.data['message'] as List).join(', ')
+              : e.response!.data['message'].toString())
+          : 'Le paiement n’a pas pu démarrer. Réessayez.';
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(msg),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.statusAlert,
+        ));
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
