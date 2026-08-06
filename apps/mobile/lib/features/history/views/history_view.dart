@@ -322,6 +322,10 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
       _playbackIndex = (startIndex ?? 0).toDouble().clamp(0, maxIdx);
     });
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _fitRoute(_allPoints);
+    });
+
     _playbackTimer = Timer.periodic(const Duration(milliseconds: 60), (_) {
       if (!_isPlaying || !mounted) return;
       setState(() {
@@ -373,6 +377,9 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
       _playbackActive = false;
       _isPlaying = false;
       _playbackIndex = 0;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _fitRoute(_allPoints);
     });
   }
 
@@ -738,10 +745,12 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
   void _fitRoute(List<LatLng> points) {
     if (points.isEmpty) return;
     final bounds = LatLngBounds.fromPoints(points);
+    final screenH = MediaQuery.of(context).size.height;
+    final bottomPad = _playbackActive ? 100.0 : (screenH * _panelRatio + 30.0);
     _mapController.fitCamera(
       CameraFit.bounds(
         bounds: bounds,
-        padding: const EdgeInsets.fromLTRB(40, 120, 40, 60),
+        padding: EdgeInsets.fromLTRB(40, 100, 40, bottomPad),
       ),
     );
   }
