@@ -18,10 +18,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: trackeo
-      POSTGRES_PASSWORD: Password_1234
+      POSTGRES_PASSWORD: ${DB_PASS:-Password_1234}
       POSTGRES_DB: traccar_db
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -70,7 +68,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: trackeo
-      DB_PASS: Password_1234
+      DB_PASS: ${DB_PASS:-Password_1234}
       DB_NAME: traccar_db
       TRACCAR_API_URL: http://trackeo-traccar:8082
       PORT: 3000
