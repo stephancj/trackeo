@@ -74,7 +74,8 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     final date = ref.watch(historyDateProvider);
     final screenH = MediaQuery.of(context).size.height;
     final topPad = MediaQuery.of(context).padding.top;
-    final panelH = screenH * _panelRatio;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final effectivePanelH = _playbackActive ? 0.0 : (screenH * _panelRatio);
 
     final positions = positionsAsync.valueOrNull ?? [];
     _day = DayTrips.fromPositions(positions);
@@ -185,7 +186,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
           // ── Boutons droite (calques + recenter) ──────────────────────
           Positioned(
             right: 16,
-            bottom: panelH + 12,
+            bottom: effectivePanelH + (_playbackActive ? 100 + bottomPad : 12),
             child: Column(
               children: [
                 // Calques — cycle clair / voyager / sombre
@@ -251,15 +252,18 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
           ),
 
           // ── Bar de contrôle du Playback ──────────────────────────────
-          _buildPlaybackBar(positions, panelH),
+          _buildPlaybackBar(positions, bottomPad),
 
           // ── Panneau inférieur (résumé + trajets) ─────────────────────
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            height: panelH,
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.fastOutSlowIn,
+              height: effectivePanelH,
+              clipBehavior: Clip.hardEdge,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: const BorderRadius.vertical(
@@ -476,7 +480,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     ];
   }
 
-  Widget _buildPlaybackBar(List<VehiclePosition> positions, double panelH) {
+  Widget _buildPlaybackBar(List<VehiclePosition> positions, double bottomPad) {
     if (!_playbackActive || positions.isEmpty) return const SizedBox.shrink();
     final maxIdx = (positions.length - 1).toDouble();
     final idx = _playbackIndex.floor().clamp(0, positions.length - 1);
@@ -488,7 +492,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     return Positioned(
       left: 16,
       right: 16,
-      bottom: panelH + 12,
+      bottom: 16 + bottomPad,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
