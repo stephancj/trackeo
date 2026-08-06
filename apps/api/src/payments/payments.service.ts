@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Subscription, SubscriptionStatus } from '../admin/subscription.entity';
 import { EntitlementsService } from '../entitlements/entitlements.service';
 import { Plan } from '../entitlements/plan.entity';
@@ -228,5 +228,36 @@ export class PaymentsService {
     const aa = Buffer.from(a);
     const bb = Buffer.from(b);
     return aa.length === bb.length && timingSafeEqual(aa, bb);
+  }
+
+  async listAdminPayments() {
+    const payments = await this.paymentRepo.find({
+      order: { createdAt: 'DESC' },
+      take: 200,
+    });
+    if (payments.length === 0) return [];
+
+    const userIds = [...new Set(payments.map((p) => p.userId))];
+    const planIds = [...new Set(payments.map((p) => p.planId))];
+
+    const [usersList, plansList] = await Promise.all([
+      this.users.findAll(),
+      this.planRepo.find({ where: { id: In(planIds) } }),
+    ]);
+
+    const userMap = new Map(usersList.map((u) => [u.id, u]));
+    const planMap = new Map(plansList.map((p) => [p.id, p]));
+
+    return payments.map((p) => {
+      const u = userMap.get(p.userId);
+      const plan = planMap.get(p.planId);
+      return {
+        ...p,
+        userName: u?.name || u?.email || `Utilisateur #${p.userId}`,
+        userEmail: u?.email || '',
+        planName: plan?.name || 'Plan',
+        planCode: plan?.code || '',
+      };
+    });
   }
 }

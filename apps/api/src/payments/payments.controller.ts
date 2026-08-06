@@ -35,6 +35,12 @@ export class PaymentsController {
   ) {
     return this.payments.status(req.user.id, reference);
   }
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard)
+  listAdminPayments() {
+    return this.payments.listAdminPayments();
+  }
+
   @Post('papi/notification') @HttpCode(200) notification(
     @Body() dto: PapiNotificationDto,
   ) {

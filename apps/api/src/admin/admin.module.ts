@@ -15,6 +15,8 @@ import { Feature } from '../entitlements/feature.entity';
 import { Plan } from '../entitlements/plan.entity';
 import { PlanFeature } from '../entitlements/plan-feature.entity';
 
+import { PaymentsModule } from '../payments/payments.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -31,6 +33,7 @@ import { PlanFeature } from '../entitlements/plan-feature.entity';
     GeofencesModule,
     AlertsModule,
     PositionsModule,
+    PaymentsModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

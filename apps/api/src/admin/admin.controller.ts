@@ -44,11 +44,21 @@ import {
  *   GET    /api/admin/alerts
  *   PATCH  /api/admin/alerts/:id       (ack)
  */
+import { PaymentsService } from '../payments/payments.service';
+
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
+
+  @Get('payments')
+  listPayments() {
+    return this.paymentsService.listAdminPayments();
+  }
 
   // ── Commercial catalogue ────────────────────────────────────────────────
 

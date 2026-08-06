@@ -169,3 +169,6 @@ export const getCoupons = () => api.get("/promotions/admin/coupons");
 export const createCoupon = (data: unknown) => api.post("/promotions/admin/coupons", data);
 export const deleteCoupon = (id: string) => api.delete(`/promotions/admin/coupons/${id}`);
 
+// Payments / Transactions
+export const getPayments = () => api.get("/admin/payments");
+
