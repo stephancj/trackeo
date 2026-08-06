@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getUsers, createUser, updateUser, deleteUser } from "@/lib/api";
 import { relativeTime } from "@/lib/utils";
@@ -70,6 +70,10 @@ function exportCSV(users: User[]) {
 }
 
 export default function UsersPage() {
+  return <Suspense fallback={null}><UsersPageContent /></Suspense>;
+}
+
+function UsersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pageParam = parseInt(searchParams.get("page") || "1", 10);

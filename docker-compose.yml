@@ -36,6 +36,9 @@ services:
     image: traccar/traccar:latest
     container_name: trackeo-traccar
     restart: unless-stopped
+    environment:
+      CONFIG_USE_ENVIRONMENT_VARIABLES: "true"
+      DATABASE_PASSWORD: ${DB_PASS:-Password_1234}
     depends_on:
       postgres:
         condition: service_healthy

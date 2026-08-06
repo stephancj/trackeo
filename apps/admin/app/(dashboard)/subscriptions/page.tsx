@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarClock, CreditCard, Search, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -34,6 +34,10 @@ type SubscriptionRow = {
 const statusLabels: Record<SubscriptionStatus, string> = { trial: "Essai", active: "Actif", suspended: "Suspendu", cancelled: "Annulé" };
 
 export default function SubscriptionsPage() {
+  return <Suspense fallback={null}><SubscriptionsPageContent /></Suspense>;
+}
+
+function SubscriptionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pageParam = parseInt(searchParams.get("page") || "1", 10);

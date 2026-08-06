@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAdminVehicles, getUsers, assignDevice, unassignDevice } from "@/lib/api";
 import { relativeTime } from "@/lib/utils";
@@ -87,6 +87,10 @@ function BatteryBar({ pct }: { pct: number | null | undefined }) {
 }
 
 export default function VehiclesPage() {
+  return <Suspense fallback={null}><VehiclesPageContent /></Suspense>;
+}
+
+function VehiclesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pageParam = parseInt(searchParams.get("page") || "1", 10);
@@ -188,7 +192,7 @@ export default function VehiclesPage() {
             Carte de la flotte
           </Button>
           <span className="text-xs text-muted-foreground">Actualisé {relativeTime(lastRefresh)}</span>
-          <Button size="sm" variant="outline" onClick={fetchVehicles} className="gap-1.5">
+          <Button size="sm" variant="outline" onClick={() => fetchVehicles()} className="gap-1.5">
             <RefreshCw className="h-3.5 w-3.5" />
             Actualiser
           </Button>

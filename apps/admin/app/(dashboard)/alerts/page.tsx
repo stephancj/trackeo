@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAlerts, ackAlert } from "@/lib/api";
 import { relativeTime } from "@/lib/utils";
@@ -48,6 +48,10 @@ type Tab = "all" | "open" | "acked";
 const REFRESH_INTERVAL = 30_000;
 
 export default function AlertsPage() {
+  return <Suspense fallback={null}><AlertsPageContent /></Suspense>;
+}
+
+function AlertsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pageParam = parseInt(searchParams.get("page") || "1", 10);

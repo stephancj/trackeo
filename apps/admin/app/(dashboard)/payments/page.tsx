@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPayments } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +56,10 @@ interface AdminPayment {
 }
 
 export default function PaymentsAdminPage() {
+  return <Suspense fallback={null}><PaymentsAdminPageContent /></Suspense>;
+}
+
+function PaymentsAdminPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pageParam = parseInt(searchParams.get("page") || "1", 10);
