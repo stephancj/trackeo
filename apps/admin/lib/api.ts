@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearToken } from "@/lib/auth";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
@@ -20,7 +21,7 @@ api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
+      clearToken();
       window.location.href = "/login";
     }
     return Promise.reject(error);
@@ -176,4 +177,3 @@ export const deleteCoupon = (id: string) => api.delete(`/promotions/admin/coupon
 
 // Payments / Transactions
 export const getPayments = (page = 1, limit = 50) => api.get(`/admin/payments?page=${page}&limit=${limit}`);
-
