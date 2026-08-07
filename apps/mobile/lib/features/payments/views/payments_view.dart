@@ -10,7 +10,8 @@ import '../../entitlements/providers/entitlements_provider.dart';
 import '../providers/payments_provider.dart';
 
 class PaymentsView extends ConsumerStatefulWidget {
-  const PaymentsView({super.key});
+  final bool isDesktopPanel;
+  const PaymentsView({super.key, this.isDesktopPanel = false});
 
   @override
   ConsumerState<PaymentsView> createState() => _PaymentsViewState();
@@ -70,7 +71,7 @@ class _PaymentsViewState extends ConsumerState<PaymentsView> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Abonnement')),
+      appBar: widget.isDesktopPanel ? null : AppBar(title: const Text('Abonnement')),
       body: plansAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => ProductEmptyState(

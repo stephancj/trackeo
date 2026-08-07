@@ -16,7 +16,8 @@ import '../../security/providers/security_provider.dart';
 
 class VehicleDetailsView extends ConsumerWidget {
   final Vehicle vehicle;
-  const VehicleDetailsView({super.key, required this.vehicle});
+  final bool isDesktopPanel;
+  const VehicleDetailsView({super.key, required this.vehicle, this.isDesktopPanel = false});
 
   static const double _heroHeight = 220.0;
 
@@ -68,10 +69,13 @@ class VehicleDetailsView extends ConsumerWidget {
             backgroundColor: AppColors.primaryDark,
             foregroundColor: Colors.white,
             elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-              onPressed: () => Navigator.pop(context),
-            ),
+            leading: isDesktopPanel
+                ? const SizedBox.shrink()
+                : IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+            leadingWidth: isDesktopPanel ? 0 : 56,
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit_rounded, size: 20),
@@ -780,7 +784,9 @@ class _MapCard extends StatelessWidget {
             onTap: () {
               ref.read(activeTabProvider.notifier).state = 1;
               ref.read(selectedVehicleIdProvider.notifier).state = vehicle.id;
-              Navigator.pop(context);
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
             },
             child: AbsorbPointer(
               child: FlutterMap(

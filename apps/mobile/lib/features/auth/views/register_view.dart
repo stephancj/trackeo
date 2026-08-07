@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../../../core/layout/responsive_layout.dart';
 
 class RegisterView extends ConsumerStatefulWidget {
   const RegisterView({super.key});
@@ -65,15 +66,9 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
   Widget build(BuildContext context) {
     final error = ref.watch(authProvider).error;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Créer un compte'),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-          child: Form(
+    final formContent = SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      child: Form(
             key: _formKey,
             autovalidateMode: AutovalidateMode.onUserInteraction,
             child: Column(
@@ -298,8 +293,68 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
               ],
             ),
           ),
-        ),
+        );
+
+    final mobileLayout = Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text('Créer un compte')),
+      body: SafeArea(child: formContent),
+    );
+
+    final desktopLayout = Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Créer un compte'),
+        backgroundColor: AppColors.background,
+        elevation: 0,
       ),
+      body: Row(
+        children: [
+          Expanded(
+            child: Container(
+              color: AppColors.primary,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.person_add_alt_1, size: 100, color: Colors.white),
+                    SizedBox(height: 24),
+                    Text(
+                      'Rejoignez iooeh',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Sécurisez vos véhicules en quelques minutes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 450),
+                child: formContent,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return ResponsiveLayout(
+      mobile: mobileLayout,
+      desktop: desktopLayout,
     );
   }
 }

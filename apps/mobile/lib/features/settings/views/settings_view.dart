@@ -13,6 +13,9 @@ import '../../promotions/redeem_dialog.dart';
 import '../../promotions/referral_view.dart';
 import 'alert_settings_view.dart';
 import 'delete_account_view.dart';
+import '../../../core/layout/responsive_layout.dart';
+
+enum SettingsSection { profile, alerts, payments, referral, deleteAccount }
 
 class SettingsView extends ConsumerStatefulWidget {
   const SettingsView({super.key});
@@ -27,6 +30,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   late final TextEditingController _phoneController;
   bool _isEditing = false;
   bool _isSaving = false;
+  SettingsSection _activeSection = SettingsSection.profile;
 
   @override
   void initState() {
@@ -77,27 +81,12 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildProfileContent(BuildContext context, {required bool isDesktop}) {
     final user = ref.watch(authProvider).user;
     final displayName = user?.displayName ?? '';
     final rightsAsync = ref.watch(entitlementsProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Réglages'),
-        actions: [
-          TextButton(
-            onPressed: _isEditing
-                ? _cancelEdit
-                : () => setState(() => _isEditing = true),
-            child: Text(_isEditing ? 'Annuler' : 'Modifier'),
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      body: SingleChildScrollView(
+    return SingleChildScrollView(
         child: ProductPage(
           child: Form(
             key: _formKey,
@@ -234,7 +223,69 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
             ),
           ),
         ),
+      );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mobileLayout = Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Réglages'),
+        actions: [
+          TextButton(
+            onPressed: _isEditing ? _cancelEdit : () => setState(() => _isEditing = true),
+            child: Text(_isEditing ? 'Annuler' : 'Modifier'),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
+      body: _buildProfileContent(context, isDesktop: false),
+    );
+
+    Widget activePanel;
+    switch (_activeSection) {
+      case SettingsSection.profile:
+        activePanel = _buildProfileContent(context, isDesktop: true);
+        break;
+      case SettingsSection.alerts:
+        activePanel = const AlertSettingsView(isDesktopPanel: true);
+        break;
+      case SettingsSection.payments:
+        activePanel = const PaymentsView(isDesktopPanel: true);
+        break;
+      case SettingsSection.referral:
+        activePanel = const ReferralView(isDesktopPanel: true);
+        break;
+      case SettingsSection.deleteAccount:
+        activePanel = const DeleteAccountView(isDesktopPanel: true);
+        break;
+    }
+
+    final desktopLayout = Scaffold(
+      backgroundColor: AppColors.background,
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 320,
+            child: _SettingsSidebar(
+              activeSection: _activeSection,
+              onSectionChanged: (s) => setState(() {
+                _activeSection = s;
+                _isEditing = false;
+              }),
+            ),
+          ),
+          const VerticalDivider(width: 1, thickness: 1, color: AppColors.divider),
+          Expanded(child: activePanel),
+        ],
+      ),
+    );
+
+    return ResponsiveLayout(
+      mobile: mobileLayout,
+      desktop: desktopLayout,
     );
   }
 
@@ -522,4 +573,125 @@ class _SettingsTile extends StatelessWidget {
           ),
         ),
       );
+}
+
+class _SettingsSidebar extends StatelessWidget {
+  final SettingsSection activeSection;
+  final ValueChanged<SettingsSection> onSectionChanged;
+
+  const _SettingsSidebar({
+    required this.activeSection,
+    required this.onSectionChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 16, bottom: 24),
+          child: Text('Réglages', style: AppTextStyles.pageTitleLarge),
+        ),
+        _SidebarItem(
+          icon: Icons.person_outline,
+          activeIcon: Icons.person,
+          label: 'Profil',
+          isActive: activeSection == SettingsSection.profile,
+          onTap: () => onSectionChanged(SettingsSection.profile),
+        ),
+        _SidebarItem(
+          icon: Icons.notifications_none,
+          activeIcon: Icons.notifications,
+          label: 'Alertes',
+          isActive: activeSection == SettingsSection.alerts,
+          onTap: () => onSectionChanged(SettingsSection.alerts),
+        ),
+        _SidebarItem(
+          icon: Icons.workspace_premium_outlined,
+          activeIcon: Icons.workspace_premium,
+          label: 'Abonnement',
+          isActive: activeSection == SettingsSection.payments,
+          onTap: () => onSectionChanged(SettingsSection.payments),
+        ),
+        _SidebarItem(
+          icon: Icons.card_giftcard_outlined,
+          activeIcon: Icons.card_giftcard,
+          label: 'Parrainage',
+          isActive: activeSection == SettingsSection.referral,
+          onTap: () => onSectionChanged(SettingsSection.referral),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Divider(),
+        ),
+        _SidebarItem(
+          icon: Icons.delete_outline,
+          activeIcon: Icons.delete,
+          label: 'Supprimer mon compte',
+          isActive: activeSection == SettingsSection.deleteAccount,
+          onTap: () => onSectionChanged(SettingsSection.deleteAccount),
+          isDestructive: true,
+        ),
+      ],
+    );
+  }
+}
+
+class _SidebarItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  const _SidebarItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDestructive
+        ? AppColors.statusAlert
+        : (isActive ? AppColors.primaryDark : AppColors.textPrimary);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isActive ? (isDestructive ? AppColors.statusAlert.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1)) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isActive ? activeIcon : icon,
+                color: isDestructive ? AppColors.statusAlert : (isActive ? AppColors.primaryDark : AppColors.textHint),
+                size: 22,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

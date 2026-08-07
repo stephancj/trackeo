@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/navigation/app_shell.dart';
+import '../../../core/layout/responsive_layout.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/vehicle_model.dart';
 import '../providers/vehicles_provider.dart';
@@ -110,9 +111,15 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
             const SizedBox(height: 12),
 
             // ── Barre de recherche ─────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _SearchBar(),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _SearchBar(),
+                ),
+              ),
             ),
 
             const SizedBox(height: 12),
@@ -188,28 +195,61 @@ class _FleetListViewState extends ConsumerState<FleetListView> {
                   return RefreshIndicator(
                     color: AppColors.primary,
                     onRefresh: () async => ref.invalidate(vehiclesProvider),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.only(top: 4, bottom: 20),
-                      itemCount: vehicles.length,
-                      itemBuilder: (_, i) => _SlideInCard(
-                        index: i,
-                        key: ValueKey(vehicles[i].id),
-                        child: VehicleCard(
-                          vehicle: vehicles[i],
-                          onTap: () {
-                            ref.read(selectedVehicleIdProvider.notifier).state =
-                                vehicles[i].id;
-                            Navigator.push(
-                              context,
-                              TrackeoRoute(
-                                builder: (context) =>
-                                    VehicleDetailsView(vehicle: vehicles[i]),
+                    child: context.isDesktop || context.isTablet
+                        ? GridView.builder(
+                            padding: const EdgeInsets.only(top: 4, bottom: 20),
+                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 450,
+                              mainAxisExtent: 180,
+                              crossAxisSpacing: 0,
+                              mainAxisSpacing: 0,
+                            ),
+                            itemCount: vehicles.length,
+                            itemBuilder: (_, i) => _SlideInCard(
+                              index: i,
+                              key: ValueKey(vehicles[i].id),
+                              child: VehicleCard(
+                                vehicle: vehicles[i],
+                                onTap: () {
+                                  ref.read(selectedVehicleIdProvider.notifier).state =
+                                      vehicles[i].id;
+                                  if (!context.isDesktop) {
+                                    Navigator.push(
+                                      context,
+                                      TrackeoRoute(
+                                        builder: (context) =>
+                                            VehicleDetailsView(vehicle: vehicles[i]),
+                                      ),
+                                    );
+                                  }
+                                },
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(top: 4, bottom: 20),
+                            itemCount: vehicles.length,
+                            itemBuilder: (_, i) => _SlideInCard(
+                              index: i,
+                              key: ValueKey(vehicles[i].id),
+                              child: VehicleCard(
+                                vehicle: vehicles[i],
+                                onTap: () {
+                                  ref.read(selectedVehicleIdProvider.notifier).state =
+                                      vehicles[i].id;
+                                  if (!context.isDesktop) {
+                                    Navigator.push(
+                                      context,
+                                      TrackeoRoute(
+                                        builder: (context) =>
+                                            VehicleDetailsView(vehicle: vehicles[i]),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
                   );
                 },
                 loading: () => const VehicleListSkeleton(),

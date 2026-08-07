@@ -6,7 +6,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class DeleteAccountView extends ConsumerStatefulWidget {
-  const DeleteAccountView({super.key});
+  final bool isDesktopPanel;
+  const DeleteAccountView({super.key, this.isDesktopPanel = false});
 
   @override
   ConsumerState<DeleteAccountView> createState() => _DeleteAccountViewState();
@@ -73,7 +74,7 @@ class _DeleteAccountViewState extends ConsumerState<DeleteAccountView> {
       canPop: !_isDeleting,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
+        appBar: widget.isDesktopPanel ? null : AppBar(
           title: const Text('Supprimer mon compte'),
           automaticallyImplyLeading: !_isDeleting,
         ),

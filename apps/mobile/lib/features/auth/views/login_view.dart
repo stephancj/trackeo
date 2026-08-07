@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import 'register_view.dart';
+import '../../../core/layout/responsive_layout.dart';
 
 class LoginView extends ConsumerStatefulWidget {
   const LoginView({super.key});
@@ -106,14 +107,11 @@ class _LoginViewState extends ConsumerState<LoginView>
     final auth = ref.watch(authProvider);
     final isLoading = auth.isLoading;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    final formContent = SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
               const SizedBox(height: 60),
 
               // Logo — slide from top + fade
@@ -288,8 +286,62 @@ class _LoginViewState extends ConsumerState<LoginView>
               ),
             ],
           ),
-        ),
+        );
+
+    final mobileLayout = Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(child: formContent),
+    );
+
+    final desktopLayout = Scaffold(
+      backgroundColor: AppColors.background,
+      body: Row(
+        children: [
+          Expanded(
+            child: Container(
+              color: AppColors.primary,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.directions_car, size: 100, color: Colors.white),
+                    SizedBox(height: 24),
+                    Text(
+                      'Bienvenue sur iooeh',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'La plateforme de suivi GPS nouvelle génération',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 450),
+                child: formContent,
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+
+    return ResponsiveLayout(
+      mobile: mobileLayout,
+      desktop: desktopLayout,
     );
   }
 }

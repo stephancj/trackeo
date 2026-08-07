@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'promotions_repository.dart';
 
 class ReferralView extends ConsumerWidget {
-  const ReferralView({super.key});
+  final bool isDesktopPanel;
+  const ReferralView({super.key, this.isDesktopPanel = false});
 
   static void navigateTo(BuildContext context) {
     Navigator.push(

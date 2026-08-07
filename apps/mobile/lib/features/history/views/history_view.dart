@@ -12,6 +12,7 @@ import '../../vehicles/models/vehicle_model.dart';
 import '../../vehicles/utils/speed_gradient.dart';
 import '../models/trip_model.dart';
 import '../models/day_activity_model.dart';
+import '../../entitlements/views/feature_gate.dart';
 import '../providers/history_provider.dart';
 import 'widgets/activity_calendar_sheet.dart';
 
@@ -96,7 +97,11 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
       });
     });
 
-    return Scaffold(
+    return FeatureGate(
+      anyOf: const ['history'],
+      title: 'Historique des Trajets',
+      description: 'L\'historique complet de vos déplacements est disponible avec un plan Basic ou Premium.',
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
@@ -307,7 +312,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   // ── Playback Logic & Helpers ──────────────────────────────────────────

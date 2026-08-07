@@ -21,6 +21,7 @@ import '../../vehicles/providers/vehicles_provider.dart';
 import '../../../core/providers/geocoding_provider.dart';
 import '../../settings/views/alert_settings_view.dart';
 import '../../../core/navigation/trackeo_route.dart';
+import '../../../core/layout/responsive_layout.dart';
 
 // Local _reverseGeocodeProvider removed in favor of global reverseGeocodeProvider
 
@@ -36,33 +37,82 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
   Widget build(BuildContext context) {
     final geofencesState = ref.watch(geofencesProvider);
     final alertsState = ref.watch(alertsProvider);
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Alertes & Zones'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_active_outlined,
-                color: AppColors.primary),
-            tooltip: 'Paramètres d\'alertes',
-            onPressed: () => Navigator.push(
-              context,
-              TrackeoRoute(builder: (_) => const AlertSettingsView()),
+    final mobileBody = RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () => Future.wait([
+        ref.read(alertsProvider.notifier).silentRefresh(),
+        ref.read(geofencesProvider.notifier).silentRefresh(),
+      ]),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: ProductPage(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(
+                    'Zones de sécurité',
+                    action: 'Ajouter',
+                    onActionTap: () {
+                      Navigator.push(
+                        context,
+                        TrackeoRoute(
+                          builder: (context) => const CreateGeofenceView(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  geofencesState.when(
+                    data: (geofences) {
+                      if (geofences.isEmpty) {
+                        return _buildGeofencesEmptyState();
+                      }
+                      return SizedBox(
+                        height: 300,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          clipBehavior: Clip.none,
+                          itemCount: geofences.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (_, i) => SizedBox(
+                            width: (MediaQuery.of(context).size.width - 32).clamp(280.0, 688.0),
+                            child: _buildActiveGeofenceCard(geofences[i]),
+                          ),
+                        ),
+                      );
+                    },
+                    loading: () => const GeofenceCarouselSkeleton(),
+                    error: (e, st) => _buildErrorState('Impossible de charger les zones.'),
+                  ),
+                  const SizedBox(height: 32),
+                  _buildActivitySectionHeader(),
+                  const SizedBox(height: 12),
+                  alertsState.when(
+                    data: (alerts) => _buildRecentActivityList(alerts),
+                    loading: () => const AlertListSkeleton(),
+                    error: (e, st) => _buildErrorState('Impossible de charger les alertes.'),
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: () => Future.wait([
-          ref.read(alertsProvider.notifier).silentRefresh(),
-          ref.read(geofencesProvider.notifier).silentRefresh(),
-        ]),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: ProductPage(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    );
+
+    final desktopBody = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 440,
+          child: RefreshIndicator(
+            onRefresh: () => ref.read(geofencesProvider.notifier).silentRefresh(),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
               children: [
                 _buildSectionHeader(
                   'Zones de sécurité',
@@ -76,45 +126,83 @@ class _AlertsViewState extends ConsumerState<AlertsView> {
                     );
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 geofencesState.when(
                   data: (geofences) {
                     if (geofences.isEmpty) {
                       return _buildGeofencesEmptyState();
                     }
-                    return SizedBox(
-                      height: 300,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        clipBehavior: Clip.none,
-                        itemCount: geofences.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (_, i) => SizedBox(
-                          width: (MediaQuery.of(context).size.width - 32)
-                              .clamp(280.0, 688.0),
-                          child: _buildActiveGeofenceCard(geofences[i]),
-                        ),
-                      ),
+                    return Column(
+                      children: [
+                        for (final g in geofences) ...[
+                          _buildActiveGeofenceCard(g),
+                          const SizedBox(height: 16),
+                        ],
+                      ],
                     );
                   },
                   loading: () => const GeofenceCarouselSkeleton(),
-                  error: (e, st) =>
-                      _buildErrorState('Impossible de charger les zones.'),
+                  error: (e, st) => _buildErrorState('Impossible de charger les zones.'),
                 ),
-                const SizedBox(height: 32),
-                _buildActivitySectionHeader(),
-                const SizedBox(height: 12),
-                alertsState.when(
-                  data: (alerts) => _buildRecentActivityList(alerts),
-                  loading: () => const AlertListSkeleton(),
-                  error: (e, st) =>
-                      _buildErrorState('Impossible de charger les alertes.'),
-                ),
-                const SizedBox(height: 32),
               ],
             ),
           ),
         ),
+        const VerticalDivider(width: 1, thickness: 1, color: AppColors.divider),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => ref.read(alertsProvider.notifier).silentRefresh(),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+              children: [
+                _buildActivitySectionHeader(),
+                const SizedBox(height: 16),
+                alertsState.when(
+                  data: (alerts) => _buildRecentActivityList(alerts),
+                  loading: () => const AlertListSkeleton(),
+                  error: (e, st) => _buildErrorState('Impossible de charger les alertes.'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+
+    return ResponsiveLayout(
+      mobile: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Alertes & Zones'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_active_outlined, color: AppColors.primary),
+              tooltip: 'Paramètres d\'alertes',
+              onPressed: () => Navigator.push(
+                context,
+                TrackeoRoute(builder: (_) => const AlertSettingsView()),
+              ),
+            ),
+          ],
+        ),
+        body: mobileBody,
+      ),
+      desktop: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Alertes & Zones'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_active_outlined, color: AppColors.primary),
+              tooltip: 'Paramètres d\'alertes',
+              onPressed: () => Navigator.push(
+                context,
+                TrackeoRoute(builder: (_) => const AlertSettingsView()),
+              ),
+            ),
+          ],
+        ),
+        body: desktopBody,
       ),
     );
   }

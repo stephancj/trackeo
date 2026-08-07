@@ -7,6 +7,9 @@ import '../../features/alerts/views/alerts_view.dart';
 import '../../features/settings/views/settings_view.dart';
 import '../../features/reports/views/reports_view.dart';
 import '../../features/entitlements/views/feature_gate.dart';
+import '../../features/vehicles/providers/vehicles_provider.dart';
+import '../../features/vehicles/views/vehicle_details_view.dart';
+import '../layout/responsive_layout.dart';
 
 /// Index : 0=Véhicules, 1=Carte, 2=Alertes, 3=Rapports, 4=Réglages.
 final activeTabProvider = StateProvider<int>((ref) => 0);
@@ -18,32 +21,137 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activeTab = ref.watch(activeTabProvider);
 
-    return Scaffold(
-      body: IndexedStack(
-        index: activeTab,
-        children: const [
-          FleetListView(),
-          MapView(),
-          AlertsView(),
-          FeatureGate(
-            anyOf: [
-              'activity_reports',
-              'trip_reports',
-              'speed_reports',
-              'idle_reports',
-              'geofence_reports',
-            ],
-            title: 'Rapports avancés',
-            description:
-                'Les rapports détaillés sont disponibles avec les plans Basic et Premium.',
-            child: ReportsView(),
-          ),
-          SettingsView(),
-        ],
+    final body = IndexedStack(
+      index: activeTab,
+      children: [
+        FleetListView(),
+        MapView(),
+        FeatureGate(
+          anyOf: const ['geofencing'],
+          title: 'Alertes et Zones',
+          description:
+              'La création de zones de sécurité et le suivi des alertes nécessitent un plan Basic ou Premium.',
+          child: AlertsView(),
+        ),
+        FeatureGate(
+          anyOf: [
+            'activity_reports',
+            'trip_reports',
+            'speed_reports',
+            'idle_reports',
+            'geofence_reports',
+          ],
+          title: 'Rapports avancés',
+          description:
+              'Les rapports détaillés sont disponibles avec les plans Basic et Premium.',
+          child: ReportsView(),
+        ),
+        SettingsView(),
+      ],
+    );
+
+    final selectedVehicleId = ref.watch(selectedVehicleIdProvider);
+    final vehicles = ref.watch(vehiclesProvider).valueOrNull ?? [];
+    final selectedVehicle = vehicles.where((v) => v.id == selectedVehicleId).firstOrNull;
+
+    final desktopBody = IndexedStack(
+      index: activeTab,
+      children: [
+        Row(
+          children: [
+            const SizedBox(
+              width: 380,
+              child: FleetListView(),
+            ),
+            const VerticalDivider(width: 1, thickness: 1, color: AppColors.divider),
+            Expanded(
+              child: Stack(
+                children: [
+                  const MapView(),
+                  if (selectedVehicle != null)
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      right: 0,
+                      width: 400,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 20,
+                              offset: const Offset(-5, 0),
+                            ),
+                          ],
+                        ),
+                        child: VehicleDetailsView(
+                          vehicle: selectedVehicle,
+                          isDesktopPanel: true,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const MapView(),
+        FeatureGate(
+          anyOf: const ['geofencing'],
+          title: 'Alertes et Zones',
+          description:
+              'La création de zones de sécurité et le suivi des alertes nécessitent un plan Basic ou Premium.',
+          child: AlertsView(),
+        ),
+        const FeatureGate(
+          anyOf: [
+            'activity_reports',
+            'trip_reports',
+            'speed_reports',
+            'idle_reports',
+            'geofence_reports',
+          ],
+          title: 'Rapports avancés',
+          description:
+              'Les rapports détaillés sont disponibles avec les plans Basic et Premium.',
+          child: ReportsView(),
+        ),
+        const SettingsView(),
+      ],
+    );
+
+    void onTabChanged(int i) => ref.read(activeTabProvider.notifier).state = i;
+
+    return ResponsiveLayout(
+      mobile: Scaffold(
+        body: body,
+        bottomNavigationBar: _TrackeoBottomNav(
+          activeTab: activeTab,
+          onTabChanged: onTabChanged,
+        ),
       ),
-      bottomNavigationBar: _TrackeoBottomNav(
-        activeTab: activeTab,
-        onTabChanged: (i) => ref.read(activeTabProvider.notifier).state = i,
+      tablet: Scaffold(
+        body: Row(
+          children: [
+            _TrackeoNavigationRail(
+              activeTab: activeTab,
+              onTabChanged: onTabChanged,
+            ),
+            Expanded(child: body),
+          ],
+        ),
+      ),
+      desktop: Scaffold(
+        body: Row(
+          children: [
+            _TrackeoSidebar(
+              activeTab: activeTab,
+              onTabChanged: onTabChanged,
+            ),
+            Expanded(child: desktopBody),
+          ],
+        ),
       ),
     );
   }
@@ -233,6 +341,283 @@ class _NavItemState extends State<_NavItem>
                   color: isActive ? AppColors.primary : AppColors.textHint,
                 ),
                 child: Text(widget.label),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Tablet Navigation Rail ──────────────────────────────────────────────────
+
+class _TrackeoNavigationRail extends StatelessWidget {
+  final int activeTab;
+  final ValueChanged<int> onTabChanged;
+
+  const _TrackeoNavigationRail({
+    required this.activeTab,
+    required this.onTabChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 80,
+      color: AppColors.surface,
+      child: SafeArea(
+        right: false,
+        child: Column(
+          children: [
+            const SizedBox(height: 24),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.primaryDark,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.gps_fixed_rounded, color: AppColors.primary, size: 24),
+            ),
+            const SizedBox(height: 32),
+            Expanded(
+              child: Column(
+                children: [
+                  _RailItem(
+                    icon: Icons.list_alt_outlined,
+                    activeIcon: Icons.list_alt,
+                    label: 'Véhicules',
+                    isActive: activeTab == 0,
+                    onTap: () => onTabChanged(0),
+                  ),
+                  _RailItem(
+                    icon: Icons.map_outlined,
+                    activeIcon: Icons.map,
+                    label: 'Carte',
+                    isActive: activeTab == 1,
+                    onTap: () => onTabChanged(1),
+                  ),
+                  _RailItem(
+                    icon: Icons.notifications_outlined,
+                    activeIcon: Icons.notifications,
+                    label: 'Alertes',
+                    isActive: activeTab == 2,
+                    onTap: () => onTabChanged(2),
+                  ),
+                  _RailItem(
+                    icon: Icons.bar_chart_outlined,
+                    activeIcon: Icons.bar_chart_rounded,
+                    label: 'Rapports',
+                    isActive: activeTab == 3,
+                    onTap: () => onTabChanged(3),
+                  ),
+                ],
+              ),
+            ),
+            _RailItem(
+              icon: Icons.settings_outlined,
+              activeIcon: Icons.settings,
+              label: 'Réglages',
+              isActive: activeTab == 4,
+              onTap: () => onTabChanged(4),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RailItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _RailItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: 80,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          children: [
+            Icon(
+              isActive ? activeIcon : icon,
+              color: isActive ? AppColors.primary : AppColors.textHint,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: isActive ? AppColors.primary : AppColors.textHint,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Desktop Sidebar ──────────────────────────────────────────────────────────
+
+class _TrackeoSidebar extends StatelessWidget {
+  final int activeTab;
+  final ValueChanged<int> onTabChanged;
+
+  const _TrackeoSidebar({
+    required this.activeTab,
+    required this.onTabChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 250,
+      color: AppColors.surface,
+      child: SafeArea(
+        right: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryDark,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.gps_fixed_rounded, color: AppColors.primary, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    'Trackeo',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  _SidebarItem(
+                    icon: Icons.list_alt_outlined,
+                    activeIcon: Icons.list_alt,
+                    label: 'Véhicules',
+                    isActive: activeTab == 0,
+                    onTap: () => onTabChanged(0),
+                  ),
+                  _SidebarItem(
+                    icon: Icons.map_outlined,
+                    activeIcon: Icons.map,
+                    label: 'Carte Live',
+                    isActive: activeTab == 1,
+                    onTap: () => onTabChanged(1),
+                  ),
+                  _SidebarItem(
+                    icon: Icons.notifications_outlined,
+                    activeIcon: Icons.notifications,
+                    label: 'Alertes & Sécurité',
+                    isActive: activeTab == 2,
+                    onTap: () => onTabChanged(2),
+                  ),
+                  _SidebarItem(
+                    icon: Icons.bar_chart_outlined,
+                    activeIcon: Icons.bar_chart_rounded,
+                    label: 'Rapports & Stats',
+                    isActive: activeTab == 3,
+                    onTap: () => onTabChanged(3),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: _SidebarItem(
+                icon: Icons.settings_outlined,
+                activeIcon: Icons.settings,
+                label: 'Réglages',
+                isActive: activeTab == 4,
+                onTap: () => onTabChanged(4),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SidebarItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _SidebarItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                isActive ? activeIcon : icon,
+                color: isActive ? AppColors.primaryDark : AppColors.textHint,
+                size: 22,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                  color: isActive ? AppColors.primaryDark : AppColors.textPrimary,
+                ),
               ),
             ],
           ),

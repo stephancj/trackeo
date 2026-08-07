@@ -6,7 +6,8 @@ import '../../auth/providers/auth_provider.dart';
 import '../../entitlements/providers/entitlements_provider.dart';
 
 class AlertSettingsView extends ConsumerStatefulWidget {
-  const AlertSettingsView({super.key});
+  final bool isDesktopPanel;
+  const AlertSettingsView({super.key, this.isDesktopPanel = false});
 
   @override
   ConsumerState<AlertSettingsView> createState() => _AlertSettingsViewState();
@@ -64,6 +65,48 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
       _initialized = true;
     }
 
+    final body = SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildMasterSwitch(),
+          const SizedBox(height: 28),
+          _buildSectionHeader('TYPES D\'ALERTES',
+              subtitle: 'Ce qui déclenche une alerte'),
+          const SizedBox(height: 12),
+          _buildAlertTypes(lowBatteryIncluded, speedIncluded),
+          const SizedBox(height: 28),
+          _buildSectionHeader('CANAUX',
+              subtitle: 'Comment vous êtes prévenu'),
+          const SizedBox(height: 12),
+          _buildNotificationMethods(hasPhone, pushIncluded, whatsappIncluded),
+          const SizedBox(height: 32),
+          if (widget.isDesktopPanel)
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: _isSaving ? null : _saveSettings,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Enregistrer les paramètres'),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    if (widget.isDesktopPanel) {
+      return body;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -92,26 +135,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildMasterSwitch(),
-            const SizedBox(height: 28),
-            _buildSectionHeader('TYPES D\'ALERTES',
-                subtitle: 'Ce qui déclenche une alerte'),
-            const SizedBox(height: 12),
-            _buildAlertTypes(lowBatteryIncluded, speedIncluded),
-            const SizedBox(height: 28),
-            _buildSectionHeader('CANAUX',
-                subtitle: 'Comment vous êtes prévenu'),
-            const SizedBox(height: 12),
-            _buildNotificationMethods(hasPhone, pushIncluded, whatsappIncluded),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
+      body: body,
     );
   }
 
@@ -527,7 +551,9 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.pop(context);
+        if (!widget.isDesktopPanel) {
+          Navigator.pop(context);
+        }
       }
     } catch (_) {
       if (mounted) {
