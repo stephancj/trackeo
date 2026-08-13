@@ -5,11 +5,12 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- 1. Ajout de la colonne referral_code à la table users
 ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR(30);
 
--- Unicité sur referral_code (quand non null)
-DO $$ BEGIN
-  ALTER TABLE users ADD CONSTRAINT uq_users_referral_code UNIQUE (referral_code);
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+-- Unicité sur referral_code (quand non null). Un index nommé peut déjà
+-- exister sur les installations ayant exécuté une version antérieure :
+-- IF NOT EXISTS rend le rejeu de cette migration réellement idempotent.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_referral_code
+  ON users (referral_code)
+  WHERE referral_code IS NOT NULL;
 
 -- Enregistrer des codes parrainage par défaut pour tous les utilisateurs existants sans code
 UPDATE users 
@@ -85,4 +86,3 @@ FROM plans p
 CROSS JOIN features f
 WHERE f.code IN ('coupon_redemption', 'referral_program')
 ON CONFLICT (plan_id, feature_id) DO UPDATE SET enabled = TRUE;
-
