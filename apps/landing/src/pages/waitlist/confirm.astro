@@ -1,0 +1,222 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const WAITLIST_CONFIRM_URL = 'https://api.iooeh.com/waitlist/confirm';
+---
+
+<Layout title="Confirmation de votre email | iooeh" robots="noindex, nofollow">
+  <main id="content" class="confirm-page" data-confirm-endpoint={WAITLIST_CONFIRM_URL}>
+    <a class="confirm-brand" href="/" aria-label="Retour à l’accueil iooeh">
+      <span class="confirm-mark"><img src="/favicon.png" alt="" width="22" height="22" /></span>
+      <strong>iooeh</strong>
+    </a>
+
+    <section class="confirm-card" aria-live="polite">
+      <div class="confirm-signal" data-confirm-icon aria-hidden="true">
+        <span></span>
+      </div>
+      <p class="confirm-eyebrow">Vérification de l’adresse</p>
+      <h1 data-confirm-title>Confirmation en cours…</h1>
+      <p class="confirm-copy" data-confirm-copy>
+        Nous vérifions le lien sécurisé reçu dans votre boîte email.
+      </p>
+      <a class="confirm-action" href="/" data-confirm-action hidden>Retour à l’accueil</a>
+    </section>
+
+    <p class="confirm-footnote">Le lien de vérification est personnel, temporaire et utilisable une seule fois.</p>
+  </main>
+</Layout>
+
+<style>
+  .confirm-page {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 1.4rem;
+    padding: clamp(1.25rem, 4vw, 3rem);
+    background:
+      radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--brand) 17%, transparent), transparent 34rem),
+      var(--mist);
+  }
+
+  .confirm-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    text-decoration: none;
+  }
+
+  .confirm-mark {
+    display: grid;
+    width: 2.15rem;
+    height: 2.15rem;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--line));
+    border-radius: 0.75rem;
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .confirm-card {
+    width: min(100%, 38rem);
+    padding: clamp(2rem, 6vw, 4rem);
+    border-radius: clamp(1.5rem, 4vw, 2.5rem);
+    background: var(--ink);
+    color: white;
+    text-align: center;
+    box-shadow: var(--shadow-hard);
+    animation: fade-up 650ms var(--ease) both;
+  }
+
+  .confirm-signal {
+    position: relative;
+    display: grid;
+    width: 4.75rem;
+    height: 4.75rem;
+    margin: 0 auto 1.6rem;
+    place-items: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--brand) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--brand) 46%, transparent);
+  }
+
+  .confirm-signal span {
+    width: 0.72rem;
+    height: 0.72rem;
+    border-radius: 50%;
+    background: var(--brand);
+    box-shadow: 0 0 0 0.55rem color-mix(in srgb, var(--brand) 15%, transparent);
+    animation: signal 1.15s ease-in-out infinite;
+  }
+
+  .confirm-signal.is-success span {
+    width: 1.6rem;
+    height: 0.85rem;
+    border: solid var(--brand);
+    border-width: 0 0 0.24rem 0.24rem;
+    border-radius: 0;
+    box-shadow: none;
+    transform: translateY(-0.16rem) rotate(-45deg);
+    animation: none;
+  }
+
+  .confirm-signal.is-error {
+    border-color: color-mix(in srgb, var(--red) 50%, transparent);
+    background: color-mix(in srgb, var(--red) 13%, transparent);
+  }
+
+  .confirm-signal.is-error span {
+    width: 1.7rem;
+    height: 0.2rem;
+    border-radius: 1rem;
+    background: #ff8989;
+    box-shadow: none;
+    animation: none;
+    transform: rotate(45deg);
+  }
+
+  .confirm-signal.is-error span::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    transform: rotate(90deg);
+  }
+
+  .confirm-eyebrow {
+    margin-bottom: 1rem;
+    color: var(--brand);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .confirm-card h1 {
+    margin-bottom: 1rem;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    line-height: 1.02;
+  }
+
+  .confirm-copy {
+    max-width: 30rem;
+    margin: 0 auto;
+    color: rgba(244, 245, 247, 0.68);
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .confirm-action {
+    display: inline-flex;
+    margin-top: 1.7rem;
+    padding: 0.9rem 1.2rem;
+    border-radius: 0.85rem;
+    background: var(--brand);
+    color: #17231c;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .confirm-action[hidden] {
+    display: none;
+  }
+
+  .confirm-footnote {
+    color: var(--ink-2);
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  @keyframes signal {
+    50% { transform: scale(0.72); opacity: 0.65; }
+  }
+</style>
+
+<script>
+  const page = document.querySelector('[data-confirm-endpoint]');
+
+  if (page instanceof HTMLElement) {
+    const title = page.querySelector('[data-confirm-title]');
+    const copy = page.querySelector('[data-confirm-copy]');
+    const icon = page.querySelector('[data-confirm-icon]');
+    const action = page.querySelector('[data-confirm-action]');
+    const endpoint = page.dataset.confirmEndpoint;
+    const token = new URLSearchParams(window.location.hash.slice(1)).get('token');
+
+    history.replaceState(null, '', window.location.pathname);
+
+    const render = (success: boolean) => {
+      if (!(title instanceof HTMLElement) || !(copy instanceof HTMLElement)) return;
+      title.textContent = success ? 'Adresse confirmée.' : 'Lien invalide ou expiré.';
+      copy.textContent = success
+        ? 'Votre inscription à la liste d’attente iooeh est maintenant validée. Nous vous écrirons au lancement.'
+        : 'Demandez un nouveau lien depuis le formulaire de la page d’accueil.';
+      icon?.classList.add(success ? 'is-success' : 'is-error');
+      if (action instanceof HTMLAnchorElement) action.hidden = false;
+    };
+
+    if (!token || !endpoint) {
+      render(false);
+    } else {
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      })
+        .then(async (response) => {
+          if (!response.ok) return false;
+          const payload = await response.json();
+          return payload?.ok === true;
+        })
+        .then(render)
+        .catch(() => render(false));
+    }
+  }
+</script>

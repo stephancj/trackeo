@@ -3,9 +3,10 @@ import '../styles/global.css';
 
 interface Props {
   title: string;
+  robots?: string;
 }
 
-const { title } = Astro.props;
+const { title, robots = 'index, follow' } = Astro.props;
 const description =
   'Bientôt à Madagascar : suivez vos véhicules avec iooeh grâce à la carte en direct, la veille antivol, les alertes et l’historique des trajets.';
 const siteUrl = 'https://iooeh.com';
@@ -20,7 +21,7 @@ const ogImage = `${siteUrl}/og-card.svg`;
     <meta name="description" content={description} />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#4ECB8D" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content={robots} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png?v=2" />
     <link rel="alternate icon" href="/favicon.ico?v=2" />

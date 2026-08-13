@@ -81,6 +81,61 @@ export class User {
   @Column({ name: 'alert_via_whatsapp', default: false })
   alertViaWhatsapp: boolean;
 
+  @Column({ name: 'alert_via_email', default: false })
+  alertViaEmail: boolean;
+
+  @Column({ name: 'email_verified_at', type: 'timestamptz', nullable: true })
+  emailVerifiedAt: Date | null;
+
+  @Column({
+    name: 'email_verification_token_hash',
+    type: 'char',
+    length: 64,
+    nullable: true,
+    select: false,
+  })
+  emailVerificationTokenHash: string | null;
+
+  @Column({
+    name: 'email_verification_expires_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  emailVerificationExpiresAt: Date | null;
+
+  @Column({
+    name: 'email_verification_sent_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  emailVerificationSentAt: Date | null;
+
+  @Column({
+    name: 'password_reset_token_hash',
+    type: 'char',
+    length: 64,
+    nullable: true,
+    select: false,
+  })
+  passwordResetTokenHash: string | null;
+
+  @Column({
+    name: 'password_reset_expires_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  passwordResetExpiresAt: Date | null;
+
+  @Column({
+    name: 'password_reset_sent_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  passwordResetSentAt: Date | null;
+
+  @Column({ name: 'last_login_at', type: 'timestamptz', nullable: true })
+  lastLoginAt: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

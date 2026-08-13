@@ -24,4 +24,8 @@ export class UpdateAlertSettingsDto {
   @IsOptional()
   @IsBoolean()
   alertViaWhatsapp?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  alertViaEmail?: boolean;
 }

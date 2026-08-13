@@ -19,6 +19,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
   late bool _speedLimit;
   late bool _pushNotification;
   late bool _whatsAppNotification;
+  late bool _emailNotification;
   bool _isSaving = false;
   bool _isSubscribing = false;
   String _pushPermissionStatus = 'default';
@@ -44,6 +45,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
     _speedLimit = user?.alertSpeedLimit ?? false;
     _pushNotification = user?.alertViaPush ?? true;
     _whatsAppNotification = user?.alertViaWhatsapp ?? false;
+    _emailNotification = user?.alertViaEmail ?? false;
   }
 
   @override
@@ -62,6 +64,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
       _speedLimit = user.alertSpeedLimit;
       _pushNotification = user.alertViaPush;
       _whatsAppNotification = user.alertViaWhatsapp;
+      _emailNotification = user.alertViaEmail;
       _initialized = true;
     }
 
@@ -77,8 +80,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
           const SizedBox(height: 12),
           _buildAlertTypes(lowBatteryIncluded, speedIncluded),
           const SizedBox(height: 28),
-          _buildSectionHeader('CANAUX',
-              subtitle: 'Comment vous êtes prévenu'),
+          _buildSectionHeader('CANAUX', subtitle: 'Comment vous êtes prévenu'),
           const SizedBox(height: 12),
           _buildNotificationMethods(hasPhone, pushIncluded, whatsappIncluded),
           const SizedBox(height: 32),
@@ -432,6 +434,21 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
           ),
           const Divider(height: 1, indent: 64, color: AppColors.divider),
           _buildSettingItem(
+            icon: Icons.email_rounded,
+            iconColor: const Color(0xFF4F7DF3),
+            iconBg: const Color(0xFF4F7DF3).withValues(alpha: 0.1),
+            title: 'Email',
+            subtitle:
+                'Recevoir les alertes sur ${ref.watch(authProvider).user?.email ?? 'votre adresse'}',
+            value: _emailNotification,
+            onChanged: (v) {
+              HapticFeedback.selectionClick();
+              setState(() => _emailNotification = v);
+            },
+            isEnabled: _alertsEnabled,
+          ),
+          const Divider(height: 1, indent: 64, color: AppColors.divider),
+          _buildSettingItem(
             icon: Icons.chat_rounded,
             iconColor: Colors.green,
             iconBg: Colors.green.withValues(alpha: 0.1),
@@ -542,6 +559,7 @@ class _AlertSettingsViewState extends ConsumerState<AlertSettingsView> {
             alertSpeedLimit: _speedLimit,
             alertViaPush: _pushNotification,
             alertViaWhatsapp: _whatsAppNotification,
+            alertViaEmail: _emailNotification,
           );
 
       if (mounted) {

@@ -22,6 +22,32 @@ export class WaitlistSubscriber {
   @Column({ length: 24, default: 'subscribed' })
   status: string;
 
+  @Column({
+    name: 'verification_token_hash',
+    type: 'char',
+    length: 64,
+    nullable: true,
+    select: false,
+  })
+  verificationTokenHash: string | null;
+
+  @Column({
+    name: 'verification_expires_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  verificationExpiresAt: Date | null;
+
+  @Column({
+    name: 'verification_sent_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  verificationSentAt: Date | null;
+
+  @Column({ name: 'verified_at', type: 'timestamptz', nullable: true })
+  verifiedAt: Date | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

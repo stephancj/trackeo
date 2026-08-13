@@ -102,6 +102,86 @@ class _LoginViewState extends ConsumerState<LoginView>
         );
   }
 
+  Future<void> _showForgotPassword() async {
+    final emailCtrl = TextEditingController(
+      text: _identifierCtrl.text.contains('@') ? _identifierCtrl.text : '',
+    );
+    final formKey = GlobalKey<FormState>();
+    var submitting = false;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          icon: const Icon(Icons.lock_reset_rounded,
+              color: AppColors.primary, size: 38),
+          title: const Text('Mot de passe oublié ?'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Saisissez votre email. Si un compte existe, nous vous enverrons un lien sécurisé.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 18),
+                TextFormField(
+                  controller: emailCtrl,
+                  autofocus: true,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  validator: (value) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                          .hasMatch(value?.trim() ?? '')
+                      ? null
+                      : 'Email invalide',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: submitting ? null : () => Navigator.pop(context),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: submitting
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      final messenger = ScaffoldMessenger.of(this.context);
+                      setDialogState(() => submitting = true);
+                      await ref
+                          .read(authProvider.notifier)
+                          .forgotPassword(emailCtrl.text);
+                      if (!context.mounted) return;
+                      Navigator.pop(context);
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Si ce compte existe, le lien vient d’être envoyé.',
+                          ),
+                        ),
+                      );
+                    },
+              child: submitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Envoyer le lien'),
+            ),
+          ],
+        ),
+      ),
+    );
+    emailCtrl.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
@@ -207,6 +287,13 @@ class _LoginViewState extends ConsumerState<LoginView>
                             return null;
                           },
                         ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: isLoading ? null : _showForgotPassword,
+                            child: const Text('Mot de passe oublié ?'),
+                          ),
+                        ),
                         if (auth.error != null) ...[
                           const SizedBox(height: 12),
                           Container(
@@ -226,11 +313,43 @@ class _LoginViewState extends ConsumerState<LoginView>
                                     color: AppColors.statusAlert, size: 18),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: Text(
-                                    auth.error!,
-                                    style: const TextStyle(
-                                        color: AppColors.statusAlert,
-                                        fontSize: 13),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        auth.error!,
+                                        style: const TextStyle(
+                                            color: AppColors.statusAlert,
+                                            fontSize: 13),
+                                      ),
+                                      if (auth.error!.contains('non vérifiée') &&
+                                          _identifierCtrl.text.contains('@'))
+                                        TextButton(
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.only(
+                                                top: 6),
+                                            minimumSize: Size.zero,
+                                          ),
+                                          onPressed: () async {
+                                            await ref
+                                                .read(authProvider.notifier)
+                                                .resendVerification(
+                                                    _identifierCtrl.text);
+                                            if (!context.mounted) return;
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Si le compte est en attente, un nouveau lien a été envoyé.',
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          child: const Text(
+                                              'Renvoyer le lien d’activation'),
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ],

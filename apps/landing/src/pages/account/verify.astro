@@ -1,0 +1,33 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import AccountEmailShell from '../../components/AccountEmailShell.astro';
+---
+
+<Layout title="Activation de votre compte | iooeh" robots="noindex, nofollow">
+  <div data-endpoint="https://api.iooeh.com/auth/verify-email">
+    <AccountEmailShell eyebrow="Activation du compte" title="Activation en cours…" copy="Nous vérifions votre lien sécurisé.">
+      <a class="account-action" href="https://app.iooeh.com" data-action hidden>Ouvrir iooeh</a>
+    </AccountEmailShell>
+  </div>
+</Layout>
+
+<script>
+  const root = document.querySelector('[data-endpoint]');
+  if (root instanceof HTMLElement) {
+    const title = root.querySelector('[data-account-title]');
+    const copy = root.querySelector('[data-account-copy]');
+    const icon = root.querySelector('[data-account-icon]');
+    const action = root.querySelector('[data-action]');
+    const token = new URLSearchParams(location.hash.slice(1)).get('token');
+    history.replaceState(null, '', location.pathname);
+    const render = (ok: boolean) => {
+      if (title) title.textContent = ok ? 'Votre compte est prêt.' : 'Lien invalide ou expiré.';
+      if (copy) copy.textContent = ok ? 'Votre email est confirmé. Vous pouvez maintenant vous connecter à iooeh.' : 'Demandez un nouveau lien depuis l’écran de connexion.';
+      icon?.classList.add(ok ? 'is-success' : 'is-error');
+      if (action instanceof HTMLAnchorElement) action.hidden = !ok;
+    };
+    if (!token) render(false);
+    else fetch(root.dataset.endpoint!, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})})
+      .then(response => render(response.ok)).catch(() => render(false));
+  }
+</script>

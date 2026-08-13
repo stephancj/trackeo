@@ -112,11 +112,17 @@ jobs:
         env:
           PAPI_API_KEY: ${{ secrets.PAPI_API_KEY }}
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_SENDER_EMAIL: ${{ secrets.BREVO_SENDER_EMAIL }}
         run: |
           test -n "$PAPI_API_KEY"
           test -n "$TURNSTILE_SECRET_KEY"
+          test -n "$BREVO_API_KEY"
+          test -n "$BREVO_SENDER_EMAIL"
           trackeo_papi_key_b64=$(printf '%s' "$PAPI_API_KEY" | base64 | tr -d '\n')
           trackeo_turnstile_secret_b64=$(printf '%s' "$TURNSTILE_SECRET_KEY" | base64 | tr -d '\n')
+          trackeo_brevo_key_b64=$(printf '%s' "$BREVO_API_KEY" | base64 | tr -d '\n')
+          trackeo_brevo_sender_b64=$(printf '%s' "$BREVO_SENDER_EMAIL" | base64 | tr -d '\n')
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_HOST }} "
             cd /opt/trackeo &&
             git fetch origin main &&
@@ -130,6 +136,12 @@ jobs:
             printf 'TURNSTILE_SECRET_KEY=' >> apps/api/.env &&
             printf '%s' '$trackeo_turnstile_secret_b64' | base64 -d | perl -pe 's/\\044/\\044\\044/g' >> apps/api/.env &&
             printf '\\nTURNSTILE_ALLOWED_HOSTNAMES=iooeh.com,www.iooeh.com\\n' >> apps/api/.env &&
+            sed -i '/^BREVO_API_KEY=/d; /^BREVO_SENDER_EMAIL=/d; /^BREVO_SENDER_NAME=/d; /^BREVO_REPLY_TO_EMAIL=/d; /^PUBLIC_LANDING_URL=/d' apps/api/.env &&
+            printf 'BREVO_API_KEY=' >> apps/api/.env &&
+            printf '%s' '$trackeo_brevo_key_b64' | base64 -d | perl -pe 's/\\044/\\044\\044/g' >> apps/api/.env &&
+            printf '\\nBREVO_SENDER_EMAIL=' >> apps/api/.env &&
+            printf '%s' '$trackeo_brevo_sender_b64' | base64 -d | perl -pe 's/\\044/\\044\\044/g' >> apps/api/.env &&
+            printf '\\nBREVO_SENDER_NAME=iooeh\\nBREVO_REPLY_TO_EMAIL=contact@iooeh.com\\nPUBLIC_LANDING_URL=https://iooeh.com\\n' >> apps/api/.env &&
             grep -q '^DB_PASS=.' apps/api/.env &&
             touch .env &&
             sed -i '/^DB_PASS=/d' .env &&
@@ -141,7 +153,9 @@ jobs:
             docker inspect trackeo-api --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^PAPI_API_KEY=' &&
             docker inspect trackeo-api --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^PAPI_TEST_MODE=true$' &&
             docker inspect trackeo-api --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^TURNSTILE_SECRET_KEY=' &&
-            docker inspect trackeo-api --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^TURNSTILE_ALLOWED_HOSTNAMES=iooeh.com,www.iooeh.com$'
+            docker inspect trackeo-api --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^TURNSTILE_ALLOWED_HOSTNAMES=iooeh.com,www.iooeh.com$' &&
+            docker inspect trackeo-api --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^BREVO_API_KEY=' &&
+            docker inspect trackeo-api --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^BREVO_SENDER_EMAIL='
           "
 
       - name: Health check

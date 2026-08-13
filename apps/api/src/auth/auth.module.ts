@@ -7,12 +7,14 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { EntitlementsModule } from '../entitlements/entitlements.module';
 import { PromotionsModule } from '../promotions/promotions.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     UsersModule,
     EntitlementsModule,
     PromotionsModule,
+    NotificationsModule,
     PassportModule,
     JwtModule.registerAsync({
       useFactory: () => ({

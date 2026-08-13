@@ -1,0 +1,32 @@
+---
+interface Props {
+  eyebrow: string;
+  title: string;
+  copy: string;
+}
+const { eyebrow, title, copy } = Astro.props;
+---
+
+<main id="content" class="account-page">
+  <a class="account-brand" href="/" aria-label="Retour à l’accueil iooeh">
+    <img src="/favicon.png" alt="" width="24" height="24" />
+    <strong>iooeh</strong>
+  </a>
+  <section class="account-card" aria-live="polite">
+    <div class="account-signal" data-account-icon aria-hidden="true"><span></span></div>
+    <p class="account-eyebrow">{eyebrow}</p>
+    <h1 data-account-title>{title}</h1>
+    <p class="account-copy" data-account-copy>{copy}</p>
+    <slot />
+  </section>
+  <p class="account-footnote">Vos liens de sécurité iooeh sont temporaires et utilisables une seule fois.</p>
+</main>
+
+<style is:global>
+  .account-page{min-height:100dvh;display:grid;place-items:center;align-content:center;gap:1.35rem;padding:clamp(1.25rem,4vw,3rem);background:radial-gradient(circle at 18% 12%,color-mix(in srgb,var(--brand) 17%,transparent),transparent 34rem),var(--mist)}
+  .account-brand{display:inline-flex;align-items:center;gap:.65rem;color:var(--ink);font-family:var(--font-display);font-size:1.1rem;text-decoration:none}.account-brand img{width:2.15rem;height:2.15rem;padding:.36rem;border:1px solid color-mix(in srgb,var(--brand) 28%,var(--line));border-radius:.75rem;background:var(--surface);box-shadow:var(--shadow-soft)}
+  .account-card{width:min(100%,38rem);padding:clamp(2rem,6vw,4rem);border-radius:clamp(1.5rem,4vw,2.5rem);background:var(--ink);color:#fff;text-align:center;box-shadow:var(--shadow-hard);animation:fade-up 650ms var(--ease) both}
+  .account-signal{position:relative;display:grid;width:4.75rem;height:4.75rem;margin:0 auto 1.6rem;place-items:center;border-radius:50%;background:color-mix(in srgb,var(--brand) 14%,transparent);border:1px solid color-mix(in srgb,var(--brand) 46%,transparent)}.account-signal span{width:.72rem;height:.72rem;border-radius:50%;background:var(--brand);box-shadow:0 0 0 .55rem color-mix(in srgb,var(--brand) 15%,transparent);animation:account-pulse 1.15s ease-in-out infinite}.account-signal.is-success span{width:1.6rem;height:.85rem;border:solid var(--brand);border-width:0 0 .24rem .24rem;border-radius:0;box-shadow:none;transform:translateY(-.16rem) rotate(-45deg);animation:none}.account-signal.is-error{border-color:color-mix(in srgb,var(--red) 50%,transparent);background:color-mix(in srgb,var(--red) 13%,transparent)}.account-signal.is-error span{width:1.7rem;height:.2rem;border-radius:1rem;background:#ff8989;box-shadow:none;animation:none;transform:rotate(45deg)}
+  .account-eyebrow{margin:0 0 1rem;color:var(--brand);font-family:var(--font-mono);font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase}.account-card h1{margin:0 0 1rem;font-family:var(--font-display);font-size:clamp(2rem,6vw,3.35rem);line-height:1.02}.account-copy{max-width:30rem;margin:0 auto;color:rgba(244,245,247,.68);font-size:1rem;line-height:1.65}.account-action{display:inline-flex;margin-top:1.7rem;padding:.9rem 1.2rem;border:0;border-radius:.85rem;background:var(--brand);color:#17231c;font:700 .95rem var(--font-body);text-decoration:none;cursor:pointer}.account-action:disabled{opacity:.6;cursor:wait}.account-action[hidden]{display:none}.account-footnote{color:var(--ink-2);font-size:.75rem;text-align:center}
+  .account-form{display:grid;gap:.85rem;margin-top:1.7rem;text-align:left}.account-field label{display:block;margin:0 0 .45rem;color:rgba(255,255,255,.78);font-size:.78rem;font-weight:600}.account-field input{width:100%;padding:.92rem 1rem;border:1px solid rgba(255,255,255,.16);border-radius:.8rem;outline:0;background:rgba(255,255,255,.07);color:#fff;font:inherit}.account-field input:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 15%,transparent)}.account-error{margin:.25rem 0 0;color:#ffabab;font-size:.78rem}.account-error[hidden]{display:none}@keyframes account-pulse{50%{transform:scale(.72);opacity:.65}}
+</style>

@@ -20,6 +20,7 @@ interface AlertSettings {
   alertSpeedLimit: boolean;
   alertViaPush: boolean;
   alertViaWhatsapp: boolean;
+  alertViaEmail: boolean;
 }
 
 @Injectable()
@@ -151,6 +152,15 @@ export class GeofencesCheckerService {
                 'enter',
               );
             }
+
+            if (userAlertSettings.alertViaEmail) {
+              await this.sendEmailIfEnabled(
+                fence.userId,
+                '🟢 Entrée de zone',
+                `${vehicle.name} est entré dans la zone "${fence.name}".`,
+                vehicle.id,
+              );
+            }
           } else if (!isInside && wasInside) {
             this.insideGeofencesCache.set(cacheKey, false);
 
@@ -201,6 +211,15 @@ export class GeofencesCheckerService {
                 vehicle.name,
                 fence.name,
                 'exit',
+              );
+            }
+
+            if (userAlertSettings.alertViaEmail) {
+              await this.sendEmailIfEnabled(
+                fence.userId,
+                '🔴 Sortie de zone',
+                `${vehicle.name} a quitté la zone "${fence.name}".`,
+                vehicle.id,
               );
             }
           }
@@ -535,6 +554,21 @@ export class GeofencesCheckerService {
             : 'exit',
       );
     }
+
+    if (settings.alertViaEmail) {
+      const title =
+        alertType === AlertType.LOW_BATTERY
+          ? '🔋 Batterie faible'
+          : alertType === AlertType.SLEEP_MOVEMENT
+            ? '🚨 Mouvement en mode veille'
+            : '⚡ Excès de vitesse';
+      await this.sendEmailIfEnabled(
+        userId,
+        title,
+        `${vehicleName} • ${message}`,
+        vehicleId,
+      );
+    }
   }
 
   /**
@@ -595,6 +629,7 @@ export class GeofencesCheckerService {
       alertSpeedLimit: user?.alertSpeedLimit ?? false,
       alertViaPush: user?.alertViaPush ?? true,
       alertViaWhatsapp: user?.alertViaWhatsapp ?? false,
+      alertViaEmail: user?.alertViaEmail ?? false,
     };
     this.alertSettingsCache.set(userId, settings);
     this.alertSettingsCacheTs.set(userId, Date.now());
@@ -622,6 +657,24 @@ export class GeofencesCheckerService {
       vehicleName,
       geofenceName: alertMessage,
       alertType,
+    });
+  }
+
+  private async sendEmailIfEnabled(
+    userId: number,
+    title: string,
+    body: string,
+    vehicleId: number,
+  ): Promise<void> {
+    const user = await this.usersService.findById(userId);
+    if (!user?.email) return;
+
+    await this.notificationsService.sendEmail({
+      email: user.email,
+      name: user.name ?? undefined,
+      title,
+      body,
+      actionUrl: `${process.env.PUBLIC_APP_URL ?? 'https://app.iooeh.com'}/vehicles/${vehicleId}`,
     });
   }
 

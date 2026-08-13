@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { BrevoEmailService } from './brevo-email.service';
 
 export interface PushPayload {
   /** ID externe de l'utilisateur cible (userId.toString()) */
@@ -23,9 +25,54 @@ export interface WhatsAppPayload {
   alertType: 'enter' | 'exit' | 'movement';
 }
 
+export interface EmailNotificationPayload {
+  email: string;
+  name?: string;
+  title: string;
+  body: string;
+  actionUrl?: string;
+}
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
+
+  constructor(private readonly emails: BrevoEmailService) {}
+
+  /** Envoie une alerte transactionnelle par email via Brevo. */
+  async sendEmail(payload: EmailNotificationPayload): Promise<void> {
+    const actionUrl =
+      payload.actionUrl ??
+        process.env.PUBLIC_APP_URL ??
+        'https://app.iooeh.com';
+    const content = this.emails.renderBranded({
+      eyebrow: 'Alerte véhicule',
+      title: payload.title,
+      intro: payload.body,
+      actionLabel: 'Ouvrir iooeh',
+      actionUrl,
+      notice:
+        'Vous recevez cet email car les alertes par email sont activées dans vos réglages iooeh.',
+    });
+
+    try {
+      await this.emails.send({
+        to: payload.email,
+        toName: payload.name,
+        subject: payload.title,
+        ...content,
+        tag: 'vehicle-alert',
+        idempotencyKey: randomUUID(),
+      });
+    } catch (error) {
+      // Une panne du canal email ne doit jamais interrompre les autres canaux
+      // ni le traitement d'une alerte en base.
+      this.logger.error(
+        `Erreur Brevo pour user=${payload.email}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+  }
 
   /**
    * Envoie une notification push via OneSignal REST API.

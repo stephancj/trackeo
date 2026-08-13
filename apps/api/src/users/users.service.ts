@@ -46,6 +46,80 @@ export class UsersService {
     return this.userRepo.findOneBy({ id, isActive: true });
   }
 
+  findByEmailForEmailFlow(email: string): Promise<User | null> {
+    return this.userRepo
+      .createQueryBuilder('user')
+      .addSelect('user.emailVerificationTokenHash')
+      .addSelect('user.passwordResetTokenHash')
+      .where('LOWER(user.email) = :email', { email: email.trim().toLowerCase() })
+      .andWhere('user.isActive = true')
+      .getOne();
+  }
+
+  findByEmailVerificationToken(tokenHash: string): Promise<User | null> {
+    return this.userRepo
+      .createQueryBuilder('user')
+      .addSelect('user.emailVerificationTokenHash')
+      .where('user.emailVerificationTokenHash = :tokenHash', { tokenHash })
+      .andWhere('user.emailVerificationExpiresAt > NOW()')
+      .andWhere('user.isActive = true')
+      .getOne();
+  }
+
+  findByPasswordResetToken(tokenHash: string): Promise<User | null> {
+    return this.userRepo
+      .createQueryBuilder('user')
+      .addSelect('user.passwordResetTokenHash')
+      .where('user.passwordResetTokenHash = :tokenHash', { tokenHash })
+      .andWhere('user.passwordResetExpiresAt > NOW()')
+      .andWhere('user.isActive = true')
+      .getOne();
+  }
+
+  async setEmailVerificationToken(
+    userId: number,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    await this.userRepo.update(userId, {
+      emailVerificationTokenHash: tokenHash,
+      emailVerificationExpiresAt: expiresAt,
+      emailVerificationSentAt: new Date(),
+    });
+  }
+
+  async markEmailVerified(userId: number): Promise<void> {
+    await this.userRepo.update(userId, {
+      emailVerifiedAt: new Date(),
+      emailVerificationTokenHash: null,
+      emailVerificationExpiresAt: null,
+    });
+  }
+
+  async setPasswordResetToken(
+    userId: number,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    await this.userRepo.update(userId, {
+      passwordResetTokenHash: tokenHash,
+      passwordResetExpiresAt: expiresAt,
+      passwordResetSentAt: new Date(),
+    });
+  }
+
+  async resetPassword(userId: number, password: string): Promise<void> {
+    await this.userRepo.update(userId, {
+      password: await bcrypt.hash(password, 12),
+      passwordResetTokenHash: null,
+      passwordResetExpiresAt: null,
+    });
+  }
+
+  async markLogin(userId: number): Promise<void> {
+    await this.userRepo.update(userId, { lastLoginAt: new Date() });
+  }
+
   /** Admin — recherche sans filtre isActive (inclut les comptes désactivés) */
   findByIdAdmin(id: number): Promise<User | null> {
     return this.userRepo.findOneBy({ id });
@@ -157,6 +231,7 @@ export class UsersService {
       alertSpeedLimit?: boolean;
       alertViaPush?: boolean;
       alertViaWhatsapp?: boolean;
+      alertViaEmail?: boolean;
     },
   ): Promise<User | null> {
     if (data.alertViaPush === true) {

@@ -108,19 +108,36 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String password,
   }) async {
     try {
-      final response = await _repo.register(
+      await _repo.register(
         name: name,
         email: email,
         phone: phone,
         password: password,
       );
-      await _openSession(response);
       return true;
     } on DioException catch (e) {
       state = AuthState.unauthenticated(error: _parseError(e));
       return false;
     } catch (_) {
       state = const AuthState.unauthenticated(error: 'Erreur inattendue');
+      return false;
+    }
+  }
+
+  Future<bool> forgotPassword(String email) async {
+    try {
+      await _repo.forgotPassword(email.trim().toLowerCase());
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> resendVerification(String email) async {
+    try {
+      await _repo.resendVerification(email.trim().toLowerCase());
+      return true;
+    } catch (_) {
       return false;
     }
   }
@@ -198,6 +215,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     bool? alertSpeedLimit,
     bool? alertViaPush,
     bool? alertViaWhatsapp,
+    bool? alertViaEmail,
   }) async {
     final updatedUser = await _repo.updateAlertSettings(
       alertsEnabled: alertsEnabled,
@@ -206,6 +224,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       alertSpeedLimit: alertSpeedLimit,
       alertViaPush: alertViaPush,
       alertViaWhatsapp: alertViaWhatsapp,
+      alertViaEmail: alertViaEmail,
     );
     state = AuthState.authenticated(token: state.token!, user: updatedUser);
   }

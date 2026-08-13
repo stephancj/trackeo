@@ -6,12 +6,16 @@ import '../models/auth_model.dart';
 abstract class AuthRepository {
   Future<AuthResponse> login(String identifier, String password);
 
-  Future<AuthResponse> register({
+  Future<RegistrationResponse> register({
     required String name,
     required String email,
     required String phone,
     required String password,
   });
+
+  Future<void> forgotPassword(String email);
+
+  Future<void> resendVerification(String email);
 
   Future<void> deleteAccount(String password);
 
@@ -30,6 +34,7 @@ abstract class AuthRepository {
     bool? alertSpeedLimit,
     bool? alertViaPush,
     bool? alertViaWhatsapp,
+    bool? alertViaEmail,
   });
 }
 
@@ -47,7 +52,7 @@ class RemoteAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AuthResponse> register({
+  Future<RegistrationResponse> register({
     required String name,
     required String email,
     required String phone,
@@ -62,7 +67,20 @@ class RemoteAuthRepository implements AuthRepository {
         'password': password,
       },
     );
-    return AuthResponse.fromJson(response.data!);
+    return RegistrationResponse.fromJson(response.data!);
+  }
+
+  @override
+  Future<void> forgotPassword(String email) async {
+    await _dio.post<void>('/auth/forgot-password', data: {'email': email});
+  }
+
+  @override
+  Future<void> resendVerification(String email) async {
+    await _dio.post<void>(
+      '/auth/resend-verification',
+      data: {'email': email},
+    );
   }
 
   @override
@@ -98,6 +116,7 @@ class RemoteAuthRepository implements AuthRepository {
     bool? alertSpeedLimit,
     bool? alertViaPush,
     bool? alertViaWhatsapp,
+    bool? alertViaEmail,
   }) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/auth/alert-settings',
@@ -108,6 +127,7 @@ class RemoteAuthRepository implements AuthRepository {
         if (alertSpeedLimit != null) 'alertSpeedLimit': alertSpeedLimit,
         if (alertViaPush != null) 'alertViaPush': alertViaPush,
         if (alertViaWhatsapp != null) 'alertViaWhatsapp': alertViaWhatsapp,
+        if (alertViaEmail != null) 'alertViaEmail': alertViaEmail,
       },
     );
     return AuthUser.fromJson(response.data!);

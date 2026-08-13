@@ -54,11 +54,30 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
 
     setState(() => _isSubmitting = false);
     if (success) {
-      // L'inscription est ouverte depuis le login via Navigator.push().
-      // L'état global affiche déjà AppShell ; retirer cette route révèle
-      // immédiatement l'application authentifiée au lieu de laisser le
-      // formulaire et son spinner au-dessus.
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          icon: const Icon(
+            Icons.mark_email_read_outlined,
+            color: AppColors.primary,
+            size: 42,
+          ),
+          title: const Text('Vérifiez votre email'),
+          content: Text(
+            'Un lien d’activation valable 30 minutes a été envoyé à ${_emailCtrl.text.trim()}.',
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Retour à la connexion'),
+            ),
+          ],
+        ),
+      );
+      if (mounted) Navigator.of(context).pop();
     }
   }
 

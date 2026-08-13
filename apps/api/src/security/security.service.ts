@@ -143,6 +143,14 @@ export class SecurityService {
         geofenceName: title,
         alertType: 'movement',
       });
+    if (user?.alertViaEmail)
+      await this.notifications.sendEmail({
+        email: user.email,
+        name: user.name ?? undefined,
+        title: '🚨 Alerte sécurité iooeh',
+        body: `${title} — ${vehicle.name}`,
+        actionUrl: `${process.env.PUBLIC_APP_URL ?? 'https://app.iooeh.com'}/security/incidents/${incident.id}`,
+      });
     return incident;
   }
 
