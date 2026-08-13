@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 
 const APP_URL = 'https://app.iooeh.com';
 const WAITLIST_URL = 'https://api.iooeh.com/waitlist';
+const TURNSTILE_SITE_KEY = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
 const stats = [
   { value: '10 s', label: 'entre chaque position' },
@@ -31,6 +32,7 @@ const steps = [
 ---
 
 <Layout title="iooeh — Suivi GPS de véhicules en temps réel à Madagascar">
+  <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <header class="site-header">
     <div class="shell header-row">
       <a href="/" class="brand">
@@ -340,11 +342,21 @@ const steps = [
                 inputmode="email"
                 autocomplete="email"
                 placeholder="vous@exemple.com"
+                pattern="^[^@\s]+@[^@\s]+\.[^@\s]{2,}$"
+                title="Saisissez une adresse email complète, par exemple vous@exemple.com"
                 maxlength="320"
                 required
               />
               <button type="submit" class="btn btn-mint waitlist-submit">Rejoindre la liste</button>
             </div>
+            <div
+              class="cf-turnstile waitlist-captcha"
+              data-sitekey={TURNSTILE_SITE_KEY}
+              data-action="waitlist"
+              data-theme="dark"
+              data-size="normal"
+              aria-label="Vérification anti-robot"
+            ></div>
             <p class="waitlist-status" data-waitlist-status aria-live="polite"></p>
           </form>
           <p class="waitlist-privacy">
@@ -1463,6 +1475,13 @@ const steps = [
     transform: none;
   }
 
+  .waitlist-captcha {
+    width: min(300px, 100%);
+    min-height: 65px;
+    overflow: hidden;
+    border-radius: 0.8rem;
+  }
+
   .waitlist-status {
     min-height: 1.25rem;
     color: rgba(244,245,247,0.68);
@@ -1759,6 +1778,18 @@ const steps = [
         return;
       }
 
+      const captchaInput = waitlistForm.querySelector(
+        'input[name="cf-turnstile-response"]'
+      );
+      const captchaToken =
+        captchaInput instanceof HTMLInputElement ? captchaInput.value : '';
+
+      if (!captchaToken) {
+        status.textContent = 'Veuillez terminer la vérification anti-robot.';
+        status.className = 'waitlist-status is-error';
+        return;
+      }
+
       submitButton.disabled = true;
       submitButton.textContent = 'Inscription…';
       status.textContent = '';
@@ -1768,19 +1799,43 @@ const steps = [
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: emailInput.value }),
+          body: JSON.stringify({ email: emailInput.value, captchaToken }),
         });
 
-        if (!response.ok) throw new Error('waitlist_request_failed');
+        if (!response.ok) {
+          let errorMessage =
+            'Impossible de vérifier cette adresse pour le moment. Réessayez dans quelques instants.';
+
+          if (response.status === 400) {
+            const payload = await response.json().catch(() => null);
+            if (
+              payload &&
+              typeof payload === 'object' &&
+              'message' in payload &&
+              typeof payload.message === 'string'
+            ) {
+              errorMessage = payload.message;
+            }
+          }
+
+          throw new Error(errorMessage);
+        }
 
         emailInput.disabled = true;
         submitButton.textContent = 'Adresse enregistrée';
         status.textContent = 'Votre adresse est bien enregistrée. On vous écrira au lancement.';
         status.classList.add('is-success');
-      } catch {
+      } catch (error) {
+        const turnstileWindow = window as Window & {
+          turnstile?: { reset: (container?: string | HTMLElement) => void };
+        };
+        turnstileWindow.turnstile?.reset('.waitlist-captcha');
         submitButton.disabled = false;
         submitButton.textContent = 'Rejoindre la liste';
-        status.textContent = 'Impossible d’enregistrer votre adresse pour le moment. Réessayez dans quelques instants.';
+        status.textContent =
+          error instanceof Error
+            ? error.message
+            : 'Impossible d’enregistrer votre adresse pour le moment. Réessayez dans quelques instants.';
         status.classList.add('is-error');
       }
     });
