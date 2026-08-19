@@ -10,6 +10,7 @@ import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/views/login_view.dart';
 import 'features/payments/views/payment_return_view.dart';
 import 'features/security/views/public_tracking_view.dart';
+import 'features/vehicles/providers/vehicles_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,10 +51,54 @@ class _IooehAppState extends ConsumerState<IooehApp> {
   void initState() {
     super.initState();
     linksSubscription = AppLinks().uriLinkStream.listen((uri) {
-      if (uri.host != 'app.iooeh.com') return;
       final route = uri.hasQuery ? '${uri.path}?${uri.query}' : uri.path;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        navigatorKey.currentState?.pushNamed(route);
+        final vehicleParam = uri.queryParameters['vehicle'] ?? uri.queryParameters['v'];
+        if (vehicleParam != null) {
+          final vehicleId = int.tryParse(vehicleParam);
+          if (vehicleId != null) {
+            ref.read(selectedVehicleIdProvider.notifier).state = vehicleId;
+            ref.read(activeTabProvider.notifier).state = 1;
+            return;
+          }
+        }
+        final tabParam = uri.queryParameters['tab'];
+        if (tabParam != null) {
+          switch (tabParam.toLowerCase()) {
+            case 'vehicles':
+            case 'vehicules':
+            case 'flotte':
+            case '0':
+              ref.read(activeTabProvider.notifier).state = 0;
+              break;
+            case 'map':
+            case 'carte':
+            case '1':
+              ref.read(activeTabProvider.notifier).state = 1;
+              break;
+            case 'alerts':
+            case 'alertes':
+            case '2':
+              ref.read(activeTabProvider.notifier).state = 2;
+              break;
+            case 'reports':
+            case 'rapports':
+            case '3':
+              ref.read(activeTabProvider.notifier).state = 3;
+              break;
+            case 'settings':
+            case 'reglages':
+            case 'parametres':
+            case '4':
+              ref.read(activeTabProvider.notifier).state = 4;
+              break;
+          }
+          return;
+        }
+
+        if (route.startsWith('/track/') || route.startsWith('/payment/return')) {
+          navigatorKey.currentState?.pushNamed(route);
+        }
       });
     });
   }

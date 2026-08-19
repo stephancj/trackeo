@@ -14,11 +14,76 @@ import '../layout/responsive_layout.dart';
 /// Index : 0=Véhicules, 1=Carte, 2=Alertes, 3=Rapports, 4=Réglages.
 final activeTabProvider = StateProvider<int>((ref) => 0);
 
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleDeepLink(Uri.base);
+    });
+  }
+
+  void _handleDeepLink(Uri uri) {
+    // 1. Paramètre Véhicule : ?vehicle=123 ou ?v=123
+    final vehicleParam = uri.queryParameters['vehicle'] ??
+        uri.queryParameters['v'] ??
+        (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'vehicles'
+            ? uri.pathSegments[1]
+            : null);
+    if (vehicleParam != null) {
+      final vehicleId = int.tryParse(vehicleParam);
+      if (vehicleId != null) {
+        ref.read(selectedVehicleIdProvider.notifier).state = vehicleId;
+        ref.read(activeTabProvider.notifier).state = 1; // Bascule sur la carte
+        return;
+      }
+    }
+
+    // 2. Paramètre Onglet : ?tab=carte, ?tab=alertes, ?tab=rapports, etc.
+    final tabParam = uri.queryParameters['tab'] ??
+        (uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null);
+    if (tabParam != null) {
+      switch (tabParam.toLowerCase()) {
+        case 'vehicles':
+        case 'vehicules':
+        case 'flotte':
+        case '0':
+          ref.read(activeTabProvider.notifier).state = 0;
+          break;
+        case 'map':
+        case 'carte':
+        case '1':
+          ref.read(activeTabProvider.notifier).state = 1;
+          break;
+        case 'alerts':
+        case 'alertes':
+        case '2':
+          ref.read(activeTabProvider.notifier).state = 2;
+          break;
+        case 'reports':
+        case 'rapports':
+        case '3':
+          ref.read(activeTabProvider.notifier).state = 3;
+          break;
+        case 'settings':
+        case 'reglages':
+        case 'parametres':
+        case '4':
+          ref.read(activeTabProvider.notifier).state = 4;
+          break;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final activeTab = ref.watch(activeTabProvider);
 
     final body = IndexedStack(
