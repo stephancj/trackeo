@@ -276,6 +276,12 @@ String _firstName(String? name, String? email) {
   return value[0].toUpperCase() + value.substring(1).toLowerCase();
 }
 
+String _getTimeBasedGreeting(String firstName) {
+  final hour = DateTime.now().hour;
+  final salutation = (hour >= 18 || hour < 5) ? 'Bonsoir' : 'Bonjour';
+  return firstName.isEmpty ? salutation : '$salutation, $firstName';
+}
+
 class _DashboardGreeting extends StatelessWidget {
   final String firstName;
   final VoidCallback onAdd;
@@ -289,7 +295,7 @@ class _DashboardGreeting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final greeting = firstName.isEmpty ? 'Bonjour' : 'Bonjour, $firstName';
+    final greeting = _getTimeBasedGreeting(firstName);
     final initial = firstName.isEmpty ? 'I' : firstName[0].toUpperCase();
 
     return Padding(

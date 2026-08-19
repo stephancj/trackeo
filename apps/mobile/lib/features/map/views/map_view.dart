@@ -895,8 +895,8 @@ class _Chip extends StatelessWidget {
 
 // ── Vehicle Card ─────────────────────────────────────────────────────────────
 
-/// Card bottom sheet quand un véhicule est sélectionné — design Figma exact.
-class _VehicleCard extends ConsumerWidget {
+/// Card bottom sheet quand un véhicule est sélectionné — design Figma exact avec mode replié / étendu.
+class _VehicleCard extends ConsumerStatefulWidget {
   final Vehicle vehicle;
   final VoidCallback onClose;
   final VoidCallback onHistoryTap;
@@ -908,7 +908,15 @@ class _VehicleCard extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_VehicleCard> createState() => _VehicleCardState();
+}
+
+class _VehicleCardState extends ConsumerState<_VehicleCard> {
+  bool _isCollapsed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final vehicle = widget.vehicle;
     final pos = vehicle.position;
     final updatedAgo = pos != null ? _timeAgo(pos.deviceTime) : null;
 
@@ -919,329 +927,505 @@ class _VehicleCard extends ConsumerWidget {
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 24,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Drag handle ──────────────────────────────────────────────
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 14),
-            decoration: BoxDecoration(
-              color: AppColors.divider,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // ── Header ──────────────────────────────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icône voiture
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.directions_car_outlined,
-                  color: AppColors.textSecondary,
-                  size: 26,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Nom + adresse
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      vehicle.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 17,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                    if (pos != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            size: 13,
-                            color: AppColors.textHint,
-                          ),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: addressAsync != null
-                                ? addressAsync.when(
-                                    data: (address) => Text(
-                                      address ??
-                                          pos.address ??
-                                          'Position inconnue',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    loading: () => const Text(
-                                      'Localisation...',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                    error: (err, _) => const Text(
-                                      'Position inconnue',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  )
-                                : const Text(
-                                    'Position inconnue',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // LIVE badge (outlined) + "Updated Xs ago" + bouton close
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          'LIVE',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: onClose,
-                        child: const Icon(
-                          Icons.close,
-                          size: 20,
-                          color: AppColors.textHint,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (updatedAgo != null) ...[
-                    const SizedBox(height: 5),
-                    Text(
-                      'Mis à jour $updatedAgo',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textHint,
-                      ),
-                    ),
-                  ],
-                ],
+    return GestureDetector(
+      onVerticalDragEnd: (details) {
+        if (details.primaryVelocity != null) {
+          if (details.primaryVelocity! > 150) {
+            // Glissé vers le bas -> réduire
+            setState(() => _isCollapsed = true);
+          } else if (details.primaryVelocity! < -150) {
+            // Glissé vers le haut -> agrandir
+            setState(() => _isCollapsed = false);
+          }
+        }
+      },
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeInOutCubic,
+        child: Container(
+          padding: EdgeInsets.fromLTRB(16, 10, 16, _isCollapsed ? 16 : 28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 24,
+                offset: const Offset(0, -4),
               ),
             ],
           ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Drag handle (cliquable pour basculer réduit / étendu) ────
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _isCollapsed = !_isCollapsed),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2, bottom: 10),
+                  child: Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.divider,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
 
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: AppColors.divider),
-          const SizedBox(height: 16),
-
-          // ── Stats ────────────────────────────────────────────────────
-          IntrinsicHeight(
-            child: Row(
-              children: [
-                // Speed
-                _StatBox(
-                  label: 'Vitesse',
-                  child: RichText(
-                    textAlign: TextAlign.center,
-                    text: TextSpan(
+              if (_isCollapsed) ...[
+                // ── Vue réduite (Collapsed) ──────────────────────────────────
+                InkWell(
+                  onTap: () => setState(() => _isCollapsed = false),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
                       children: [
-                        TextSpan(
-                          text: '${pos?.speedKmh.toInt() ?? 0}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 24,
-                            color: AppColors.primaryDark,
+                        // Icône voiture avec pastille de statut
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.background,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.directions_car_outlined,
+                                color: AppColors.textSecondary,
+                                size: 22,
+                              ),
+                            ),
+                            Positioned(
+                              right: -2,
+                              bottom: -2,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: _statusColor(vehicle.status),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                        // Nom + Vitesse / Batterie
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                vehicle.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                  color: AppColors.primaryDark,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Text(
+                                    '${pos?.speedKmh.toInt() ?? 0} km/h',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  ),
+                                  if (pos?.battery != null) ...[
+                                    const Text(' · ',
+                                        style: TextStyle(
+                                            color: AppColors.textHint)),
+                                    Icon(
+                                      Icons.battery_charging_full_rounded,
+                                      color: _batteryColor(pos!.battery!),
+                                      size: 13,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      '${pos.battery}%',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11,
+                                        color: _batteryColor(pos.battery!),
+                                      ),
+                                    ),
+                                  ],
+                                  if (updatedAgo != null) ...[
+                                    const Text(' · ',
+                                        style: TextStyle(
+                                            color: AppColors.textHint)),
+                                    Text(
+                                      updatedAgo,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textHint,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        const TextSpan(
-                          text: ' km/h',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500,
+                        // Bouton agrandir (chevron up)
+                        IconButton(
+                          icon: const Icon(
+                            Icons.keyboard_arrow_up_rounded,
+                            size: 24,
+                            color: AppColors.primary,
                           ),
+                          tooltip: 'Agrandir',
+                          onPressed: () => setState(() => _isCollapsed = false),
+                        ),
+                        // Bouton fermer
+                        IconButton(
+                          icon: const Icon(
+                            Icons.close,
+                            size: 20,
+                            color: AppColors.textHint,
+                          ),
+                          tooltip: 'Fermer',
+                          onPressed: widget.onClose,
                         ),
                       ],
                     ),
                   ),
                 ),
-                Container(width: 1, color: AppColors.divider),
-                // Battery
-                _StatBox(
-                  label: 'Batterie',
-                  child: pos?.battery != null
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.battery_charging_full_rounded,
-                              color: _batteryColor(pos!.battery!),
-                              size: 20,
+              ] else ...[
+                // ── Vue étendue (Expanded) ───────────────────────────────────
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icône voiture
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.directions_car_outlined,
+                        color: AppColors.textSecondary,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Nom + adresse
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            vehicle.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 17,
+                              color: AppColors.primaryDark,
                             ),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${pos.battery}%',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 20,
-                                color: AppColors.primaryDark,
+                          ),
+                          if (pos != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  size: 13,
+                                  color: AppColors.textHint,
+                                ),
+                                const SizedBox(width: 3),
+                                Expanded(
+                                  child: addressAsync != null
+                                      ? addressAsync.when(
+                                          data: (address) => Text(
+                                            address ??
+                                                pos.address ??
+                                                'Position inconnue',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          loading: () => const Text(
+                                            'Localisation...',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                          error: (err, _) => const Text(
+                                            'Position inconnue',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Position inconnue',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // LIVE badge + Chevron down pour réduire + Close
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: AppColors.primary,
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'LIVE',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            // Bouton Réduire
+                            IconButton(
+                              icon: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                size: 24,
+                                color: AppColors.textSecondary,
+                              ),
+                              tooltip: 'Réduire',
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () =>
+                                  setState(() => _isCollapsed = true),
+                            ),
+                            const SizedBox(width: 8),
+                            // Bouton Fermer
+                            GestureDetector(
+                              onTap: widget.onClose,
+                              child: const Icon(
+                                Icons.close,
+                                size: 20,
+                                color: AppColors.textHint,
                               ),
                             ),
                           ],
-                        )
-                      : const Text(
-                          '--',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 20,
-                            color: AppColors.textHint,
+                        ),
+                        if (updatedAgo != null) ...[
+                          const SizedBox(height: 5),
+                          Text(
+                            'Mis à jour $updatedAgo',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textHint,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+                const Divider(height: 1, color: AppColors.divider),
+                const SizedBox(height: 16),
+
+                // ── Stats ────────────────────────────────────────────────────
+                IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      // Speed
+                      _StatBox(
+                        label: 'Vitesse',
+                        child: RichText(
+                          textAlign: TextAlign.center,
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${pos?.speedKmh.toInt() ?? 0}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 24,
+                                  color: AppColors.primaryDark,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: ' km/h',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                      Container(width: 1, color: AppColors.divider),
+                      // Battery
+                      _StatBox(
+                        label: 'Batterie',
+                        child: pos?.battery != null
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.battery_charging_full_rounded,
+                                    color: _batteryColor(pos!.battery!),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    '${pos.battery}%',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 20,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : const Text(
+                                '--',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 20,
+                                  color: AppColors.textHint,
+                                ),
+                              ),
+                      ),
+                      Container(width: 1, color: AppColors.divider),
+                      // Status
+                      _StatBox(
+                        label: 'Statut',
+                        child: Text(
+                          vehicle.status.label,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: _statusColor(vehicle.status),
+                          ),
+                        ),
+                      ),
+                      Container(width: 1, color: AppColors.divider),
+                      // Ignition
+                      _StatBox(
+                        label: 'Allumage',
+                        child: Icon(
+                          pos?.ignition == true
+                              ? Icons.key_rounded
+                              : Icons.key_off_rounded,
+                          size: 22,
+                          color: pos?.ignition == true
+                              ? AppColors.statusOnline
+                              : AppColors.textHint,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Container(width: 1, color: AppColors.divider),
-                // Status
-                _StatBox(
-                  label: 'Statut',
-                  child: Text(
-                    vehicle.status.label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
-                      color: _statusColor(vehicle.status),
+
+                const SizedBox(height: 16),
+
+                // ── Boutons ─────────────────────────────────────────────────
+                Row(
+                  children: [
+                    // Détails — vert rempli
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          TrackeoRoute(
+                            builder: (_) => VehicleDetailsView(vehicle: vehicle),
+                          ),
+                        ),
+                        icon: const Icon(Icons.info_outline_rounded, size: 17),
+                        label: const Text(
+                          'Détails',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.primaryDark,
+                          minimumSize: const Size(0, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Container(width: 1, color: AppColors.divider),
-                // Ignition
-                _StatBox(
-                  label: 'Allumage',
-                  child: Icon(
-                    pos?.ignition == true
-                        ? Icons.key_rounded
-                        : Icons.key_off_rounded,
-                    size: 22,
-                    color: pos?.ignition == true
-                        ? AppColors.statusOnline
-                        : AppColors.textHint,
-                  ),
+                    const SizedBox(width: 12),
+                    // History — contour gris
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: widget.onHistoryTap,
+                        icon: const Icon(Icons.history_rounded, size: 17),
+                        label: const Text(
+                          'Historique',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                          side: const BorderSide(
+                            color: AppColors.divider,
+                            width: 1.5,
+                          ),
+                          minimumSize: const Size(0, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── Boutons ─────────────────────────────────────────────────
-          Row(
-            children: [
-              // Détails — vert rempli
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    TrackeoRoute(
-                      builder: (_) => VehicleDetailsView(vehicle: vehicle),
-                    ),
-                  ),
-                  icon: const Icon(Icons.info_outline_rounded, size: 17),
-                  label: const Text(
-                    'Détails',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.primaryDark,
-                    minimumSize: const Size(0, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // History — contour gris
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onHistoryTap,
-                  icon: const Icon(Icons.history_rounded, size: 17),
-                  label: const Text(
-                    'Historique',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textSecondary,
-                    side: const BorderSide(
-                      color: AppColors.divider,
-                      width: 1.5,
-                    ),
-                    minimumSize: const Size(0, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
