@@ -342,8 +342,6 @@ const steps = [
                 inputmode="email"
                 autocomplete="email"
                 placeholder="vous@exemple.com"
-                pattern="^[^@\s]+@[^@\s]+\.[^@\s]{2,}$"
-                title="Saisissez une adresse email complète, par exemple vous@exemple.com"
                 maxlength="320"
                 required
               />
@@ -1772,6 +1770,8 @@ const steps = [
         !(status instanceof HTMLElement) ||
         !endpoint
       ) return;
+
+      emailInput.value = emailInput.value.trim();
 
       if (!waitlistForm.checkValidity()) {
         waitlistForm.reportValidity();
