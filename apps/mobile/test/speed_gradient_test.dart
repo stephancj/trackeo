@@ -9,40 +9,54 @@ VehiclePosition _p(double lat, double lon, double speed, int sec) =>
       lon: lon,
       speedKmh: speed,
       course: 0,
-      deviceTime: DateTime.utc(2026, 6, 18, 10, 0).add(Duration(seconds: sec)),
+      deviceTime: DateTime.utc(2026, 6, 18, 10).add(Duration(seconds: sec)),
     );
 
 void main() {
-  const gray = Color(0xFF9CA3AF);
+  const stopped = Color(0xFF98A2B3);
 
-  test('vitesse rapportée 0 mais déplacement réel ⇒ PAS gris (bug signalé)', () {
-    // ~278 m vers le sud en 30 s ⇒ ~33 km/h, alors que le traceur rapporte 0.
-    final pts = [
+  test('un déplacement réel corrige un traceur bloqué à 0 km/h', () {
+    final points = [
       _p(-18.9000, 47.5000, 0, 0),
       _p(-18.9025, 47.5000, 0, 30),
     ];
-    final colors = speedGradientColors(pts);
-    expect(colors.length, 2);
-    expect(colors[1], isNot(gray),
-        reason: 'le déplacement réel doit primer sur la vitesse rapportée à 0');
+
+    expect(smoothedSpeedKmh(points, 1), greaterThan(20));
+    expect(buildSpeedTraceSegments(points).single.band.color, isNot(stopped));
   });
 
-  test('réellement immobile (pas de déplacement) ⇒ gris', () {
-    final pts = [
-      _p(-18.9000, 47.5000, 0, 0),
-      _p(-18.90001, 47.50001, 0, 30), // ~1.5 m
+  test('le bruit GPS inférieur à 12 m reste affiché comme un arrêt', () {
+    final points = [
+      _p(-18.90000, 47.50000, 0, 0),
+      _p(-18.90004, 47.50004, 0, 30),
     ];
-    final colors = speedGradientColors(pts);
-    expect(colors[1], gray);
+
+    expect(buildSpeedTraceSegments(points).single.band.color, stopped);
   });
 
-  test('vitesse rapportée correcte conservée si > déplacement', () {
-    // Traceur dit 80 km/h, points proches (gap GPS) ⇒ on garde 80, pas gris.
-    final pts = [
-      _p(-18.9000, 47.5000, 80, 0),
-      _p(-18.90005, 47.5000, 80, 5),
+  test('la médiane locale élimine un pic de vitesse isolé', () {
+    final points = [
+      _p(-18.9000, 47.5000, 42, 0),
+      _p(-18.9005, 47.5000, 42, 10),
+      _p(-18.9010, 47.5000, 175, 20),
+      _p(-18.9015, 47.5000, 42, 30),
     ];
-    final colors = speedGradientColors(pts);
-    expect(colors[1], isNot(gray));
+
+    expect(smoothedSpeedKmh(points, 2), 42);
+  });
+
+  test('les portions consécutives de même bande sont regroupées', () {
+    final points = [
+      _p(-18.9000, 47.5000, 30, 0),
+      _p(-18.9005, 47.5000, 32, 10),
+      _p(-18.9010, 47.5000, 35, 20),
+      _p(-18.9015, 47.5000, 95, 30),
+      _p(-18.9020, 47.5000, 100, 40),
+    ];
+
+    final segments = buildSpeedTraceSegments(points);
+    expect(segments, hasLength(2));
+    expect(segments.first.points.length, 3);
+    expect(segments.last.points.first, points[2]);
   });
 }

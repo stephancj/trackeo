@@ -11,23 +11,24 @@ class SpeedBand {
 
 /// Palette de vitesse partagée (trace Historique + trace d'alerte).
 ///
-/// On distingue l'**arrêt réel** (< 1 km/h) du **roulage lent / bouchon**
-/// (1–15 km/h) — fréquent à Antananarivo. Avant, tout ce qui était sous 5 km/h
-/// s'affichait en gris « arrêté », ce qui faisait passer un véhicule au pas dans
-/// les embouteillages pour stationné.
+/// Palette froide pour la circulation normale, chaude uniquement lorsqu'une
+/// vitesse demande de l'attention. Les bornes affichées correspondent exactement
+/// aux comparaisons (borne haute exclue).
 const List<SpeedBand> kSpeedBands = [
-  SpeedBand(1, Color(0xFF9CA3AF), 'Arrêté', '< 1'),
-  SpeedBand(10, Color(0xFFFBBF24), 'Au pas', '1–10'),
-  SpeedBand(30, Color(0xFF4ECB8D), 'Lent', '10–30'),
-  SpeedBand(50, Color(0xFF5B8DEF), 'Urbain', '30–50'),
-  SpeedBand(100, Color(0xFFF59E0B), 'Route', '50–100'),
-  SpeedBand(double.infinity, Color(0xFFEF4444), 'Excès', '> 100'),
+  SpeedBand(3, Color(0xFF98A2B3), 'Arrêté', '< 3'),
+  SpeedBand(20, Color(0xFF4ECB8D), 'Au pas', '3–19'),
+  SpeedBand(50, Color(0xFF20A4B8), 'Urbain', '20–49'),
+  SpeedBand(80, Color(0xFF3E7DD8), 'Route', '50–79'),
+  SpeedBand(120, Color(0xFFE99A28), 'Rapide', '80–119'),
+  SpeedBand(double.infinity, Color(0xFFD94B4B), 'Excès', '≥ 120'),
 ];
 
-/// Couleur correspondant à une vitesse en km/h.
-Color speedColor(double kmh) {
+SpeedBand speedBand(double kmh) {
   for (final b in kSpeedBands) {
-    if (kmh < b.maxKmh) return b.color;
+    if (kmh < b.maxKmh) return b;
   }
-  return kSpeedBands.last.color;
+  return kSpeedBands.last;
 }
+
+/// Couleur correspondant à une vitesse en km/h.
+Color speedColor(double kmh) => speedBand(kmh).color;

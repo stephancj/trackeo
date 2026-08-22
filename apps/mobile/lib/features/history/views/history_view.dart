@@ -98,226 +98,232 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     });
 
     return FeatureGate(
-      anyOf: const ['history'],
-      title: 'Historique des Trajets',
-      description: 'L\'historique complet de vos déplacements est disponible avec un plan Basic ou Premium.',
-      child: Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          // ── Carte plein écran ─────────────────────────────────────────
-          FlutterMap(
-            mapController: _mapController,
-            options: const MapOptions(
-              initialCenter: _defaultCenter,
-              initialZoom: 12,
-            ),
+        anyOf: const ['history'],
+        title: 'Historique des Trajets',
+        description:
+            'L\'historique complet de vos déplacements est disponible avec un plan Basic ou Premium.',
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          body: Stack(
             children: [
-              TileLayer(
-                urlTemplate: _tiles[_tileIndex],
-                subdomains: AppMapTiles.subdomains,
-                retinaMode: true,
-                userAgentPackageName: 'mg.trackeo.app',
-              ),
-              // Une polyligne (dégradé de vitesse) par trajet — pas de ligne
-              // factice à travers les arrêts.
-              if (polylines.isNotEmpty) PolylineLayer(polylines: polylines),
-              // Marqueurs départ / arrivée du jour + points d'arrêt + véhicule animé.
-              MarkerLayer(
-                markers: [
-                  ..._dayMarkers(_day),
-                  ..._playbackMarkers(positions),
+              // ── Carte plein écran ─────────────────────────────────────────
+              FlutterMap(
+                mapController: _mapController,
+                options: const MapOptions(
+                  initialCenter: _defaultCenter,
+                  initialZoom: 12,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: _tiles[_tileIndex],
+                    subdomains: AppMapTiles.subdomains,
+                    retinaMode: true,
+                    userAgentPackageName: 'mg.trackeo.app',
+                  ),
+                  // Une polyligne (dégradé de vitesse) par trajet — pas de ligne
+                  // factice à travers les arrêts.
+                  if (polylines.isNotEmpty) PolylineLayer(polylines: polylines),
+                  // Marqueurs départ / arrivée du jour + points d'arrêt + véhicule animé.
+                  MarkerLayer(
+                    markers: [
+                      ..._dayMarkers(_day),
+                      ..._playbackMarkers(positions),
+                    ],
+                  ),
                 ],
+              ),
+
+              // ── Indicateur de chargement (fin du top) ────────────────────
+              if (positionsAsync.isLoading)
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: LinearProgressIndicator(
+                    color: AppColors.primary,
+                    backgroundColor: Colors.transparent,
+                    minHeight: 2,
+                  ),
+                ),
+
+              // ── Header : retour + sélecteur de date ──────────────────────
+              Positioned(
+                top: topPad + 8,
+                left: 16,
+                right: 16,
+                child: Row(
+                  children: [
+                    // Bouton retour
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new,
+                          size: 16,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Sélecteur de date
+                    Expanded(
+                      child: _DateSelector(
+                        date: date,
+                        vehicleId: widget.vehicleId,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Boutons droite (calques + recenter) ──────────────────────
+              Positioned(
+                right: 16,
+                bottom:
+                    effectivePanelH + (_playbackActive ? 100 + bottomPad : 12),
+                child: Column(
+                  children: [
+                    // Calques — cycle clair / voyager / sombre
+                    GestureDetector(
+                      onTap: _cycleTiles,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryDark,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.layers,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Recentrer
+                    GestureDetector(
+                      onTap: () {
+                        final sel = _tripByIndex(_selectedTrip);
+                        if (sel != null) {
+                          _fitTrip(sel);
+                        } else if (_allPoints.length > 1) {
+                          _fitRoute(_allPoints);
+                        } else if (_allPoints.isNotEmpty) {
+                          _mapController.move(_allPoints.first, 14);
+                        }
+                      },
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.gps_fixed,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Bar de contrôle du Playback ──────────────────────────────
+              _buildPlaybackBar(positions, bottomPad),
+
+              // ── Panneau inférieur (résumé + trajets) ─────────────────────
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.fastOutSlowIn,
+                  height: effectivePanelH,
+                  clipBehavior: Clip.hardEdge,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
+                  ),
+                  child: positionsAsync.when(
+                    loading: () => const Center(
+                      child:
+                          CircularProgressIndicator(color: AppColors.primary),
+                    ),
+                    error: (e, _) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'Impossible de charger le trajet.\n$e',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.statusAlert,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                    data: (_) => positions.isEmpty
+                        ? _EmptyState(
+                            vehicleName: widget.vehicleName, date: date)
+                        : _DayPanel(
+                            day: _day,
+                            selectedTrip: _selectedTrip,
+                            onTripTap: _onTripTap,
+                            onPlayPlayback: () =>
+                                _startPlayback(positions: positions),
+                          ),
+                  ),
+                ),
               ),
             ],
           ),
-
-          // ── Indicateur de chargement (fin du top) ────────────────────
-          if (positionsAsync.isLoading)
-            const Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: LinearProgressIndicator(
-                color: AppColors.primary,
-                backgroundColor: Colors.transparent,
-                minHeight: 2,
-              ),
-            ),
-
-          // ── Header : retour + sélecteur de date ──────────────────────
-          Positioned(
-            top: topPad + 8,
-            left: 16,
-            right: 16,
-            child: Row(
-              children: [
-                // Bouton retour
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 16,
-                      color: AppColors.primaryDark,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Sélecteur de date
-                Expanded(
-                  child: _DateSelector(
-                    date: date,
-                    vehicleId: widget.vehicleId,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Boutons droite (calques + recenter) ──────────────────────
-          Positioned(
-            right: 16,
-            bottom: effectivePanelH + (_playbackActive ? 100 + bottomPad : 12),
-            child: Column(
-              children: [
-                // Calques — cycle clair / voyager / sombre
-                GestureDetector(
-                  onTap: _cycleTiles,
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryDark,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.layers,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Recentrer
-                GestureDetector(
-                  onTap: () {
-                    final sel = _tripByIndex(_selectedTrip);
-                    if (sel != null) {
-                      _fitTrip(sel);
-                    } else if (_allPoints.length > 1) {
-                      _fitRoute(_allPoints);
-                    } else if (_allPoints.isNotEmpty) {
-                      _mapController.move(_allPoints.first, 14);
-                    }
-                  },
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.gps_fixed,
-                      color: AppColors.primary,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Bar de contrôle du Playback ──────────────────────────────
-          _buildPlaybackBar(positions, bottomPad),
-
-          // ── Panneau inférieur (résumé + trajets) ─────────────────────
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.fastOutSlowIn,
-              height: effectivePanelH,
-              clipBehavior: Clip.hardEdge,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: positionsAsync.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-                error: (e, _) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      'Impossible de charger le trajet.\n$e',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AppColors.statusAlert,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ),
-                data: (_) => positions.isEmpty
-                    ? _EmptyState(vehicleName: widget.vehicleName, date: date)
-                    : _DayPanel(
-                        day: _day,
-                        selectedTrip: _selectedTrip,
-                        onTripTap: _onTripTap,
-                        onPlayPlayback: () => _startPlayback(positions: positions),
-                      ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ));
+        ));
   }
 
   // ── Playback Logic & Helpers ──────────────────────────────────────────
 
-  void _startPlayback({required List<VehiclePosition> positions, int? startIndex}) {
+  void _startPlayback(
+      {required List<VehiclePosition> positions, int? startIndex}) {
     if (positions.isEmpty) return;
     _playbackTimer?.cancel();
     final maxIdx = (positions.length - 1).toDouble();
@@ -445,7 +451,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     final currentPos = _interpolatedPoint(positions, _playbackIndex);
     final bearing = _interpolatedBearing(positions, _playbackIndex);
     final idx = _playbackIndex.floor().clamp(0, positions.length - 1);
-    final speed = positions[idx].speedKmh;
+    final speed = smoothedSpeedKmh(positions, idx);
 
     return [
       Marker(
@@ -679,26 +685,32 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
     for (final t in day.trips) {
       if (t.points.length < 2) continue;
       final dimmed = selected != null && selected != t.index;
-      final pts = t.points.map((p) => LatLng(p.lat, p.lon)).toList();
-      // Estompé → trait gris uni ; sinon dégradé de vitesse (les deux options
-      // de Polyline étant mutuellement exclusives).
-      polys.add(
-        dimmed
-            ? Polyline(
-                points: pts,
-                strokeWidth: 5,
-                color: const Color(0x559CA3AF),
-                strokeCap: StrokeCap.round,
-                strokeJoin: StrokeJoin.round,
-              )
-            : Polyline(
-                points: pts,
-                strokeWidth: selected == t.index ? 6 : 5,
-                gradientColors: speedGradientColors(t.points),
-                strokeCap: StrokeCap.round,
-                strokeJoin: StrokeJoin.round,
-              ),
-      );
+      if (dimmed) {
+        polys.add(
+          Polyline(
+            points: t.points.map((p) => LatLng(p.lat, p.lon)).toList(),
+            strokeWidth: 5,
+            color: const Color(0x5598A2B3),
+            strokeCap: StrokeCap.round,
+            strokeJoin: StrokeJoin.round,
+          ),
+        );
+        continue;
+      }
+
+      for (final segment in buildSpeedTraceSegments(t.points)) {
+        polys.add(
+          Polyline(
+            points: segment.points.map((p) => LatLng(p.lat, p.lon)).toList(),
+            strokeWidth: selected == t.index ? 6 : 5,
+            color: segment.band.color,
+            borderStrokeWidth: 1,
+            borderColor: const Color(0x66333549),
+            strokeCap: StrokeCap.round,
+            strokeJoin: StrokeJoin.round,
+          ),
+        );
+      }
     }
     return polys;
   }
@@ -1069,7 +1081,8 @@ class _DayPanel extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryDark,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     shape: RoundedRectangleBorder(
@@ -1670,7 +1683,7 @@ class _LegendItem extends StatelessWidget {
           ),
         ),
         Text(
-          '$sub km/h',
+          sub.contains('km/h') ? sub : '$sub km/h',
           style: const TextStyle(
             fontSize: 9,
             color: AppColors.textHint,

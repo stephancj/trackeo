@@ -96,7 +96,8 @@ class _AlertTraceMapState extends ConsumerState<AlertTraceMap> {
         : (pts.length >= 2 ? pts : [if (focal != null) focal]);
 
     if (fitTarget.isNotEmpty) {
-      final sig = Object.hash(fitTarget.length, fitTarget.first, fitTarget.last);
+      final sig =
+          Object.hash(fitTarget.length, fitTarget.first, fitTarget.last);
       if (sig != _fittedFor) {
         _fittedFor = sig;
         WidgetsBinding.instance.addPostFrameCallback((_) => _fit(fitTarget));
@@ -111,7 +112,8 @@ class _AlertTraceMapState extends ConsumerState<AlertTraceMap> {
         initialCenter: center,
         initialZoom: 15,
         interactionOptions: InteractionOptions(
-          flags: widget.interactive ? InteractiveFlag.all : InteractiveFlag.none,
+          flags:
+              widget.interactive ? InteractiveFlag.all : InteractiveFlag.none,
         ),
       ),
       children: [
@@ -124,13 +126,17 @@ class _AlertTraceMapState extends ConsumerState<AlertTraceMap> {
         if (pts.length >= 2)
           PolylineLayer(
             polylines: [
-              Polyline(
-                points: pts,
-                strokeWidth: 5,
-                gradientColors: speedGradientColors(positions),
-                strokeCap: StrokeCap.round,
-                strokeJoin: StrokeJoin.round,
-              ),
+              for (final segment in buildSpeedTraceSegments(positions))
+                Polyline(
+                  points:
+                      segment.points.map((p) => LatLng(p.lat, p.lon)).toList(),
+                  strokeWidth: 5,
+                  color: segment.band.color,
+                  borderStrokeWidth: 1,
+                  borderColor: const Color(0x66333549),
+                  strokeCap: StrokeCap.round,
+                  strokeJoin: StrokeJoin.round,
+                ),
             ],
           ),
         MarkerLayer(markers: _markers(pts, focal)),

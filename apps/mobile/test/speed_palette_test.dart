@@ -3,37 +3,33 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/theme/speed_palette.dart';
 
 void main() {
-  const gray = Color(0xFF9CA3AF);
-  const amber = Color(0xFFFBBF24);
-  const green = Color(0xFF4ECB8D);
-  const blue = Color(0xFF5B8DEF);
-  const orange = Color(0xFFF59E0B);
-  const red = Color(0xFFEF4444);
+  const stopped = Color(0xFF98A2B3);
+  const walking = Color(0xFF4ECB8D);
+  const urban = Color(0xFF20A4B8);
+  const road = Color(0xFF3E7DD8);
+  const fast = Color(0xFFE99A28);
+  const excess = Color(0xFFD94B4B);
 
-  group('speedColor — distinguer arrêt et bouchon', () {
-    test('< 1 km/h ⇒ gris (arrêté)', () {
-      expect(speedColor(0), gray);
-      expect(speedColor(0.9), gray);
+  group('speedColor utilise des bornes exactes et monotones', () {
+    test('arrêt et circulation lente', () {
+      expect(speedColor(0), stopped);
+      expect(speedColor(2.99), stopped);
+      expect(speedColor(3), walking);
+      expect(speedColor(19.99), walking);
     });
 
-    test('2 et 4 km/h (au pas / bouchon) ⇒ ambre, PAS gris (bug signalé)', () {
-      expect(speedColor(2), amber);
-      expect(speedColor(4), amber);
-      expect(speedColor(4), isNot(gray));
+    test('circulation urbaine et route', () {
+      expect(speedColor(20), urban);
+      expect(speedColor(49.99), urban);
+      expect(speedColor(50), road);
+      expect(speedColor(79.99), road);
     });
 
-    test('au pas jusqu\'à 10 : 9 ⇒ ambre, 11 ⇒ vert (lent)', () {
-      expect(speedColor(9), amber);
-      expect(speedColor(11), green);
-    });
-
-    test('urbain jusqu\'à 50 : 45 ⇒ bleu, 55 ⇒ orange (route)', () {
-      expect(speedColor(45), blue);
-      expect(speedColor(55), orange);
-    });
-
-    test('excès > 100 ⇒ rouge', () {
-      expect(speedColor(135), red);
+    test('orange avant le seuil et rouge à partir de 120 km/h', () {
+      expect(speedColor(80), fast);
+      expect(speedColor(119.99), fast);
+      expect(speedColor(120), excess);
+      expect(speedColor(160), excess);
     });
   });
 }
